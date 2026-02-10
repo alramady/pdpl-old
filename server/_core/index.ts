@@ -7,6 +7,8 @@ import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { initWebSocket } from "../websocket";
+import { initScheduler } from "../scheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,6 +45,9 @@ async function startServer() {
       createContext,
     })
   );
+  // Initialize WebSocket server
+  initWebSocket(server);
+
   // development mode uses Vite, production mode uses static files
   if (process.env.NODE_ENV === "development") {
     await setupVite(app, server);
@@ -57,8 +62,14 @@ async function startServer() {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
+  server.listen(port, async () => {
     console.log(`Server running on http://localhost:${port}/`);
+    // Initialize scheduled monitoring jobs after server starts
+    try {
+      await initScheduler();
+    } catch (error) {
+      console.error("[Scheduler] Failed to initialize:", error);
+    }
   });
 }
 

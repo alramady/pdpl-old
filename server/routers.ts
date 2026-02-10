@@ -19,7 +19,18 @@ import {
   getAllUsers,
   updateUserRole,
   logAudit,
+  getAuditLogs,
+  exportAuditLogsCsv,
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  getUnreadNotificationCount,
+  createNotification,
+  getMonitoringJobs,
+  getMonitoringJobById,
 } from "./db";
+import { triggerJob, toggleJobStatus } from "./scheduler";
+import { broadcastNotification } from "./websocket";
 
 export const appRouter = router({
   system: systemRouter,
@@ -29,6 +40,9 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
+      if (ctx.user) {
+        logAudit(ctx.user.id, "auth.logout", `User ${ctx.user.name} logged out`, "auth", ctx.user.name ?? undefined);
+      }
       return { success: true } as const;
     }),
   }),
@@ -91,7 +105,7 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         await createLeak(input);
-        await logAudit(ctx.user.id, "leak.create", `Created leak ${input.leakId}`);
+        await logAudit(ctx.user.id, "leak.create", `Created leak ${input.leakId}`, "leak", ctx.user.name ?? undefined);
         return { success: true };
       }),
 
@@ -104,7 +118,18 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         await updateLeakStatus(input.leakId, input.status);
-        await logAudit(ctx.user.id, "leak.updateStatus", `Updated ${input.leakId} to ${input.status}`);
+        await logAudit(ctx.user.id, "leak.updateStatus", `Updated ${input.leakId} to ${input.status}`, "leak", ctx.user.name ?? undefined);
+
+        // Broadcast status change notification
+        broadcastNotification({
+          type: "status_change",
+          title: `Leak ${input.leakId} status updated to ${input.status}`,
+          titleAr: `تم تحديث حالة التسريب ${input.leakId} إلى ${input.status === "analyzing" ? "قيد التحليل" : input.status === "documented" ? "موثق" : input.status === "reported" ? "تم الإبلاغ" : "جديد"}`,
+          severity: "info",
+          relatedId: input.leakId,
+          createdAt: new Date().toISOString(),
+        });
+
         return { success: true };
       }),
 
@@ -118,7 +143,7 @@ export const appRouter = router({
           })
           .optional()
       )
-      .query(async ({ input }) => {
+      .query(async ({ input, ctx }) => {
         const data = await getLeaks(input);
         const headers = [
           "Leak ID",
@@ -145,6 +170,9 @@ export const appRouter = router({
           leak.detectedAt?.toISOString() ?? "",
         ]);
         const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+        if (ctx.user) {
+          await logAudit(ctx.user.id, "leak.export", `Exported ${data.length} leaks as CSV`, "export", ctx.user.name ?? undefined);
+        }
         return { csv, filename: `ndmo-leaks-export-${Date.now()}.csv` };
       }),
   }),
@@ -197,6 +225,29 @@ export const appRouter = router({
             results,
             totalMatches: results.length,
           });
+          await logAudit(ctx.user.id, "pii.scan", `PII scan: ${results.length} matches found`, "pii", ctx.user.name ?? undefined);
+
+          // Send notification if matches found
+          if (results.length > 0) {
+            const notifId = await createNotification({
+              userId: ctx.user.id,
+              type: "scan_complete",
+              title: `PII Scan Complete: ${results.length} matches`,
+              titleAr: `اكتمل فحص PII: ${results.length} تطابق`,
+              message: `Found ${results.length} PII items across ${new Set(results.map(r => r.type)).size} categories`,
+              messageAr: `تم العثور على ${results.length} عنصر PII في ${new Set(results.map(r => r.type)).size} فئات`,
+              severity: results.length > 10 ? "high" : results.length > 5 ? "medium" : "low",
+            });
+
+            broadcastNotification({
+              id: notifId,
+              type: "scan_complete",
+              title: `PII Scan Complete: ${results.length} matches`,
+              titleAr: `اكتمل فحص PII: ${results.length} تطابق`,
+              severity: results.length > 10 ? "high" : results.length > 5 ? "medium" : "low",
+              createdAt: new Date().toISOString(),
+            });
+          }
         }
 
         return { results, totalMatches: results.length };
@@ -238,17 +289,20 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         const id = await createReport({ ...input, generatedBy: ctx.user.id });
-        await logAudit(ctx.user.id, "report.create", `Created report: ${input.title}`);
+        await logAudit(ctx.user.id, "report.create", `Created report: ${input.title}`, "report", ctx.user.name ?? undefined);
         return { id, success: true };
       }),
 
     exportPdf: publicProcedure
       .input(z.object({ reportId: z.number().optional() }))
-      .query(async ({ input }) => {
-        // Generate a summary report as structured data for client-side PDF generation
+      .query(async ({ input, ctx }) => {
         const allLeaks = await getLeaks();
         const stats = await getDashboardStats();
         const reportsList = await getReports();
+
+        if (ctx.user) {
+          await logAudit(ctx.user.id, "report.export", `Exported PDF report`, "export", ctx.user.name ?? undefined);
+        }
 
         const summary = {
           title: "NDMO — تقرير تسريبات البيانات الشخصية",
@@ -286,7 +340,101 @@ export const appRouter = router({
       )
       .mutation(async ({ input, ctx }) => {
         await updateUserRole(input.userId, input.ndmoRole);
-        await logAudit(ctx.user.id, "user.updateRole", `Updated user ${input.userId} to ${input.ndmoRole}`);
+        await logAudit(ctx.user.id, "user.updateRole", `Updated user ${input.userId} to ${input.ndmoRole}`, "user", ctx.user.name ?? undefined);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Notifications ──────────────────────────────────────────
+  notifications: router({
+    list: publicProcedure
+      .input(z.object({ limit: z.number().optional() }).optional())
+      .query(async ({ ctx, input }) => {
+        const userId = ctx.user?.id ?? null;
+        return getNotifications(userId, input?.limit ?? 50);
+      }),
+
+    unreadCount: publicProcedure.query(async ({ ctx }) => {
+      const userId = ctx.user?.id ?? null;
+      return getUnreadNotificationCount(userId);
+    }),
+
+    markRead: protectedProcedure
+      .input(z.object({ notificationId: z.number() }))
+      .mutation(async ({ input }) => {
+        await markNotificationRead(input.notificationId);
+        return { success: true };
+      }),
+
+    markAllRead: protectedProcedure.mutation(async ({ ctx }) => {
+      await markAllNotificationsRead(ctx.user.id);
+      return { success: true };
+    }),
+  }),
+
+  // ─── Audit Log (admin only) ─────────────────────────────────
+  audit: router({
+    list: adminProcedure
+      .input(
+        z
+          .object({
+            category: z.string().optional(),
+            limit: z.number().optional(),
+          })
+          .optional()
+      )
+      .query(async ({ input }) => {
+        return getAuditLogs(input);
+      }),
+
+    exportCsv: adminProcedure
+      .input(z.object({ category: z.string().optional() }).optional())
+      .query(async ({ input, ctx }) => {
+        const csv = await exportAuditLogsCsv(input);
+        await logAudit(ctx.user.id, "audit.export", "Exported audit logs as CSV", "export", ctx.user.name ?? undefined);
+        return { csv, filename: `ndmo-audit-log-${Date.now()}.csv` };
+      }),
+  }),
+
+  // ─── Monitoring Jobs ────────────────────────────────────────
+  jobs: router({
+    list: publicProcedure.query(async () => {
+      return getMonitoringJobs();
+    }),
+
+    getById: publicProcedure
+      .input(z.object({ jobId: z.string() }))
+      .query(async ({ input }) => {
+        return getMonitoringJobById(input.jobId);
+      }),
+
+    trigger: protectedProcedure
+      .input(z.object({ jobId: z.string() }))
+      .mutation(async ({ input, ctx }) => {
+        await logAudit(ctx.user.id, "monitoring.trigger", `Manually triggered job ${input.jobId}`, "monitoring", ctx.user.name ?? undefined);
+        // Run asynchronously so we don't block the response
+        triggerJob(input.jobId).catch((err) => {
+          console.error(`[Jobs] Failed to trigger ${input.jobId}:`, err);
+        });
+        return { success: true, message: "Job triggered" };
+      }),
+
+    toggleStatus: protectedProcedure
+      .input(
+        z.object({
+          jobId: z.string(),
+          status: z.enum(["active", "paused"]),
+        })
+      )
+      .mutation(async ({ input, ctx }) => {
+        await toggleJobStatus(input.jobId, input.status);
+        await logAudit(
+          ctx.user.id,
+          `monitoring.${input.status === "active" ? "resume" : "pause"}`,
+          `${input.status === "active" ? "Resumed" : "Paused"} job ${input.jobId}`,
+          "monitoring",
+          ctx.user.name ?? undefined,
+        );
         return { success: true };
       }),
   }),

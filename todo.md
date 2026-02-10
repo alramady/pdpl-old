@@ -36,3 +36,30 @@
 - [x] Test export functionality
 - [x] Verify RTL still works correctly
 - [x] Create checkpoint
+
+## Phase 6: Real-Time Notifications (WebSocket)
+- [x] Install socket.io dependencies
+- [x] Create WebSocket server integration with Express
+- [x] Add notification events (new_leak, status_change, scan_complete)
+- [x] Build notification bell UI with dropdown panel
+- [x] Add toast notifications for real-time alerts
+- [x] Store notifications in database with read/unread status
+- [x] Add notification preferences in Settings
+
+## Phase 7: Scheduled Monitoring Jobs
+- [x] Create monitoring_jobs table in schema
+- [x] Build cron-based background worker service
+- [x] Implement Telegram channel check simulation
+- [x] Implement Dark Web source check simulation
+- [x] Implement Paste Sites check simulation
+- [x] Add job status dashboard in monitoring pages
+- [x] Add manual trigger buttons for each job
+- [x] Log job results and auto-create leak records
+
+## Phase 8: Audit Log System
+- [x] Create audit_logs table in schema
+- [x] Add audit logging middleware for all API actions
+- [x] Track: logins, exports, status changes, role changes, PII scans
+- [x] Build Audit Log page with filterable table
+- [x] Add audit log to admin-only navigation
+- [x] Add export audit log as CSV

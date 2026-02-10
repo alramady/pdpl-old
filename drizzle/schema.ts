@@ -173,9 +173,64 @@ export type InsertPasteEntry = typeof pasteEntries.$inferInsert;
 export const auditLog = mysqlTable("audit_log", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId"),
+  userName: varchar("userName", { length: 255 }),
   action: varchar("action", { length: 100 }).notNull(),
+  category: mysqlEnum("auditCategory", ["auth", "leak", "export", "pii", "user", "report", "system", "monitoring"])
+    .default("system")
+    .notNull(),
   details: text("details"),
+  ipAddress: varchar("ipAddress", { length: 45 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type AuditLogEntry = typeof auditLog.$inferSelect;
+export type InsertAuditLogEntry = typeof auditLog.$inferInsert;
+
+/**
+ * Notifications — real-time alerts for users
+ */
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  type: mysqlEnum("notificationType", ["new_leak", "status_change", "scan_complete", "job_complete", "system"])
+    .default("system")
+    .notNull(),
+  title: varchar("notifTitle", { length: 255 }).notNull(),
+  titleAr: varchar("notifTitleAr", { length: 255 }).notNull(),
+  message: text("notifMessage"),
+  messageAr: text("notifMessageAr"),
+  severity: mysqlEnum("notifSeverity", ["critical", "high", "medium", "low", "info"])
+    .default("info")
+    .notNull(),
+  isRead: boolean("isRead").default(false).notNull(),
+  relatedId: varchar("relatedId", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = typeof notifications.$inferInsert;
+
+/**
+ * Monitoring jobs — scheduled background tasks
+ */
+export const monitoringJobs = mysqlTable("monitoring_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  jobId: varchar("jobId", { length: 64 }).notNull().unique(),
+  name: varchar("jobName", { length: 255 }).notNull(),
+  nameAr: varchar("jobNameAr", { length: 255 }).notNull(),
+  platform: mysqlEnum("jobPlatform", ["telegram", "darkweb", "paste", "all"]).notNull(),
+  cronExpression: varchar("cronExpression", { length: 50 }).notNull(),
+  status: mysqlEnum("jobStatus", ["active", "paused", "running", "error"])
+    .default("active")
+    .notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  nextRunAt: timestamp("nextRunAt"),
+  lastResult: text("lastResult"),
+  leaksFound: int("leaksFound").default(0),
+  totalRuns: int("totalRuns").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type MonitoringJob = typeof monitoringJobs.$inferSelect;
+export type InsertMonitoringJob = typeof monitoringJobs.$inferInsert;

@@ -10,12 +10,17 @@ import {
   darkWebListings,
   pasteEntries,
   auditLog,
+  notifications,
+  monitoringJobs,
   type InsertLeak,
   type InsertChannel,
   type InsertPiiScan,
   type InsertReport,
   type InsertDarkWebListing,
   type InsertPasteEntry,
+  type InsertNotification,
+  type InsertMonitoringJob,
+  type InsertAuditLogEntry,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -235,8 +240,149 @@ export async function getDashboardStats() {
 
 // ─── Audit Log ──────────────────────────────────────────────────
 
-export async function logAudit(userId: number | null, action: string, details?: string) {
+export async function logAudit(
+  userId: number | null,
+  action: string,
+  details?: string,
+  category?: "auth" | "leak" | "export" | "pii" | "user" | "report" | "system" | "monitoring",
+  userName?: string,
+  ipAddress?: string,
+) {
   const db = await getDb();
   if (!db) return;
-  await db.insert(auditLog).values({ userId, action, details });
+  await db.insert(auditLog).values({
+    userId,
+    userName: userName ?? null,
+    action,
+    category: category ?? "system",
+    details,
+    ipAddress: ipAddress ?? null,
+  });
+}
+
+export async function getAuditLogs(filters?: {
+  category?: string;
+  userId?: number;
+  limit?: number;
+}) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = [];
+  if (filters?.category && filters.category !== "all") {
+    conditions.push(eq(auditLog.category, filters.category as any));
+  }
+  if (filters?.userId) {
+    conditions.push(eq(auditLog.userId, filters.userId));
+  }
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  const limit = filters?.limit ?? 200;
+  return db.select().from(auditLog).where(where).orderBy(desc(auditLog.createdAt)).limit(limit);
+}
+
+export async function exportAuditLogsCsv(filters?: { category?: string }) {
+  const logs = await getAuditLogs({ ...filters, limit: 5000 });
+  const headers = ["ID", "User ID", "User Name", "Action", "Category", "Details", "IP Address", "Timestamp"];
+  const rows = logs.map((log) => [
+    log.id,
+    log.userId ?? "",
+    `"${log.userName ?? ""}"`,
+    log.action,
+    log.category,
+    `"${(log.details ?? "").replace(/"/g, '""')}"`,
+    log.ipAddress ?? "",
+    log.createdAt?.toISOString() ?? "",
+  ]);
+  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+}
+
+// ─── Notifications ──────────────────────────────────────────────
+
+export async function createNotification(notif: InsertNotification) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(notifications).values(notif);
+  return result[0].insertId;
+}
+
+export async function getNotifications(userId?: number | null, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  // Get notifications for the user or global (userId = null)
+  if (userId) {
+    return db.select().from(notifications)
+      .where(sql`${notifications.userId} = ${userId} OR ${notifications.userId} IS NULL`)
+      .orderBy(desc(notifications.createdAt))
+      .limit(limit);
+  }
+  return db.select().from(notifications)
+    .where(sql`${notifications.userId} IS NULL`)
+    .orderBy(desc(notifications.createdAt))
+    .limit(limit);
+}
+
+export async function markNotificationRead(notifId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true }).where(eq(notifications.id, notifId));
+}
+
+export async function markAllNotificationsRead(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(notifications).set({ isRead: true })
+    .where(sql`(${notifications.userId} = ${userId} OR ${notifications.userId} IS NULL) AND ${notifications.isRead} = false`);
+}
+
+export async function getUnreadNotificationCount(userId?: number | null) {
+  const db = await getDb();
+  if (!db) return 0;
+  if (userId) {
+    const [row] = await db.select({
+      count: sql<number>`COUNT(*)`,
+    }).from(notifications)
+      .where(sql`(${notifications.userId} = ${userId} OR ${notifications.userId} IS NULL) AND ${notifications.isRead} = false`);
+    return Number(row?.count ?? 0);
+  }
+  const [row] = await db.select({
+    count: sql<number>`COUNT(*)`,
+  }).from(notifications)
+    .where(sql`${notifications.userId} IS NULL AND ${notifications.isRead} = false`);
+  return Number(row?.count ?? 0);
+}
+
+// ─── Monitoring Jobs ────────────────────────────────────────────
+
+export async function getMonitoringJobs() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(monitoringJobs).orderBy(desc(monitoringJobs.updatedAt));
+}
+
+export async function getMonitoringJobById(jobId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(monitoringJobs).where(eq(monitoringJobs.jobId, jobId)).limit(1);
+  return result[0];
+}
+
+export async function createMonitoringJob(job: InsertMonitoringJob) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  await db.insert(monitoringJobs).values(job);
+}
+
+export async function updateMonitoringJobStatus(
+  jobId: string,
+  status: "active" | "paused" | "running" | "error",
+  extra?: { lastRunAt?: Date; nextRunAt?: Date; lastResult?: string; leaksFound?: number; totalRuns?: number }
+) {
+  const db = await getDb();
+  if (!db) return;
+  const updateData: Record<string, unknown> = { status };
+  if (extra?.lastRunAt) updateData.lastRunAt = extra.lastRunAt;
+  if (extra?.nextRunAt) updateData.nextRunAt = extra.nextRunAt;
+  if (extra?.lastResult !== undefined) updateData.lastResult = extra.lastResult;
+  if (extra?.leaksFound !== undefined) updateData.leaksFound = sql`${monitoringJobs.leaksFound} + ${extra.leaksFound}`;
+  if (extra?.totalRuns !== undefined) updateData.totalRuns = sql`${monitoringJobs.totalRuns} + 1`;
+  await db.update(monitoringJobs).set(updateData).where(eq(monitoringJobs.jobId, jobId));
 }

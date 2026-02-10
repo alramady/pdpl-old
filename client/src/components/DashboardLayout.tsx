@@ -2,7 +2,7 @@
  * DashboardLayout — Dark Observatory Theme
  * RTL-first sidebar layout with NDMO branding
  * Collapsible sidebar with icon+label navigation
- * Integrated auth, role-based nav, user profile
+ * Integrated auth, role-based nav, user profile, real-time notifications
  */
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
@@ -20,18 +20,20 @@ import {
   ChevronLeft,
   Menu,
   X,
-  Bell,
   Search,
   Shield,
   LogIn,
   LogOut,
   Users,
   Loader2,
+  Radio,
+  ScrollText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNdmoAuth } from "@/hooks/useNdmoAuth";
 import { getLoginUrl } from "@/const";
+import NotificationBell from "./NotificationBell";
 
 interface NavItem {
   label: string;
@@ -50,8 +52,9 @@ const navItems: NavItem[] = [
   { label: "مصنّف PII", labelEn: "PII Classifier", icon: ScanSearch, path: "/pii-classifier" },
   { label: "التسريبات", labelEn: "Leaks", icon: ShieldAlert, path: "/leaks" },
   { label: "التقارير", labelEn: "Reports", icon: BarChart3, path: "/reports" },
-  { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/admin/users", requiresAuth: true, minRole: "admin" },
-  { label: "الإعدادات", labelEn: "Settings", icon: Settings, path: "/settings" },
+  { label: "مهام الرصد", labelEn: "Monitoring Jobs", icon: Radio, path: "/monitoring-jobs" },
+  { label: "سجل المراجعة", labelEn: "Audit Log", icon: ScrollText, path: "/audit-log", requiresAuth: true, minRole: "admin" },
+  { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/settings", requiresAuth: true, minRole: "admin" },
 ];
 
 const roleLabels: Record<string, string> = {
@@ -263,16 +266,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Search className="w-4 h-4" />
             </Button>
 
-            {/* Notifications */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground relative"
-              onClick={() => toast("الإشعارات قريباً", { description: "Notifications coming soon" })}
-            >
-              <Bell className="w-4 h-4" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-destructive rounded-full animate-pulse-glow" />
-            </Button>
+            {/* Real-time Notifications */}
+            <NotificationBell userId={user?.id} />
 
             {/* Status indicator */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">

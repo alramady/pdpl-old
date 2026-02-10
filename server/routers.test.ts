@@ -53,6 +53,7 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
   return { ctx, clearedCookies };
 }
 
+// ─── Dashboard ────────────────────────────────────────────────
 describe("dashboard.stats", () => {
   it("returns dashboard statistics", async () => {
     const ctx = createPublicContext();
@@ -69,6 +70,7 @@ describe("dashboard.stats", () => {
   });
 });
 
+// ─── Leaks ────────────────────────────────────────────────────
 describe("leaks.list", () => {
   it("returns an array of leaks", async () => {
     const ctx = createPublicContext();
@@ -120,6 +122,7 @@ describe("leaks.exportCsv", () => {
   });
 });
 
+// ─── Channels ─────────────────────────────────────────────────
 describe("channels.list", () => {
   it("returns an array of channels", async () => {
     const ctx = createPublicContext();
@@ -143,6 +146,7 @@ describe("channels.list", () => {
   });
 });
 
+// ─── PII Scanner ──────────────────────────────────────────────
 describe("pii.scan", () => {
   it("detects Saudi national IDs", async () => {
     const ctx = createPublicContext();
@@ -234,6 +238,7 @@ describe("pii.scan", () => {
   });
 });
 
+// ─── Dark Web ─────────────────────────────────────────────────
 describe("darkweb.listings", () => {
   it("returns an array of dark web listings", async () => {
     const ctx = createPublicContext();
@@ -245,6 +250,7 @@ describe("darkweb.listings", () => {
   });
 });
 
+// ─── Paste Sites ──────────────────────────────────────────────
 describe("pastes.list", () => {
   it("returns an array of paste entries", async () => {
     const ctx = createPublicContext();
@@ -256,6 +262,7 @@ describe("pastes.list", () => {
   });
 });
 
+// ─── Reports ──────────────────────────────────────────────────
 describe("reports.list", () => {
   it("returns an array of reports", async () => {
     const ctx = createPublicContext();
@@ -284,6 +291,7 @@ describe("reports.exportPdf", () => {
   });
 });
 
+// ─── Users (admin only) ──────────────────────────────────────
 describe("users.list (admin only)", () => {
   it("returns users list for admin", async () => {
     const { ctx } = createAuthContext();
@@ -309,5 +317,220 @@ describe("users.list (admin only)", () => {
     const caller = appRouter.createCaller(ctx);
 
     await expect(caller.users.list()).rejects.toThrow();
+  });
+});
+
+// ─── Notifications ────────────────────────────────────────────
+describe("notifications.list", () => {
+  it("returns an array of notifications for public users", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const notifications = await caller.notifications.list({ limit: 10 });
+
+    expect(Array.isArray(notifications)).toBe(true);
+  });
+
+  it("supports limit parameter", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const notifications = await caller.notifications.list({ limit: 5 });
+
+    expect(Array.isArray(notifications)).toBe(true);
+    expect(notifications.length).toBeLessThanOrEqual(5);
+  });
+});
+
+describe("notifications.unreadCount", () => {
+  it("returns a number for unread count", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const count = await caller.notifications.unreadCount();
+
+    expect(typeof count).toBe("number");
+    expect(count).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe("notifications.markRead", () => {
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.notifications.markRead({ notificationId: 1 })).rejects.toThrow();
+  });
+});
+
+describe("notifications.markAllRead", () => {
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.notifications.markAllRead()).rejects.toThrow();
+  });
+
+  it("succeeds for authenticated users", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.notifications.markAllRead();
+
+    expect(result).toEqual({ success: true });
+  });
+});
+
+// ─── Audit Log (admin only) ──────────────────────────────────
+describe("audit.list (admin only)", () => {
+  it("returns audit logs for admin", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const logs = await caller.audit.list({ limit: 20 });
+
+    expect(Array.isArray(logs)).toBe(true);
+  });
+
+  it("supports category filtering", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const logs = await caller.audit.list({ category: "auth" });
+
+    expect(Array.isArray(logs)).toBe(true);
+    for (const log of logs) {
+      expect(log.category).toBe("auth");
+    }
+  });
+
+  it("rejects non-admin users", async () => {
+    const { ctx } = createAuthContext();
+    (ctx.user as AuthenticatedUser).role = "user";
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.audit.list()).rejects.toThrow();
+  });
+
+  it("rejects unauthenticated users", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.audit.list()).rejects.toThrow();
+  });
+});
+
+describe("audit.exportCsv (admin only)", () => {
+  it("returns CSV for admin", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.audit.exportCsv();
+
+    expect(result).toBeDefined();
+    expect(typeof result.csv).toBe("string");
+    expect(typeof result.filename).toBe("string");
+    expect(result.csv).toContain("Timestamp");
+    expect(result.filename).toMatch(/ndmo-audit-log-\d+\.csv/);
+  });
+
+  it("rejects non-admin users", async () => {
+    const { ctx } = createAuthContext();
+    (ctx.user as AuthenticatedUser).role = "user";
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.audit.exportCsv()).rejects.toThrow();
+  });
+});
+
+// ─── Monitoring Jobs ──────────────────────────────────────────
+describe("jobs.list", () => {
+  it("returns an array of monitoring jobs", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const jobs = await caller.jobs.list();
+
+    expect(Array.isArray(jobs)).toBe(true);
+    expect(jobs.length).toBeGreaterThan(0);
+  });
+
+  it("each job has required fields", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const jobs = await caller.jobs.list();
+
+    for (const job of jobs) {
+      expect(job.jobId).toBeDefined();
+      expect(job.name).toBeDefined();
+      expect(job.nameAr).toBeDefined();
+      expect(job.platform).toBeDefined();
+      expect(job.cronExpression).toBeDefined();
+      expect(job.status).toBeDefined();
+    }
+  });
+});
+
+describe("jobs.getById", () => {
+  it("returns a specific job", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const job = await caller.jobs.getById({ jobId: "job-telegram-monitor" });
+
+    expect(job).toBeDefined();
+    if (job) {
+      expect(job.jobId).toBe("job-telegram-monitor");
+      expect(job.platform).toBe("telegram");
+    }
+  });
+});
+
+describe("jobs.trigger", () => {
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.jobs.trigger({ jobId: "job-telegram-monitor" })).rejects.toThrow();
+  });
+
+  it("succeeds for authenticated users", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.jobs.trigger({ jobId: "job-telegram-monitor" });
+
+    expect(result).toEqual({ success: true, message: "Job triggered" });
+  });
+});
+
+describe("jobs.toggleStatus", () => {
+  it("requires authentication", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.jobs.toggleStatus({ jobId: "job-telegram-monitor", status: "paused" })
+    ).rejects.toThrow();
+  });
+
+  it("can pause and resume a job", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    // Pause
+    const pauseResult = await caller.jobs.toggleStatus({
+      jobId: "job-telegram-monitor",
+      status: "paused",
+    });
+    expect(pauseResult).toEqual({ success: true });
+
+    // Resume
+    const resumeResult = await caller.jobs.toggleStatus({
+      jobId: "job-telegram-monitor",
+      status: "active",
+    });
+    expect(resumeResult).toEqual({ success: true });
   });
 });

@@ -15,6 +15,13 @@
       "when": 1770743794759,
       "tag": "0001_nosy_tag",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770746776401,
+      "tag": "0002_odd_argent",
+      "breakpoints": true
     }
   ]
 }

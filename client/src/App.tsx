@@ -13,6 +13,9 @@ import PIIClassifier from "./pages/PIIClassifier";
 import Leaks from "./pages/Leaks";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
+import MonitoringJobs from "./pages/MonitoringJobs";
+import AuditLog from "./pages/AuditLog";
+
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
@@ -26,6 +29,8 @@ function Router() {
         <Route path="/leaks" component={Leaks} />
         <Route path="/reports" component={Reports} />
         <Route path="/settings" component={Settings} />
+        <Route path="/monitoring-jobs" component={MonitoringJobs} />
+        <Route path="/audit-log" component={AuditLog} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />
       </Switch>
