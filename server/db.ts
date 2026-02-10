@@ -474,3 +474,127 @@ export async function updateRetentionPolicy(
   if (!db) return;
   await db.update(retentionPolicies).set(data).where(eq(retentionPolicies.id, id));
 }
+
+// ─── API Keys ─────────────────────────────────────────────────
+
+import {
+  apiKeys,
+  scheduledReports,
+  type InsertApiKey,
+  type InsertScheduledReport,
+} from "../drizzle/schema";
+
+export async function getApiKeys() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: apiKeys.id,
+    name: apiKeys.name,
+    keyPrefix: apiKeys.keyPrefix,
+    permissions: apiKeys.permissions,
+    rateLimit: apiKeys.rateLimit,
+    requestsToday: apiKeys.requestsToday,
+    lastUsedAt: apiKeys.lastUsedAt,
+    expiresAt: apiKeys.expiresAt,
+    isActive: apiKeys.isActive,
+    createdBy: apiKeys.createdBy,
+    createdAt: apiKeys.createdAt,
+  }).from(apiKeys).orderBy(desc(apiKeys.createdAt));
+}
+
+export async function createApiKey(data: InsertApiKey) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(apiKeys).values(data);
+  return result[0].insertId;
+}
+
+export async function updateApiKey(id: number, data: Partial<{ name: string; permissions: string[]; rateLimit: number; isActive: boolean; expiresAt: Date | null }>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(apiKeys).set(data).where(eq(apiKeys.id, id));
+}
+
+export async function deleteApiKey(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(apiKeys).where(eq(apiKeys.id, id));
+}
+
+export async function getApiKeyByHash(keyHash: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(apiKeys).where(eq(apiKeys.keyHash, keyHash)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+// ─── Scheduled Reports ────────────────────────────────────────
+
+export async function getScheduledReports() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(scheduledReports).orderBy(desc(scheduledReports.createdAt));
+}
+
+export async function createScheduledReport(data: InsertScheduledReport) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const result = await db.insert(scheduledReports).values(data);
+  return result[0].insertId;
+}
+
+export async function updateScheduledReport(id: number, data: Partial<InsertScheduledReport>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(scheduledReports).set(data).where(eq(scheduledReports.id, id));
+}
+
+export async function deleteScheduledReport(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(scheduledReports).where(eq(scheduledReports.id, id));
+}
+
+// ─── Threat Map Data ──────────────────────────────────────────
+
+export async function getThreatMapData() {
+  const db = await getDb();
+  if (!db) return { regions: [], leaks: [] };
+  
+  const allLeaks = await db.select({
+    leakId: leaks.leakId,
+    title: leaks.title,
+    titleAr: leaks.titleAr,
+    source: leaks.source,
+    severity: leaks.severity,
+    sector: leaks.sector,
+    sectorAr: leaks.sectorAr,
+    recordCount: leaks.recordCount,
+    status: leaks.status,
+    region: leaks.region,
+    regionAr: leaks.regionAr,
+    city: leaks.city,
+    cityAr: leaks.cityAr,
+    latitude: leaks.latitude,
+    longitude: leaks.longitude,
+    detectedAt: leaks.detectedAt,
+  }).from(leaks).where(
+    sql`${leaks.latitude} IS NOT NULL AND ${leaks.longitude} IS NOT NULL`
+  );
+  
+  // Aggregate by region
+  const regionMap = new Map<string, { region: string; regionAr: string; count: number; critical: number; high: number; medium: number; low: number; records: number }>();
+  for (const leak of allLeaks) {
+    const key = leak.region || "Unknown";
+    const existing = regionMap.get(key) || { region: key, regionAr: leak.regionAr || key, count: 0, critical: 0, high: 0, medium: 0, low: 0, records: 0 };
+    existing.count++;
+    existing[leak.severity as "critical" | "high" | "medium" | "low"]++;
+    existing.records += leak.recordCount;
+    regionMap.set(key, existing);
+  }
+  
+  return {
+    regions: Array.from(regionMap.values()),
+    leaks: allLeaks,
+  };
+}

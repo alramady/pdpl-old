@@ -17,6 +17,9 @@ import MonitoringJobs from "./pages/MonitoringJobs";
 import AuditLog from "./pages/AuditLog";
 import AlertChannels from "./pages/AlertChannels";
 import DataRetention from "./pages/DataRetention";
+import ThreatMap from "./pages/ThreatMap";
+import ScheduledReports from "./pages/ScheduledReports";
+import ApiKeys from "./pages/ApiKeys";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -32,7 +35,10 @@ function Router() {
         <Route path="/reports" component={Reports} />
         <Route path="/settings" component={Settings} />
         <Route path="/monitoring-jobs" component={MonitoringJobs} />
+        <Route path="/threat-map" component={ThreatMap} />
         <Route path="/alert-channels" component={AlertChannels} />
+        <Route path="/scheduled-reports" component={ScheduledReports} />
+        <Route path="/api-keys" component={ApiKeys} />
         <Route path="/data-retention" component={DataRetention} />
         <Route path="/audit-log" component={AuditLog} />
         <Route path="/404" component={NotFound} />

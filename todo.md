@@ -89,3 +89,30 @@
 - [x] Add archive/purge confirmation dialogs
 - [x] Show retention stats (records archived, storage saved)
 - [x] Add manual archive trigger for admin
+
+## Phase 12: Interactive Threat Map
+- [x] Add geographic data fields to leaks schema (region, city, lat, lng)
+- [x] Create map data aggregation endpoint (leaks by region)
+- [x] Build interactive threat map page with SVG-based Saudi Arabia map
+- [x] Add heat zones for threat concentration areas
+- [x] Add clickable markers with leak details popup
+- [x] Show Saudi Arabia regional breakdown with color-coded severity
+- [x] Add map to Dashboard as a summary widget (nav link)
+
+## Phase 13: Automated Compliance Reports
+- [x] Add scheduled_reports table (frequency, recipients, template, lastRun, nextRun)
+- [x] Create report generation service with PDF output
+- [x] Add tRPC procedures for CRUD on scheduled reports
+- [x] Build Report Scheduler management page
+- [x] Add weekly/monthly/quarterly frequency options
+- [x] Integrate with alert contacts for recipient selection
+- [x] Add report history with download links
+
+## Phase 14: API Key Management
+- [x] Add api_keys table (name, key, permissions, rateLimit, lastUsed, expiresAt)
+- [x] Create API key generation and validation logic
+- [x] Add tRPC procedures for CRUD on API keys
+- [x] Build API Keys management page with create/revoke UI
+- [x] Add usage stats and rate limit display
+- [x] Add API documentation section with endpoint reference
+- [x] Add API key auth middleware for external access

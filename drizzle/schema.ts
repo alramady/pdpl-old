@@ -60,6 +60,13 @@ export const leaks = mysqlTable("leaks", {
   aiRecommendationsAr: json("aiRecommendationsAr").$type<string[]>(),
   aiConfidence: int("aiConfidence"),
   enrichedAt: timestamp("enrichedAt"),
+  // Geographic data for threat map
+  region: varchar("region", { length: 100 }),
+  regionAr: varchar("regionAr", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  cityAr: varchar("cityAr", { length: 100 }),
+  latitude: varchar("latitude", { length: 20 }),
+  longitude: varchar("longitude", { length: 20 }),
   detectedAt: timestamp("detectedAt").defaultNow().notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
@@ -320,3 +327,47 @@ export const retentionPolicies = mysqlTable("retention_policies", {
 
 export type RetentionPolicy = typeof retentionPolicies.$inferSelect;
 export type InsertRetentionPolicy = typeof retentionPolicies.$inferInsert;
+
+/**
+ * API Keys — for external SIEM/SOC integrations
+ */
+export const apiKeys = mysqlTable("api_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("apiKeyName", { length: 255 }).notNull(),
+  keyHash: varchar("keyHash", { length: 128 }).notNull().unique(),
+  keyPrefix: varchar("keyPrefix", { length: 12 }).notNull(),
+  permissions: json("permissions").$type<string[]>(),
+  rateLimit: int("rateLimit").default(1000).notNull(),
+  requestsToday: int("requestsToday").default(0).notNull(),
+  lastUsedAt: timestamp("lastUsedAt"),
+  expiresAt: timestamp("expiresAt"),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ApiKey = typeof apiKeys.$inferSelect;
+export type InsertApiKey = typeof apiKeys.$inferInsert;
+
+/**
+ * Scheduled reports — automated compliance report generation
+ */
+export const scheduledReports = mysqlTable("scheduled_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("scheduledReportName", { length: 255 }).notNull(),
+  nameAr: varchar("scheduledReportNameAr", { length: 255 }),
+  frequency: mysqlEnum("frequency", ["weekly", "monthly", "quarterly"]).notNull(),
+  template: mysqlEnum("reportTemplate", ["executive_summary", "full_detail", "compliance", "sector_analysis"]).default("executive_summary").notNull(),
+  recipientIds: json("recipientIds").$type<number[]>(),
+  isEnabled: boolean("isEnabled").default(true).notNull(),
+  lastRunAt: timestamp("lastRunAt"),
+  nextRunAt: timestamp("nextRunAt"),
+  totalRuns: int("totalRuns").default(0),
+  createdBy: int("createdBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ScheduledReport = typeof scheduledReports.$inferSelect;
+export type InsertScheduledReport = typeof scheduledReports.$inferInsert;

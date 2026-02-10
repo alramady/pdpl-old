@@ -17,6 +17,7 @@ import {
 import { monitoringJobs } from "../drizzle/schema";
 import { broadcastNotification, broadcastJobUpdate } from "./websocket";
 import { sql } from "drizzle-orm";
+import { checkAndRunScheduledReports } from "./reportScheduler";
 
 // Store active cron tasks
 type CronTask = ReturnType<typeof cron.schedule>;
@@ -286,6 +287,19 @@ export async function initScheduler() {
   }
 
   console.log(`[Scheduler] ${jobs.filter(j => j.status === "active").length} jobs scheduled`);
+
+  // Schedule automated report generation check every hour
+  cron.schedule("0 * * * *", async () => {
+    try {
+      const count = await checkAndRunScheduledReports();
+      if (count > 0) {
+        console.log(`[Scheduler] Generated ${count} scheduled report(s)`);
+      }
+    } catch (error) {
+      console.error("[Scheduler] Report generation failed:", error);
+    }
+  });
+  console.log("[Scheduler] Report scheduler initialized (hourly check)");
 }
 
 /**

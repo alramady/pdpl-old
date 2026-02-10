@@ -30,6 +30,9 @@ import {
   ScrollText,
   Bell,
   Archive,
+  Map,
+  CalendarClock,
+  KeyRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -55,7 +58,10 @@ const navItems: NavItem[] = [
   { label: "التسريبات", labelEn: "Leaks", icon: ShieldAlert, path: "/leaks" },
   { label: "التقارير", labelEn: "Reports", icon: BarChart3, path: "/reports" },
   { label: "مهام الرصد", labelEn: "Monitoring Jobs", icon: Radio, path: "/monitoring-jobs" },
+  { label: "خريطة التهديدات", labelEn: "Threat Map", icon: Map, path: "/threat-map" },
   { label: "قنوات التنبيه", labelEn: "Alert Channels", icon: Bell, path: "/alert-channels" },
+  { label: "التقارير المجدولة", labelEn: "Scheduled Reports", icon: CalendarClock, path: "/scheduled-reports" },
+  { label: "مفاتيح API", labelEn: "API Keys", icon: KeyRound, path: "/api-keys", requiresAuth: true, minRole: "admin" },
   { label: "الاحتفاظ بالبيانات", labelEn: "Data Retention", icon: Archive, path: "/data-retention", requiresAuth: true, minRole: "admin" },
   { label: "سجل المراجعة", labelEn: "Audit Log", icon: ScrollText, path: "/audit-log", requiresAuth: true, minRole: "admin" },
   { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/settings", requiresAuth: true, minRole: "admin" },

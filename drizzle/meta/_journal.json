@@ -36,6 +36,20 @@
       "when": 1770748272734,
       "tag": "0004_abnormal_wrecking_crew",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1770750771679,
+      "tag": "0005_outstanding_the_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1770750823525,
+      "tag": "0006_whole_ricochet",
+      "breakpoints": true
     }
   ]
 }

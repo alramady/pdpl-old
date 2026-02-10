@@ -45,6 +45,18 @@ import { broadcastNotification } from "./websocket";
 import { enrichLeak, enrichAllPending } from "./enrichment";
 import { getAlertStats } from "./alertDispatch";
 import { executeRetentionPolicies, previewRetention } from "./retention";
+import { issueApiKey, API_PERMISSIONS } from "./apiKeyService";
+import {
+  getApiKeys,
+  updateApiKey,
+  deleteApiKey,
+  getScheduledReports,
+  createScheduledReport,
+  updateScheduledReport,
+  deleteScheduledReport,
+  getThreatMapData,
+} from "./db";
+import { checkAndRunScheduledReports } from "./reportScheduler";
 
 export const appRouter = router({
   system: systemRouter,
@@ -542,6 +554,122 @@ export const appRouter = router({
       return results;
     }),
     preview: adminProcedure.query(async () => previewRetention()),
+  }),
+
+  // ─── Threat Map ─────────────────────────────────────────────
+  threatMap: router({
+    data: publicProcedure.query(async () => {
+      return getThreatMapData();
+    }),
+  }),
+
+  // ─── API Keys (admin only) ──────────────────────────────────
+  apiKeys: router({
+    list: adminProcedure.query(async () => {
+      return getApiKeys();
+    }),
+    permissions: publicProcedure.query(() => {
+      return API_PERMISSIONS;
+    }),
+    create: adminProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        permissions: z.array(z.string()),
+        rateLimit: z.number().optional(),
+        expiresAt: z.string().nullable().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const result = await issueApiKey({
+          name: input.name,
+          permissions: input.permissions,
+          rateLimit: input.rateLimit,
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+          createdBy: ctx.user.id,
+        });
+        await logAudit(ctx.user.id, "apikey.create", `Created API key: ${input.name} (${result.keyPrefix}...)`, "system", ctx.user.name ?? undefined);
+        return result;
+      }),
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        permissions: z.array(z.string()).optional(),
+        rateLimit: z.number().optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...data } = input;
+        await updateApiKey(id, data);
+        await logAudit(ctx.user.id, "apikey.update", `Updated API key #${id}`, "system", ctx.user.name ?? undefined);
+        return { success: true };
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await deleteApiKey(input.id);
+        await logAudit(ctx.user.id, "apikey.delete", `Deleted API key #${input.id}`, "system", ctx.user.name ?? undefined);
+        return { success: true };
+      }),
+  }),
+
+  // ─── Scheduled Reports ──────────────────────────────────────
+  scheduledReports: router({
+    list: publicProcedure.query(async () => {
+      return getScheduledReports();
+    }),
+    create: adminProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        nameAr: z.string().optional(),
+        frequency: z.enum(["weekly", "monthly", "quarterly"]),
+        template: z.enum(["executive_summary", "full_detail", "compliance", "sector_analysis"]),
+        recipientIds: z.array(z.number()).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const nextRunAt = input.frequency === "weekly"
+          ? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+          : input.frequency === "monthly"
+            ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+            : new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+        const id = await createScheduledReport({
+          name: input.name,
+          nameAr: input.nameAr,
+          frequency: input.frequency,
+          template: input.template,
+          recipientIds: input.recipientIds,
+          nextRunAt,
+          createdBy: ctx.user.id,
+        });
+        await logAudit(ctx.user.id, "scheduledReport.create", `Created scheduled report: ${input.name}`, "report", ctx.user.name ?? undefined);
+        return { id, success: true };
+      }),
+    update: adminProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        nameAr: z.string().optional(),
+        frequency: z.enum(["weekly", "monthly", "quarterly"]).optional(),
+        template: z.enum(["executive_summary", "full_detail", "compliance", "sector_analysis"]).optional(),
+        isEnabled: z.boolean().optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        const { id, ...data } = input;
+        await updateScheduledReport(id, data);
+        await logAudit(ctx.user.id, "scheduledReport.update", `Updated scheduled report #${id}`, "report", ctx.user.name ?? undefined);
+        return { success: true };
+      }),
+    delete: adminProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        await deleteScheduledReport(input.id);
+        await logAudit(ctx.user.id, "scheduledReport.delete", `Deleted scheduled report #${input.id}`, "report", ctx.user.name ?? undefined);
+        return { success: true };
+      }),
+    runNow: adminProcedure.mutation(async ({ ctx }) => {
+      const count = await checkAndRunScheduledReports();
+      await logAudit(ctx.user.id, "scheduledReport.runNow", `Manually triggered scheduled reports: ${count} generated`, "report", ctx.user.name ?? undefined);
+      return { generated: count };
+    }),
   }),
 
   // ─── Monitoring Jobs ────────────────────────────────────────

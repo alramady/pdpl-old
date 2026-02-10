@@ -728,3 +728,182 @@ describe("enrichment.enrichAll (admin only)", () => {
     await expect(caller.enrichment.enrichAll()).rejects.toThrow();
   });
 });
+
+
+// ─── Threat Map Tests ────────────────────────────────────────────────
+describe("threatMap", () => {
+  it("returns threat map data with regions and leaks", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.threatMap.data();
+    expect(result).toHaveProperty("regions");
+    expect(result).toHaveProperty("leaks");
+    expect(Array.isArray(result.regions)).toBe(true);
+    expect(Array.isArray(result.leaks)).toBe(true);
+  });
+
+  it("regions contain count and severity breakdown", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.threatMap.data();
+    if (result.regions.length > 0) {
+      const region = result.regions[0];
+      expect(region).toHaveProperty("region");
+      expect(region).toHaveProperty("regionAr");
+      expect(region).toHaveProperty("count");
+      expect(typeof region.count).toBe("number");
+    }
+  });
+
+  it("leaks contain geographic data", async () => {
+    const ctx = createPublicContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.threatMap.data();
+    if (result.leaks.length > 0) {
+      const leak = result.leaks[0];
+      expect(leak).toHaveProperty("leakId");
+      expect(leak).toHaveProperty("severity");
+    }
+  });
+});
+
+// ─── Scheduled Reports Tests ─────────────────────────────────────────
+describe("scheduledReports", () => {
+  it("lists scheduled reports", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.scheduledReports.list();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("creates a new scheduled report", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.scheduledReports.create({
+      name: "Test Weekly Report",
+      nameAr: "تقرير أسبوعي تجريبي",
+      frequency: "weekly",
+      template: "executive_summary",
+    });
+    expect(result).toHaveProperty("id");
+    expect(typeof result.id).toBe("number");
+  });
+
+  it("updates a scheduled report", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const reports = await caller.scheduledReports.list();
+    if (reports.length > 0) {
+      const result = await caller.scheduledReports.update({
+        id: reports[0].id,
+        isEnabled: false,
+      });
+      expect(result).toHaveProperty("success");
+    }
+  });
+
+  it("runs reports now", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.scheduledReports.runNow();
+    expect(result).toHaveProperty("generated");
+    expect(typeof result.generated).toBe("number");
+  });
+
+  it("rejects non-admin for create", async () => {
+    const { ctx } = createAuthContext();
+    (ctx.user as AuthenticatedUser).role = "user";
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.scheduledReports.create({
+        name: "Test",
+        nameAr: "تجربة",
+        frequency: "weekly",
+        template: "executive_summary",
+      })
+    ).rejects.toThrow();
+  });
+});
+
+// ─── API Keys Tests ──────────────────────────────────────────────────
+describe("apiKeys", () => {
+  it("lists API keys for admin", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.apiKeys.list();
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("returns available permissions", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.apiKeys.permissions();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0]).toHaveProperty("id");
+    expect(result[0]).toHaveProperty("label");
+    expect(result[0]).toHaveProperty("labelAr");
+  });
+
+  it("creates a new API key and returns raw key", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const result = await caller.apiKeys.create({
+      name: "Test SIEM Key",
+      permissions: ["read:leaks", "read:reports"],
+      rateLimit: 500,
+      expiresAt: null,
+    });
+    expect(result).toHaveProperty("id");
+    expect(result).toHaveProperty("rawKey");
+    expect(result.rawKey.startsWith("ndmo_")).toBe(true);
+  });
+
+  it("updates an API key", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+
+    const keys = await caller.apiKeys.list();
+    if (keys.length > 0) {
+      const result = await caller.apiKeys.update({
+        id: keys[0].id,
+        isActive: false,
+      });
+      expect(result).toHaveProperty("success");
+    }
+  });
+
+  it("rejects non-admin for API key creation", async () => {
+    const { ctx } = createAuthContext();
+    (ctx.user as AuthenticatedUser).role = "user";
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(
+      caller.apiKeys.create({
+        name: "Unauthorized Key",
+        permissions: ["read:leaks"],
+        rateLimit: 100,
+        expiresAt: null,
+      })
+    ).rejects.toThrow();
+  });
+
+  it("rejects non-admin for API key listing", async () => {
+    const { ctx } = createAuthContext();
+    (ctx.user as AuthenticatedUser).role = "user";
+    const caller = appRouter.createCaller(ctx);
+
+    await expect(caller.apiKeys.list()).rejects.toThrow();
+  });
+});
