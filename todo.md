@@ -193,3 +193,19 @@
 - [x] Add evidence details (URLs, screenshots, hashes, forensic data) to leak records
 - [x] Enhance leak detail panel to show full evidence chain and incident timeline
 - [x] Run tests and checkpoint (86/86 passed)
+
+## Phase 22: Remove NCA & Non-Personal Data Content
+- [ ] Remove NCA reporting section from leak detail panel (Leaks.tsx)
+- [ ] Remove NCA reporting section from Reports page (Reports.tsx)
+- [ ] Remove any NCA references from Dashboard (Dashboard.tsx)
+- [ ] Remove any leak records that are not about personal data leaks
+- [ ] Ensure all remaining content focuses only on personal data leak monitoring
+- [x] Run tests and checkpoint (86/86 passed)
+
+## Phase 22: Remove All External Agency References (NCA/SDAIA)
+- [x] Remove NCA reporting section from leak detail panel (Leaks.tsx)
+- [x] Remove NCA reporting section from Reports page (Reports.tsx)
+- [x] Remove NCA references from Dashboard (Dashboard.tsx)
+- [x] Clean NCA references from all database records (0 remaining across all 6 tables)
+- [x] Ensure platform focuses ONLY on NDMO's role: monitoring personal data leaks
+- [ ] Run tests and checkpoint

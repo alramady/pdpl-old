@@ -502,45 +502,7 @@ export default function Leaks() {
                   </div>
                 )}
 
-                {/* NCA Reporting & PDPL Compliance */}
-                <div className="bg-gradient-to-br from-blue-500/5 to-indigo-500/5 rounded-xl p-4 border border-blue-500/20">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ShieldAlert className="w-4 h-4 text-blue-400" />
-                    <h4 className="text-sm font-semibold text-blue-300">إبلاغ NCA وامتثال PDPL</h4>
-                    {selectedLeakData.status === 'reported' ? (
-                      <span className="text-[10px] px-2 py-0.5 rounded border text-emerald-400 bg-emerald-500/10 border-emerald-500/30">تم الإبلاغ</span>
-                    ) : (
-                      <span className="text-[10px] px-2 py-0.5 rounded border text-amber-400 bg-amber-500/10 border-amber-500/30">بانتظار الإبلاغ</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-3 mb-3">
-                    <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
-                      <p className="text-xs font-bold text-blue-400">72 ساعة</p>
-                      <p className="text-[9px] text-gray-400">مهلة الإبلاغ القانونية</p>
-                    </div>
-                    <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/20 text-center">
-                      <p className="text-xs font-bold text-blue-400">المادة 20</p>
-                      <p className="text-[9px] text-gray-400">PDPL</p>
-                    </div>
-                  </div>
-                  {(selectedLeakData.severity === 'critical' || selectedLeakData.severity === 'high') && selectedLeakData.status !== 'reported' && (
-                    <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 mb-3">
-                      <p className="text-[10px] text-red-400 flex items-center gap-1">
-                        <AlertTriangle className="w-3 h-3" />
-                        تسريب {selectedLeakData.severity === 'critical' ? 'حرج' : 'عالي'} الخطورة — يجب إبلاغ NCA فوراً
-                      </p>
-                    </div>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-full gap-2 text-xs border-blue-500/30 text-blue-400 hover:bg-blue-500/10"
-                    onClick={() => toast.success('تم إرسال التقرير إلى NCA', { description: 'سيتم إشعارك بالرد' })}
-                  >
-                    <Send className="w-3 h-3" />
-                    إرسال تقرير إلى NCA
-                  </Button>
-                </div>
+
               </div>
             </motion.div>
           </motion.div>

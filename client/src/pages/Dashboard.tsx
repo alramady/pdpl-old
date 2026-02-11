@@ -498,12 +498,12 @@ export default function Dashboard() {
                       {critical > 0 && (
                         <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
                           <FileWarning className="w-4 h-4 text-red-400 flex-shrink-0" />
-                          <p className="text-[10px] text-red-400">{critical} تسريبات حرجة تتطلب إبلاغ NCA خلال 72 ساعة</p>
+                          <p className="text-[10px] text-red-400">{critical} تسريبات حرجة تتطلب معالجة فورية</p>
                         </div>
                       )}
                       <div className="flex items-center gap-2 p-2 rounded-lg bg-blue-500/5 border border-blue-500/10">
                         <Shield className="w-3.5 h-3.5 text-blue-400" />
-                        <p className="text-[10px] text-muted-foreground">يتتبع النظام مهلة الـ 72 ساعة للإبلاغ وفقاً لنظام حماية البيانات الشخصية</p>
+                        <p className="text-[10px] text-muted-foreground">يتتبع النظام مهلة الـ 72 ساعة للمعالجة وفقاً لنظام حماية البيانات الشخصية</p>
                       </div>
                     </>
                   );
