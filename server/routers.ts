@@ -1435,7 +1435,7 @@ export const appRouter = router({
           who.name,
           who.id,
         );
-        return { response: result.response, toolsUsed: result.toolsUsed };
+        return { response: result.response, toolsUsed: result.toolsUsed, thinkingSteps: result.thinkingSteps };
       }),
 
     dashboardSummary: publicProcedure.query(async () => {

@@ -1,6 +1,14 @@
 /**
- * Rasid AI — Comprehensive Smart Assistant Service
- * Full access to all platform data, functions, and analytics
+ * Rasid AI — "محافظ المنصة المطلق" (The Ultimate Platform Governor)
+ * Hierarchical Agent Architecture with Advanced Analytical Methodology
+ * 
+ * Architecture:
+ * - Main Governor Agent: Routes requests to specialized sub-agents
+ * - Knowledge Agent: Learns from documents, Q&A, and feedback
+ * - Audit Agent: Expert on audit_log — tracks employee activities
+ * - File Agent: Retrieves reports and documents
+ * - Executive Agent: Executes platform functions (search, update, create)
+ * - Analytics Agent: Deep correlation analysis and trend detection
  */
 import { invokeLLM } from "./_core/llm";
 import {
@@ -32,13 +40,30 @@ import {
   getReportAuditEntries,
   getApiKeys,
   logAudit,
+  getPublishedKnowledgeForAI,
+  getKnowledgeBaseEntries,
+  getAllPlatformUsers,
 } from "./db";
 
 // ═══════════════════════════════════════════════════════════════
-// SYSTEM PROMPT — Comprehensive platform knowledge
+// THINKING STEPS — Track the agent's reasoning process
 // ═══════════════════════════════════════════════════════════════
 
-export function buildSystemPrompt(userName: string, stats: any): string {
+interface ThinkingStep {
+  id: string;
+  agent: string; // Which sub-agent is working
+  action: string; // What action is being taken
+  description: string; // Arabic description of the step
+  status: "running" | "completed" | "error";
+  timestamp: Date;
+  result?: string; // Brief summary of the result
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM PROMPT — The Ultimate Platform Governor
+// ═══════════════════════════════════════════════════════════════
+
+export function buildSystemPrompt(userName: string, stats: any, knowledgeContext: string): string {
   const today = new Date().toLocaleDateString("ar-SA", {
     weekday: "long",
     year: "numeric",
@@ -46,15 +71,13 @@ export function buildSystemPrompt(userName: string, stats: any): string {
     day: "numeric",
   });
 
-  return `أنت "راصد الذكي" — المساعد الإداري الذكي لمنصة راصد v5.5 (Sentinel) لرصد تسريبات البيانات الشخصية السعودية.
+  return `**هويتك:** أنت "محافظ منصة راصد"، كبير المحللين السيبرانيين والوكيل التنفيذي الشامل لمنصة "راصد" لرصد تسريبات البيانات الشخصية.
 المنصة تابعة للمكتب الوطني لإدارة البيانات (NDMO).
 
-# من أنت
-- مساعد ذكي شامل مطّلع على كل شيء في منصة راصد
-- تخدم مسؤولي المنصة في لوحة التحكم الإدارية
-- كل بياناتك ومعرفتك تأتي حصرياً من المنصة — لا مصادر خارجية
-- المستخدم الحالي: ${userName}
-- التاريخ: ${today}
+**مهمتك الأساسية:** ضمان عمل المنصة بكفاءة قصوى، وتحويل بياناتها إلى رؤى استراتيجية قابلة للتنفيذ، وتلبية جميع طلبات المستخدمين الإداريين. أنت لا تجيب على الأسئلة فقط، بل تحلل، تستنتج، تربط، وتنفذ.
+
+# المستخدم الحالي: ${userName}
+# التاريخ: ${today}
 
 # بيانات المنصة الحية
 - إجمالي التسريبات: ${stats?.totalLeaks ?? 0}
@@ -63,45 +86,60 @@ export function buildSystemPrompt(userName: string, stats: any): string {
 - أجهزة الرصد النشطة: ${stats?.activeMonitors ?? 0}
 - بيانات PII المكتشفة: ${stats?.piiDetected?.toLocaleString() ?? 0}
 
-# ماذا تستطيع — بدون استثناء
-1. **الإجابة** على أي سؤال يخص المنصة (بيانات، وظائف، إحصائيات، شروحات)
-2. **التنفيذ** لأي مهمة متاحة في المنصة (فحص، تحديث، إضافة، تحليل، تقارير)
-3. **الإرشاد** لطريقة عمل أي مهمة أو وظيفة
-4. **التشخيص** لأي مشكلة تقنية في المنصة
-5. **التحليل** عبر كل قواعد البيانات والربط بينها
-6. **التكيف** مع أي وظائف أو مهام جديدة تُضاف للمنصة
-7. **فهم** أي سؤال بأي صياغة (فصحى + عامية سعودية + إنجليزية)
+# منهجية التحليل والتفكير الخاصة بك
+عندما يُطلب منك تحليل أو سؤال يتطلب تفكيرًا، اتبع هذه المنهجية الهرمية:
+
+1. **فهم النية الحقيقية:** ما هو الهدف النهائي للمستخدم؟ هل يريد معلومة، إجراء، ملف، أم تحليل؟
+2. **تحديد الوكيل المختص:** بناءً على النية، اختر الأداة/الوكيل المتخصص المناسب:
+   - **سؤال عن نشاط الموظفين؟** → استخدم أداة analyze_user_activity
+   - **طلب شرح أو سؤال عام؟** → استخدم أداة search_knowledge_base أو get_platform_guide
+   - **طلب تنفيذ إجراء أو استعلام بيانات؟** → استخدم الأدوات التنفيذية المناسبة
+   - **طلب ملف أو تقرير؟** → استخدم أداة get_reports_and_documents
+   - **طلب تحليل ارتباطات؟** → استخدم أداة get_correlations
+3. **تفكيك المشكلة:** قسّم الطلب المعقد إلى خطوات أصغر. قد تحتاج إلى استدعاء أدوات متعددة بالتسلسل.
+4. **الربط (Connect):** ابحث دائمًا عن روابط خفية. هل هذا البائع مرتبط بتسريب آخر؟ هل هذا القطاع يُستهدف بشكل متكرر؟
+5. **المقارنة (Compare):** قارن الفترات الزمنية (هذا الشهر مقابل الشهر الماضي)، المصادر (الدارك ويب مقابل تليجرام)، ومستويات الخطورة.
+6. **الاستنتاج (Infer):** لا تعرض البيانات فقط، بل استنتج الأنماط والشذوذ. مثال: "ألاحظ زيادة بنسبة 30% في تسريبات القطاع المالي هذا الأسبوع، معظمها من بائع جديد اسمه X"
+7. **تقييم الأثر (Assess Impact):** عند تحليل تسريب، قيّم أثره التنظيمي. هل يتطلب إبلاغًا خلال 72 ساعة؟ ما هي مواد PDPL المنطبقة؟
+
+# أمثلة على قدراتك التحليلية المتقدمة
+- **تحليل بائع:** "حلل لي نمط البائع @dark_seller. ما هي القطاعات التي يركز عليها؟ ما مدى خطورته؟ هل هو مرتبط ببائعين آخرين؟"
+- **تحليل ارتباطات:** "هل هناك أي ارتباط بين تسريب بيانات شركة X الأخير وتسريب بيانات شركة Y قبل شهر؟"
+- **تحليل استراتيجي:** "ما هي أكبر ثلاثة تهديدات تواجه القطاع المصرفي السعودي بناءً على بيانات آخر 6 أشهر؟"
+- **تحليل شذوذ:** "هل هناك أي أنماط غير عادية في تسريبات اليوم؟"
+- **مراقبة الأنشطة:** "كم تقرير أصدر محمد اليوم؟" أو "ما آخر إجراء قام به المستخدم أحمد؟"
+- **إدارة المعرفة:** "أضف هذا المستند لقاعدة المعرفة" أو "ما هو نظام PDPL؟"
+
+# قدراتك الشاملة
+1. **التحليل والاستنتاج** — تحليل عميق مع ربط البيانات واستنتاج الأنماط
+2. **التنفيذ** — أي مهمة متاحة في المنصة (فحص، تحديث، إضافة، تقارير)
+3. **مراقبة الأنشطة** — تعرف بالضبط من فعل ماذا ومتى
+4. **التعلم المستمر** — تتعلم من قاعدة المعرفة والمستندات والتقييمات
+5. **إدارة الملفات** — جلب أي تقرير أو مستند
+6. **التشخيص** — حل مشاكل تقنية في المنصة
+7. **الإرشاد** — شرح أي مفهوم أو إجراء
+8. **فهم لغوي فائق** — فصحى + عامية سعودية + إنجليزية
 
 # ماذا لا تستطيع
 - أي شيء خارج المنصة. إذا سُئلت سؤال خارجي:
-  "هذا السؤال خارج نطاق مهامي كمساعد لمنصة راصد. أستطيع مساعدتك في أي شيء يتعلق بالمنصة — تسريبات، تحليلات، تقارير، إرشادات، حل مشاكل، أو تنفيذ أي مهمة."
+  "هذا السؤال خارج نطاق مهامي كمحافظ لمنصة راصد. أستطيع مساعدتك في أي شيء يتعلق بالمنصة."
 
-# أسلوبك
-- تفهم العربية الفصحى والعامية السعودية والإنجليزية
-- تجيب بنفس لغة السؤال
-- مختصر للأسئلة البسيطة، مفصّل للمعقدة
-- أرقام دقيقة من البيانات — لا تخمّن
-- تطلب تأكيد للإجراءات التي تغيّر بيانات (تحديث، حذف، إبلاغ)
-- استخدم الجداول والتنسيق Markdown عند الحاجة لعرض بيانات منظمة
-- استخدم الإيموجي بشكل مقتصد ومهني
-
-# هيكل المنصة — 27 جدول بيانات
+# هيكل المنصة — الجداول
 users, leaks, channels, pii_scans, reports, dark_web_listings, paste_entries,
 audit_log, notifications, monitoring_jobs, alert_contacts, alert_rules, alert_history,
 retention_policies, api_keys, scheduled_reports, threat_rules, evidence_chain,
 seller_profiles, osint_queries, feedback_entries, knowledge_graph_nodes, knowledge_graph_edges,
-platform_users, incident_documents, report_audit
+platform_users, incident_documents, report_audit, knowledge_base, ai_response_ratings
 
-# وظائف المنصة — الصفحات والأقسام
-📊 لوحة القيادة — إحصائيات شاملة: إجمالي التسريبات، السجلات، القطاعات، الخطورة، الاتجاهات
-🔍 التسريبات — قائمة كل التسريبات المرصودة مع فلاتر وتفاصيل
+# وظائف المنصة
+📊 لوحة القيادة — إحصائيات شاملة
+🔍 التسريبات — قائمة كل التسريبات المرصودة
 🧪 محلل PII — تحليل نص مباشر لكشف بيانات شخصية
 📡 رصد تليجرام — مراقبة قنوات تليجرام
 🌐 الدارك ويب — رصد منتديات ومواقع الدارك ويب
 📁 مواقع اللصق — رصد مواقع Paste
 👤 ملفات البائعين — تتبع البائعين المرصودين
 📡 الرصد المباشر — فحص مباشر للمصادر
-🎯 مصنّف PII — تصنيف أنواع البيانات الشخصية
 🔗 سلسلة الأدلة — حفظ وتوثيق الأدلة الرقمية
 🎯 قواعد صيد التهديدات — قواعد YARA-like للكشف
 🔍 أدوات OSINT — استخبارات مفتوحة المصدر
@@ -110,13 +148,9 @@ platform_users, incident_documents, report_audit
 📻 مهام الرصد — جدولة وإدارة مهام المراقبة
 🔔 قنوات التنبيه — إعدادات التنبيهات
 📅 التقارير المجدولة — تقارير تلقائية
-✅ التحقق من التوثيق — التحقق من صحة الوثائق
 🗺️ خريطة التهديدات — خريطة جغرافية للتهديدات
-🔑 مفاتيح API — إدارة مفاتيح الوصول
-🗄️ الاحتفاظ بالبيانات — سياسات حفظ البيانات
 📋 سجل المراجعة — تتبع كل العمليات
-👥 إدارة المستخدمين — إدارة حسابات المنصة
-📄 سجل التوثيقات — أرشيف الوثائق الرسمية
+📚 قاعدة المعرفة — مقالات وأسئلة وأجوبة وسياسات
 
 # مستويات الخطورة
 - critical: تسريب يشمل بيانات حساسة جداً (هوية وطنية، بيانات مالية) لأكثر من 10,000 سجل
@@ -134,20 +168,33 @@ medical_record (سجل طبي), salary (راتب), gosi (تأمينات), licens
 
 # مواد نظام حماية البيانات الشخصية (PDPL) ذات الصلة
 - المادة 10: حماية البيانات الشخصية
-- المادة 14: الإفصاح عن التسريبات
+- المادة 14: الإفصاح عن التسريبات (إبلاغ خلال 72 ساعة)
 - المادة 19: حقوق أصحاب البيانات
-- المادة 24: العقوبات والغرامات
+- المادة 24: العقوبات والغرامات (حتى 5 ملايين ريال)
 - المادة 32: الالتزامات الأمنية
 
+${knowledgeContext ? `\n# قاعدة المعرفة المحدّثة\n${knowledgeContext}` : ""}
+
+# أسلوبك
+- تفهم العربية الفصحى والعامية السعودية والإنجليزية
+- تجيب بنفس لغة السؤال
+- مختصر للأسئلة البسيطة، مفصّل للمعقدة
+- أرقام دقيقة من البيانات — لا تخمّن
+- تطلب تأكيد للإجراءات التي تغيّر بيانات (تحديث، حذف، إبلاغ)
+- استخدم الجداول والتنسيق Markdown عند الحاجة لعرض بيانات منظمة
+- استخدم الإيموجي بشكل مقتصد ومهني
+
 عند استخدام الأدوات، اختر الأداة المناسبة تلقائياً بناءً على نية المستخدم.
-يمكنك استدعاء عدة أدوات بالتسلسل للإجابة على سؤال معقد.`;
+يمكنك استدعاء عدة أدوات بالتسلسل للإجابة على سؤال معقد.
+عند تحليل معقد، استخدم أدوات متعددة ثم اربط النتائج واستنتج الأنماط.`;
 }
 
 // ═══════════════════════════════════════════════════════════════
-// TOOL DEFINITIONS — All platform capabilities
+// TOOL DEFINITIONS — Hierarchical Agent Tools
 // ═══════════════════════════════════════════════════════════════
 
 export const RASID_TOOLS = [
+  // ─── Executive Agent Tools ─────────────────────────────────
   {
     type: "function" as const,
     function: {
@@ -183,7 +230,7 @@ export const RASID_TOOLS = [
     type: "function" as const,
     function: {
       name: "get_dashboard_stats",
-      description: "إحصائيات لوحة القيادة الشاملة: إجمالي التسريبات، الحرجة، السجلات، أجهزة الرصد، PII.",
+      description: "إحصائيات لوحة القيادة الشاملة: إجمالي التسريبات، الحرجة، السجلات، أجهزة الرصد، PII، مع توزيعات حسب الخطورة والمصدر والقطاع.",
       parameters: { type: "object", properties: {} },
     },
   },
@@ -296,36 +343,9 @@ export const RASID_TOOLS = [
   {
     type: "function" as const,
     function: {
-      name: "get_reports_info",
-      description: "التقارير: القائمة، المجدولة، سجل التدقيق، التوثيقات.",
-      parameters: {
-        type: "object",
-        properties: {
-          report_type: { type: "string", enum: ["all", "scheduled", "audit", "documents"], description: "نوع التقارير" },
-        },
-      },
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
       name: "get_threat_map",
       description: "خريطة التهديدات الجغرافية: التوزيع حسب المناطق والقطاعات.",
       parameters: { type: "object", properties: {} },
-    },
-  },
-  {
-    type: "function" as const,
-    function: {
-      name: "get_audit_log",
-      description: "سجل المراجعة الأمنية: كل العمليات والإجراءات المسجلة.",
-      parameters: {
-        type: "object",
-        properties: {
-          category: { type: "string", description: "فلتر الفئة (auth, leak, export, pii, user, report, system, monitoring)" },
-          limit: { type: "number", description: "عدد السجلات" },
-        },
-      },
     },
   },
   {
@@ -370,343 +390,786 @@ export const RASID_TOOLS = [
       },
     },
   },
+
+  // ─── Audit Agent Tools (NEW) ──────────────────────────────
+  {
+    type: "function" as const,
+    function: {
+      name: "analyze_user_activity",
+      description: "تحليل نشاط الموظفين والمستخدمين من سجل المراجعة. يجيب على: من فعل ماذا؟ متى؟ كم مرة؟ مثال: 'من أصدر تقارير اليوم؟'، 'ما آخر إجراء قام به المستخدم محمد؟'، 'كم عملية نفذها أحمد هذا الأسبوع؟'",
+      parameters: {
+        type: "object",
+        properties: {
+          user_name: { type: "string", description: "اسم المستخدم للبحث عنه (اختياري)" },
+          category: { type: "string", enum: ["auth", "leak", "export", "pii", "user", "report", "system", "monitoring", "enrichment", "alert", "retention", "api", "user_management", "all"], description: "فلتر فئة النشاط" },
+          action_search: { type: "string", description: "بحث نصي في الإجراءات (اختياري)" },
+          limit: { type: "number", description: "عدد السجلات (افتراضي 50)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_audit_log",
+      description: "سجل المراجعة الأمنية: كل العمليات والإجراءات المسجلة.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: { type: "string", description: "فلتر الفئة (auth, leak, export, pii, user, report, system, monitoring)" },
+          limit: { type: "number", description: "عدد السجلات" },
+        },
+      },
+    },
+  },
+
+  // ─── Knowledge Agent Tools (NEW) ──────────────────────────
+  {
+    type: "function" as const,
+    function: {
+      name: "search_knowledge_base",
+      description: "البحث في قاعدة المعرفة عن مقالات، أسئلة وأجوبة، سياسات، وتعليمات. استخدم هذه الأداة للإجابة على أسئلة إرشادية عامة أو البحث عن معلومات محددة في قاعدة المعرفة.",
+      parameters: {
+        type: "object",
+        properties: {
+          search_query: { type: "string", description: "نص البحث" },
+          category: { type: "string", enum: ["article", "faq", "glossary", "instruction", "policy", "regulation", "all"], description: "فلتر الفئة" },
+        },
+        required: ["search_query"],
+      },
+    },
+  },
+
+  // ─── File Agent Tools (NEW) ───────────────────────────────
+  {
+    type: "function" as const,
+    function: {
+      name: "get_reports_and_documents",
+      description: "جلب التقارير والمستندات. يبحث في التقارير المنشأة والمستندات الرسمية ويعيد الروابط والتفاصيل. استخدم هذه الأداة عندما يطلب المستخدم ملفًا أو تقريرًا محددًا.",
+      parameters: {
+        type: "object",
+        properties: {
+          report_type: { type: "string", enum: ["all", "scheduled", "audit", "documents", "incident"], description: "نوع التقارير" },
+          search: { type: "string", description: "بحث في عناوين التقارير (اختياري)" },
+        },
+      },
+    },
+  },
+
+  // ─── Analytics Agent Tools (NEW) ──────────────────────────
+  {
+    type: "function" as const,
+    function: {
+      name: "get_correlations",
+      description: "تحليل الارتباطات بين التسريبات والبائعين والقطاعات. يكتشف الأنماط المخفية والعلاقات بين الأحداث. استخدم هذه الأداة للتحليل العميق وربط البيانات. مثال: 'هل هناك ارتباط بين تسريبات القطاع المالي وبائع معين؟'",
+      parameters: {
+        type: "object",
+        properties: {
+          correlation_type: {
+            type: "string",
+            enum: ["seller_sector", "source_severity", "time_pattern", "pii_correlation", "seller_connections", "anomaly_detection", "comprehensive"],
+            description: "نوع تحليل الارتباط",
+          },
+          focus_entity: { type: "string", description: "كيان محدد للتركيز عليه (اسم بائع، قطاع، معرّف تسريب)" },
+        },
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_platform_users_info",
+      description: "معلومات مستخدمي المنصة: قائمة المستخدمين، أدوارهم، حالتهم، آخر تسجيل دخول.",
+      parameters: { type: "object", properties: {} },
+    },
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
-// TOOL EXECUTION ENGINE
+// TOOL EXECUTION ENGINE — Hierarchical Dispatch
 // ═══════════════════════════════════════════════════════════════
 
-async function executeTool(toolName: string, params: any): Promise<any> {
+async function executeTool(toolName: string, params: any, thinkingSteps: ThinkingStep[]): Promise<any> {
+  const stepId = `step-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+  
+  // Determine which agent handles this tool
+  const agentMap: Record<string, string> = {
+    query_leaks: "الوكيل التنفيذي",
+    get_leak_details: "الوكيل التنفيذي",
+    get_dashboard_stats: "الوكيل التنفيذي",
+    get_channels_info: "الوكيل التنفيذي",
+    get_monitoring_status: "الوكيل التنفيذي",
+    get_alert_info: "الوكيل التنفيذي",
+    get_sellers_info: "الوكيل التنفيذي",
+    get_evidence_info: "الوكيل التنفيذي",
+    get_threat_rules_info: "الوكيل التنفيذي",
+    get_darkweb_pastes: "الوكيل التنفيذي",
+    get_feedback_accuracy: "الوكيل التنفيذي",
+    get_knowledge_graph: "الوكيل التنفيذي",
+    get_osint_info: "الوكيل التنفيذي",
+    get_threat_map: "الوكيل التنفيذي",
+    get_system_health: "الوكيل التنفيذي",
+    analyze_trends: "وكيل التحليلات",
+    get_platform_guide: "وكيل المعرفة",
+    analyze_user_activity: "وكيل سجل المراجعة",
+    get_audit_log: "وكيل سجل المراجعة",
+    search_knowledge_base: "وكيل المعرفة",
+    get_reports_and_documents: "وكيل الملفات",
+    get_correlations: "وكيل التحليلات",
+    get_platform_users_info: "الوكيل التنفيذي",
+  };
+
+  const toolDescriptions: Record<string, string> = {
+    query_leaks: "البحث في التسريبات",
+    get_leak_details: "جلب تفاصيل التسريب",
+    get_dashboard_stats: "جلب إحصائيات لوحة القيادة",
+    get_channels_info: "جلب معلومات القنوات",
+    get_monitoring_status: "فحص حالة المراقبة",
+    get_alert_info: "جلب معلومات التنبيهات",
+    get_sellers_info: "جلب معلومات البائعين",
+    get_evidence_info: "جلب الأدلة الرقمية",
+    get_threat_rules_info: "جلب قواعد التهديدات",
+    get_darkweb_pastes: "جلب بيانات الدارك ويب",
+    get_feedback_accuracy: "جلب مقاييس الدقة",
+    get_knowledge_graph: "جلب رسم المعرفة",
+    get_osint_info: "جلب بيانات OSINT",
+    get_threat_map: "جلب خريطة التهديدات",
+    get_system_health: "فحص صحة النظام",
+    analyze_trends: "تحليل الاتجاهات والأنماط",
+    get_platform_guide: "البحث في الدليل الإرشادي",
+    analyze_user_activity: "تحليل نشاط المستخدمين",
+    get_audit_log: "جلب سجل المراجعة",
+    search_knowledge_base: "البحث في قاعدة المعرفة",
+    get_reports_and_documents: "جلب التقارير والمستندات",
+    get_correlations: "تحليل الارتباطات",
+    get_platform_users_info: "جلب معلومات المستخدمين",
+  };
+
+  const step: ThinkingStep = {
+    id: stepId,
+    agent: agentMap[toolName] || "الوكيل الرئيسي",
+    action: toolName,
+    description: toolDescriptions[toolName] || toolName,
+    status: "running",
+    timestamp: new Date(),
+  };
+  thinkingSteps.push(step);
+
   try {
-    switch (toolName) {
-      case "query_leaks": {
-        const filters: any = {};
-        if (params.severity && params.severity !== "all") filters.severity = params.severity;
-        if (params.status && params.status !== "all") filters.status = params.status;
-        if (params.source && params.source !== "all") filters.source = params.source;
-        if (params.search) filters.search = params.search;
-        const leaksList = await getLeaks(filters);
-        const limited = leaksList.slice(0, params.limit || 20);
-        return {
-          total: leaksList.length,
-          showing: limited.length,
-          leaks: limited.map((l: any) => ({
-            leakId: l.leakId,
-            title: l.titleAr || l.title,
-            source: l.source,
-            severity: l.severity,
-            sector: l.sectorAr || l.sector,
-            recordCount: l.recordCount,
-            status: l.status,
-            piiTypes: l.piiTypes,
-            detectedAt: l.detectedAt,
-            aiSummary: l.aiSummaryAr || l.aiSummary,
-          })),
-        };
-      }
-
-      case "get_leak_details": {
-        const leak = await getLeakById(params.leak_id);
-        if (!leak) return { error: `لم يتم العثور على تسريب بمعرّف ${params.leak_id}` };
-        const evidence = await getEvidenceChain(params.leak_id);
-        return {
-          leak: {
-            leakId: leak.leakId,
-            title: leak.titleAr || leak.title,
-            description: leak.descriptionAr || leak.description,
-            source: leak.source,
-            severity: leak.severity,
-            sector: leak.sectorAr || leak.sector,
-            recordCount: leak.recordCount,
-            status: leak.status,
-            piiTypes: leak.piiTypes,
-            detectedAt: leak.detectedAt,
-            aiSeverity: leak.aiSeverity,
-            aiSummary: leak.aiSummaryAr || leak.aiSummary,
-            aiRecommendations: leak.aiRecommendationsAr || leak.aiRecommendations,
-          },
-          evidenceCount: evidence.length,
-          evidence: evidence.slice(0, 10),
-        };
-      }
-
-      case "get_dashboard_stats": {
-        const stats = await getDashboardStats();
-        const allLeaks = await getLeaks();
-        const bySeverity: Record<string, number> = {};
-        const bySource: Record<string, number> = {};
-        const bySector: Record<string, number> = {};
-        for (const l of allLeaks) {
-          bySeverity[l.severity] = (bySeverity[l.severity] || 0) + 1;
-          bySource[l.source] = (bySource[l.source] || 0) + 1;
-          const sec = l.sectorAr || l.sector;
-          bySector[sec] = (bySector[sec] || 0) + 1;
-        }
-        return {
-          ...stats,
-          totalLeaksInDB: allLeaks.length,
-          bySeverity,
-          bySource,
-          bySector,
-          latestLeaks: allLeaks.slice(0, 5).map((l: any) => ({
-            leakId: l.leakId,
-            title: l.titleAr || l.title,
-            severity: l.severity,
-            detectedAt: l.detectedAt,
-          })),
-        };
-      }
-
-      case "get_channels_info": {
-        const ch = await getChannels(params.platform);
-        return {
-          total: ch.length,
-          channels: ch.map((c: any) => ({
-            name: c.name,
-            nameAr: c.nameAr,
-            platform: c.platform,
-            status: c.status,
-            priority: c.priority,
-            leaksFound: c.leaksFound,
-            lastActivity: c.lastActivity,
-          })),
-        };
-      }
-
-      case "get_monitoring_status": {
-        const jobs = await getMonitoringJobs();
-        return {
-          total: jobs.length,
-          jobs: jobs.map((j: any) => ({
-            jobId: j.jobId,
-            name: j.nameAr || j.name,
-            type: j.type,
-            status: j.status,
-            schedule: j.schedule,
-            lastRun: j.lastRun,
-            nextRun: j.nextRun,
-            leaksFound: j.leaksFound,
-          })),
-        };
-      }
-
-      case "get_alert_info": {
-        const result: any = {};
-        if (!params.info_type || params.info_type === "all" || params.info_type === "history") {
-          const history = await getAlertHistory(50);
-          result.history = { total: history.length, alerts: history.slice(0, 20) };
-        }
-        if (!params.info_type || params.info_type === "all" || params.info_type === "rules") {
-          const rules = await getAlertRules();
-          result.rules = rules;
-        }
-        if (!params.info_type || params.info_type === "all" || params.info_type === "contacts") {
-          const contacts = await getAlertContacts();
-          result.contacts = contacts;
-        }
-        return result;
-      }
-
-      case "get_sellers_info": {
-        if (params.seller_id) {
-          const seller = await getSellerById(params.seller_id);
-          return seller || { error: `لم يتم العثور على البائع ${params.seller_id}` };
-        }
-        const filters: any = {};
-        if (params.risk_level && params.risk_level !== "all") filters.riskLevel = params.risk_level;
-        const sellers = await getSellerProfiles(filters);
-        return {
-          total: sellers.length,
-          sellers: sellers.map((s: any) => ({
-            sellerId: s.sellerId,
-            alias: s.aliasAr || s.alias,
-            riskLevel: s.riskLevel,
-            platforms: s.platforms,
-            totalListings: s.totalListings,
-            totalRecords: s.totalRecords,
-            firstSeen: s.firstSeen,
-            lastSeen: s.lastSeen,
-          })),
-        };
-      }
-
-      case "get_evidence_info": {
-        const stats = await getEvidenceStats();
-        const chain = await getEvidenceChain(params.leak_id);
-        return {
-          stats,
-          total: chain.length,
-          evidence: chain.slice(0, 20).map((e: any) => ({
-            evidenceId: e.evidenceId,
-            leakId: e.leakId,
-            type: e.type,
-            description: e.descriptionAr || e.description,
-            hash: e.hash,
-            capturedAt: e.capturedAt,
-          })),
-        };
-      }
-
-      case "get_threat_rules_info": {
-        const rules = await getThreatRules();
-        return {
-          total: rules.length,
-          rules: rules.map((r: any) => ({
-            ruleId: r.ruleId,
-            name: r.nameAr || r.name,
-            category: r.category,
-            severity: r.severity,
-            isEnabled: r.isEnabled,
-            matchCount: r.matchCount,
-            lastTriggered: r.lastTriggered,
-          })),
-        };
-      }
-
-      case "get_darkweb_pastes": {
-        const result: any = {};
-        if (!params.source_type || params.source_type === "both" || params.source_type === "darkweb") {
-          const dw = await getDarkWebListings();
-          result.darkweb = { total: dw.length, listings: dw.slice(0, 15) };
-        }
-        if (!params.source_type || params.source_type === "both" || params.source_type === "paste") {
-          const pastes = await getPasteEntries();
-          result.pastes = { total: pastes.length, entries: pastes.slice(0, 15) };
-        }
-        return result;
-      }
-
-      case "get_feedback_accuracy": {
-        const stats = await getFeedbackStats();
-        const entries = await getFeedbackEntries();
-        return {
-          stats,
-          recentFeedback: entries.slice(0, 20),
-        };
-      }
-
-      case "get_knowledge_graph": {
-        const data = await getKnowledgeGraphData();
-        return data;
-      }
-
-      case "get_osint_info": {
-        const queries = await getOsintQueries();
-        return {
-          total: queries.length,
-          queries: queries.slice(0, 20),
-        };
-      }
-
-      case "get_reports_info": {
-        const result: any = {};
-        if (!params.report_type || params.report_type === "all") {
-          result.reports = await getReports();
-          result.scheduled = await getScheduledReports();
-          result.audit = (await getReportAuditEntries(20));
-          result.documents = (await getAllIncidentDocuments()).slice(0, 20);
-        } else if (params.report_type === "scheduled") {
-          result.scheduled = await getScheduledReports();
-        } else if (params.report_type === "audit") {
-          result.audit = await getReportAuditEntries(50);
-        } else if (params.report_type === "documents") {
-          result.documents = await getAllIncidentDocuments();
-        }
-        return result;
-      }
-
-      case "get_threat_map": {
-        return await getThreatMapData();
-      }
-
-      case "get_audit_log": {
-        const logs = await getAuditLogs({
-          category: params.category,
-          limit: params.limit || 50,
-        });
-        return {
-          total: logs.length,
-          logs: logs.slice(0, 30).map((l: any) => ({
-            action: l.action,
-            category: l.category,
-            userName: l.userName,
-            details: l.details?.substring(0, 200),
-            createdAt: l.createdAt,
-          })),
-        };
-      }
-
-      case "get_system_health": {
-        const retention = await getRetentionPolicies();
-        const stats = await getDashboardStats();
-        return {
-          status: "operational",
-          database: stats ? "connected" : "disconnected",
-          retentionPolicies: retention,
-          stats,
-        };
-      }
-
-      case "analyze_trends": {
-        const allLeaks = await getLeaks();
-        const result: any = { totalLeaks: allLeaks.length };
-
-        if (params.analysis_type === "severity_distribution" || params.analysis_type === "comprehensive") {
-          const dist: Record<string, number> = {};
-          allLeaks.forEach((l: any) => { dist[l.severity] = (dist[l.severity] || 0) + 1; });
-          result.severityDistribution = dist;
-        }
-        if (params.analysis_type === "source_distribution" || params.analysis_type === "comprehensive") {
-          const dist: Record<string, number> = {};
-          allLeaks.forEach((l: any) => { dist[l.source] = (dist[l.source] || 0) + 1; });
-          result.sourceDistribution = dist;
-        }
-        if (params.analysis_type === "sector_distribution" || params.analysis_type === "comprehensive") {
-          const dist: Record<string, number> = {};
-          allLeaks.forEach((l: any) => {
-            const sec = l.sectorAr || l.sector;
-            dist[sec] = (dist[sec] || 0) + 1;
-          });
-          result.sectorDistribution = dist;
-        }
-        if (params.analysis_type === "pii_types" || params.analysis_type === "comprehensive") {
-          const dist: Record<string, number> = {};
-          allLeaks.forEach((l: any) => {
-            if (Array.isArray(l.piiTypes)) {
-              l.piiTypes.forEach((p: string) => { dist[p] = (dist[p] || 0) + 1; });
-            }
-          });
-          result.piiTypeDistribution = dist;
-        }
-        if (params.analysis_type === "time_trend" || params.analysis_type === "comprehensive") {
-          const byMonth: Record<string, number> = {};
-          allLeaks.forEach((l: any) => {
-            if (l.detectedAt) {
-              const d = new Date(l.detectedAt);
-              const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-              byMonth[key] = (byMonth[key] || 0) + 1;
-            }
-          });
-          result.monthlyTrend = byMonth;
-        }
-        if (params.analysis_type === "comprehensive") {
-          const totalRecords = allLeaks.reduce((s: number, l: any) => s + (l.recordCount || 0), 0);
-          result.totalRecordsExposed = totalRecords;
-          result.averageRecordsPerLeak = allLeaks.length > 0 ? Math.round(totalRecords / allLeaks.length) : 0;
-        }
-        return result;
-      }
-
-      case "get_platform_guide": {
-        return getPlatformGuide(params.topic);
-      }
-
-      default:
-        return { error: `أداة غير معروفة: ${toolName}` };
-    }
+    const result = await executeToolInternal(toolName, params);
+    step.status = "completed";
+    step.result = summarizeResult(toolName, result);
+    return result;
   } catch (err: any) {
+    step.status = "error";
+    step.result = `خطأ: ${err.message}`;
     console.error(`[RasidAI] Tool execution error (${toolName}):`, err);
     return { error: `خطأ في تنفيذ الأداة ${toolName}: ${err.message}` };
+  }
+}
+
+function summarizeResult(toolName: string, result: any): string {
+  if (result?.error) return `خطأ: ${result.error}`;
+  if (result?.total !== undefined) return `تم العثور على ${result.total} نتيجة`;
+  if (result?.totalLeaks !== undefined) return `${result.totalLeaks} تسريب`;
+  if (result?.stats) return "تم جلب الإحصائيات";
+  if (result?.leak) return `تسريب: ${result.leak.title || result.leak.leakId}`;
+  if (result?.entries) return `${result.entries.length} مدخل`;
+  if (result?.title) return result.title;
+  if (Array.isArray(result)) return `${result.length} عنصر`;
+  return "تم بنجاح";
+}
+
+async function executeToolInternal(toolName: string, params: any): Promise<any> {
+  switch (toolName) {
+    case "query_leaks": {
+      const filters: any = {};
+      if (params.severity && params.severity !== "all") filters.severity = params.severity;
+      if (params.status && params.status !== "all") filters.status = params.status;
+      if (params.source && params.source !== "all") filters.source = params.source;
+      if (params.search) filters.search = params.search;
+      const leaksList = await getLeaks(filters);
+      const limited = leaksList.slice(0, params.limit || 20);
+      return {
+        total: leaksList.length,
+        showing: limited.length,
+        leaks: limited.map((l: any) => ({
+          leakId: l.leakId,
+          title: l.titleAr || l.title,
+          source: l.source,
+          severity: l.severity,
+          sector: l.sectorAr || l.sector,
+          recordCount: l.recordCount,
+          status: l.status,
+          piiTypes: l.piiTypes,
+          detectedAt: l.detectedAt,
+          aiSummary: l.aiSummaryAr || l.aiSummary,
+        })),
+      };
+    }
+
+    case "get_leak_details": {
+      const leak = await getLeakById(params.leak_id);
+      if (!leak) return { error: `لم يتم العثور على تسريب بمعرّف ${params.leak_id}` };
+      const evidence = await getEvidenceChain(params.leak_id);
+      return {
+        leak: {
+          leakId: leak.leakId,
+          title: leak.titleAr || leak.title,
+          description: leak.descriptionAr || leak.description,
+          source: leak.source,
+          severity: leak.severity,
+          sector: leak.sectorAr || leak.sector,
+          recordCount: leak.recordCount,
+          status: leak.status,
+          piiTypes: leak.piiTypes,
+          detectedAt: leak.detectedAt,
+          aiSeverity: leak.aiSeverity,
+          aiSummary: leak.aiSummaryAr || leak.aiSummary,
+          aiRecommendations: leak.aiRecommendationsAr || leak.aiRecommendations,
+        },
+        evidenceCount: evidence.length,
+        evidence: evidence.slice(0, 10),
+      };
+    }
+
+    case "get_dashboard_stats": {
+      const stats = await getDashboardStats();
+      const allLeaks = await getLeaks();
+      const bySeverity: Record<string, number> = {};
+      const bySource: Record<string, number> = {};
+      const bySector: Record<string, number> = {};
+      for (const l of allLeaks) {
+        bySeverity[l.severity] = (bySeverity[l.severity] || 0) + 1;
+        bySource[l.source] = (bySource[l.source] || 0) + 1;
+        const sec = l.sectorAr || l.sector;
+        bySector[sec] = (bySector[sec] || 0) + 1;
+      }
+      return {
+        ...stats,
+        totalLeaksInDB: allLeaks.length,
+        bySeverity,
+        bySource,
+        bySector,
+        latestLeaks: allLeaks.slice(0, 5).map((l: any) => ({
+          leakId: l.leakId,
+          title: l.titleAr || l.title,
+          severity: l.severity,
+          detectedAt: l.detectedAt,
+        })),
+      };
+    }
+
+    case "get_channels_info": {
+      const ch = await getChannels(params.platform);
+      return {
+        total: ch.length,
+        channels: ch.map((c: any) => ({
+          name: c.name,
+          nameAr: c.nameAr,
+          platform: c.platform,
+          status: c.status,
+          priority: c.priority,
+          leaksFound: c.leaksFound,
+          lastActivity: c.lastActivity,
+        })),
+      };
+    }
+
+    case "get_monitoring_status": {
+      const jobs = await getMonitoringJobs();
+      return {
+        total: jobs.length,
+        jobs: jobs.map((j: any) => ({
+          jobId: j.jobId,
+          name: j.nameAr || j.name,
+          type: j.type,
+          status: j.status,
+          schedule: j.schedule,
+          lastRun: j.lastRun,
+          nextRun: j.nextRun,
+          leaksFound: j.leaksFound,
+        })),
+      };
+    }
+
+    case "get_alert_info": {
+      const result: any = {};
+      if (!params.info_type || params.info_type === "all" || params.info_type === "history") {
+        const history = await getAlertHistory(50);
+        result.history = { total: history.length, alerts: history.slice(0, 20) };
+      }
+      if (!params.info_type || params.info_type === "all" || params.info_type === "rules") {
+        const rules = await getAlertRules();
+        result.rules = rules;
+      }
+      if (!params.info_type || params.info_type === "all" || params.info_type === "contacts") {
+        const contacts = await getAlertContacts();
+        result.contacts = contacts;
+      }
+      return result;
+    }
+
+    case "get_sellers_info": {
+      if (params.seller_id) {
+        const seller = await getSellerById(params.seller_id);
+        return seller || { error: `لم يتم العثور على البائع ${params.seller_id}` };
+      }
+      const filters: any = {};
+      if (params.risk_level && params.risk_level !== "all") filters.riskLevel = params.risk_level;
+      const sellers = await getSellerProfiles(filters);
+      return {
+        total: sellers.length,
+        sellers: sellers.map((s: any) => ({
+          sellerId: s.sellerId,
+          alias: s.aliasAr || s.alias,
+          riskLevel: s.riskLevel,
+          platforms: s.platforms,
+          totalListings: s.totalListings,
+          totalRecords: s.totalRecords,
+          firstSeen: s.firstSeen,
+          lastSeen: s.lastSeen,
+        })),
+      };
+    }
+
+    case "get_evidence_info": {
+      const stats = await getEvidenceStats();
+      const chain = await getEvidenceChain(params.leak_id);
+      return {
+        stats,
+        total: chain.length,
+        evidence: chain.slice(0, 20).map((e: any) => ({
+          evidenceId: e.evidenceId,
+          leakId: e.leakId,
+          type: e.type,
+          description: e.descriptionAr || e.description,
+          hash: e.hash,
+          capturedAt: e.capturedAt,
+        })),
+      };
+    }
+
+    case "get_threat_rules_info": {
+      const rules = await getThreatRules();
+      return {
+        total: rules.length,
+        rules: rules.map((r: any) => ({
+          ruleId: r.ruleId,
+          name: r.nameAr || r.name,
+          category: r.category,
+          severity: r.severity,
+          isEnabled: r.isEnabled,
+          matchCount: r.matchCount,
+          lastTriggered: r.lastTriggered,
+        })),
+      };
+    }
+
+    case "get_darkweb_pastes": {
+      const result: any = {};
+      if (!params.source_type || params.source_type === "both" || params.source_type === "darkweb") {
+        const dw = await getDarkWebListings();
+        result.darkweb = { total: dw.length, listings: dw.slice(0, 15) };
+      }
+      if (!params.source_type || params.source_type === "both" || params.source_type === "paste") {
+        const pastes = await getPasteEntries();
+        result.pastes = { total: pastes.length, entries: pastes.slice(0, 15) };
+      }
+      return result;
+    }
+
+    case "get_feedback_accuracy": {
+      const stats = await getFeedbackStats();
+      const entries = await getFeedbackEntries();
+      return { stats, recentFeedback: entries.slice(0, 20) };
+    }
+
+    case "get_knowledge_graph": {
+      return await getKnowledgeGraphData();
+    }
+
+    case "get_osint_info": {
+      const queries = await getOsintQueries();
+      return { total: queries.length, queries: queries.slice(0, 20) };
+    }
+
+    case "get_reports_and_documents": {
+      const result: any = {};
+      if (!params.report_type || params.report_type === "all") {
+        result.reports = await getReports();
+        result.scheduled = await getScheduledReports();
+        result.audit = await getReportAuditEntries(20);
+        result.documents = (await getAllIncidentDocuments()).slice(0, 20);
+      } else if (params.report_type === "scheduled") {
+        result.scheduled = await getScheduledReports();
+      } else if (params.report_type === "audit") {
+        result.audit = await getReportAuditEntries(50);
+      } else if (params.report_type === "documents" || params.report_type === "incident") {
+        result.documents = await getAllIncidentDocuments();
+      }
+
+      // Filter by search if provided
+      if (params.search && result.reports) {
+        const q = params.search.toLowerCase();
+        result.reports = result.reports.filter((r: any) =>
+          r.title?.toLowerCase().includes(q) || r.titleAr?.toLowerCase().includes(q)
+        );
+      }
+      if (params.search && result.documents) {
+        const q = params.search.toLowerCase();
+        result.documents = result.documents.filter((d: any) =>
+          d.title?.toLowerCase().includes(q) || d.titleAr?.toLowerCase().includes(q) || d.documentId?.toLowerCase().includes(q)
+        );
+      }
+      return result;
+    }
+
+    case "get_threat_map": {
+      return await getThreatMapData();
+    }
+
+    case "get_audit_log": {
+      const logs = await getAuditLogs({
+        category: params.category,
+        limit: params.limit || 50,
+      });
+      return {
+        total: logs.length,
+        logs: logs.slice(0, 30).map((l: any) => ({
+          action: l.action,
+          category: l.category,
+          userName: l.userName,
+          details: l.details?.substring(0, 200),
+          createdAt: l.createdAt,
+        })),
+      };
+    }
+
+    case "get_system_health": {
+      const retention = await getRetentionPolicies();
+      const stats = await getDashboardStats();
+      const apiKeys = await getApiKeys();
+      return {
+        status: "operational",
+        database: stats ? "connected" : "disconnected",
+        retentionPolicies: retention,
+        apiKeysCount: apiKeys.length,
+        stats,
+      };
+    }
+
+    case "analyze_trends": {
+      const allLeaks = await getLeaks();
+      const result: any = { totalLeaks: allLeaks.length };
+
+      if (params.analysis_type === "severity_distribution" || params.analysis_type === "comprehensive") {
+        const dist: Record<string, number> = {};
+        allLeaks.forEach((l: any) => { dist[l.severity] = (dist[l.severity] || 0) + 1; });
+        result.severityDistribution = dist;
+      }
+      if (params.analysis_type === "source_distribution" || params.analysis_type === "comprehensive") {
+        const dist: Record<string, number> = {};
+        allLeaks.forEach((l: any) => { dist[l.source] = (dist[l.source] || 0) + 1; });
+        result.sourceDistribution = dist;
+      }
+      if (params.analysis_type === "sector_distribution" || params.analysis_type === "comprehensive") {
+        const dist: Record<string, number> = {};
+        allLeaks.forEach((l: any) => {
+          const sec = l.sectorAr || l.sector;
+          dist[sec] = (dist[sec] || 0) + 1;
+        });
+        result.sectorDistribution = dist;
+      }
+      if (params.analysis_type === "pii_types" || params.analysis_type === "comprehensive") {
+        const dist: Record<string, number> = {};
+        allLeaks.forEach((l: any) => {
+          if (Array.isArray(l.piiTypes)) {
+            l.piiTypes.forEach((p: string) => { dist[p] = (dist[p] || 0) + 1; });
+          }
+        });
+        result.piiTypeDistribution = dist;
+      }
+      if (params.analysis_type === "time_trend" || params.analysis_type === "comprehensive") {
+        const byMonth: Record<string, number> = {};
+        allLeaks.forEach((l: any) => {
+          if (l.detectedAt) {
+            const d = new Date(l.detectedAt);
+            const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+            byMonth[key] = (byMonth[key] || 0) + 1;
+          }
+        });
+        result.monthlyTrend = byMonth;
+      }
+      if (params.analysis_type === "comprehensive") {
+        const totalRecords = allLeaks.reduce((s: number, l: any) => s + (l.recordCount || 0), 0);
+        result.totalRecordsExposed = totalRecords;
+        result.averageRecordsPerLeak = allLeaks.length > 0 ? Math.round(totalRecords / allLeaks.length) : 0;
+      }
+      return result;
+    }
+
+    case "get_platform_guide": {
+      return getPlatformGuide(params.topic);
+    }
+
+    // ─── Audit Agent ────────────────────────────────────────
+    case "analyze_user_activity": {
+      const logs = await getAuditLogs({
+        category: params.category !== "all" ? params.category : undefined,
+        limit: params.limit || 100,
+      });
+
+      let filtered = logs;
+
+      // Filter by user name
+      if (params.user_name) {
+        const nameQuery = params.user_name.toLowerCase();
+        filtered = filtered.filter((l: any) =>
+          l.userName?.toLowerCase().includes(nameQuery)
+        );
+      }
+
+      // Filter by action search
+      if (params.action_search) {
+        const actionQuery = params.action_search.toLowerCase();
+        filtered = filtered.filter((l: any) =>
+          l.action?.toLowerCase().includes(actionQuery) ||
+          l.details?.toLowerCase().includes(actionQuery)
+        );
+      }
+
+      // Build activity summary
+      const userSummary: Record<string, { count: number; actions: string[]; lastAction: any }> = {};
+      for (const log of filtered) {
+        const name = log.userName || "غير معروف";
+        if (!userSummary[name]) {
+          userSummary[name] = { count: 0, actions: [], lastAction: null };
+        }
+        userSummary[name].count++;
+        if (!userSummary[name].actions.includes(log.action)) {
+          userSummary[name].actions.push(log.action);
+        }
+        if (!userSummary[name].lastAction || new Date(log.createdAt) > new Date(userSummary[name].lastAction.createdAt)) {
+          userSummary[name].lastAction = {
+            action: log.action,
+            category: log.category,
+            details: log.details?.substring(0, 200),
+            createdAt: log.createdAt,
+          };
+        }
+      }
+
+      // Category breakdown
+      const categoryBreakdown: Record<string, number> = {};
+      filtered.forEach((l: any) => {
+        categoryBreakdown[l.category] = (categoryBreakdown[l.category] || 0) + 1;
+      });
+
+      return {
+        totalActivities: filtered.length,
+        userSummary,
+        categoryBreakdown,
+        recentActivities: filtered.slice(0, 20).map((l: any) => ({
+          userName: l.userName,
+          action: l.action,
+          category: l.category,
+          details: l.details?.substring(0, 200),
+          createdAt: l.createdAt,
+        })),
+      };
+    }
+
+    // ─── Knowledge Agent ────────────────────────────────────
+    case "search_knowledge_base": {
+      const entries = await getKnowledgeBaseEntries({
+        search: params.search_query,
+        category: params.category !== "all" ? params.category : undefined,
+        isPublished: true,
+        limit: 10,
+      });
+
+      if (entries.length === 0) {
+        // Fall back to platform guide
+        const guide = getPlatformGuide(params.search_query);
+        return {
+          source: "platform_guide",
+          entries: [],
+          fallbackGuide: guide,
+        };
+      }
+
+      return {
+        source: "knowledge_base",
+        total: entries.length,
+        entries: entries.map((e) => ({
+          entryId: e.entryId,
+          category: e.category,
+          title: e.titleAr || e.title,
+          content: (e.contentAr || e.content)?.substring(0, 2000),
+          tags: e.tags,
+          viewCount: e.viewCount,
+          helpfulCount: e.helpfulCount,
+        })),
+      };
+    }
+
+    // ─── Analytics Agent — Correlations ─────────────────────
+    case "get_correlations": {
+      const allLeaks = await getLeaks();
+      const sellers = await getSellerProfiles();
+      const result: any = { analysisType: params.correlation_type };
+
+      if (params.correlation_type === "seller_sector" || params.correlation_type === "comprehensive") {
+        // Which sellers target which sectors
+        const sellerSectorMap: Record<string, Record<string, number>> = {};
+        for (const leak of allLeaks) {
+          const sector = leak.sectorAr || leak.sector;
+          // Try to match seller from leak data
+          for (const seller of sellers) {
+            const sellerName = (seller as any).aliasAr || (seller as any).alias;
+            if (leak.description?.includes(sellerName) || leak.title?.includes(sellerName)) {
+              if (!sellerSectorMap[sellerName]) sellerSectorMap[sellerName] = {};
+              sellerSectorMap[sellerName][sector] = (sellerSectorMap[sellerName][sector] || 0) + 1;
+            }
+          }
+        }
+        result.sellerSectorCorrelations = sellerSectorMap;
+      }
+
+      if (params.correlation_type === "source_severity" || params.correlation_type === "comprehensive") {
+        // Source vs severity distribution
+        const matrix: Record<string, Record<string, number>> = {};
+        for (const leak of allLeaks) {
+          if (!matrix[leak.source]) matrix[leak.source] = {};
+          matrix[leak.source][leak.severity] = (matrix[leak.source][leak.severity] || 0) + 1;
+        }
+        result.sourceSeverityMatrix = matrix;
+      }
+
+      if (params.correlation_type === "time_pattern" || params.correlation_type === "comprehensive") {
+        // Day-of-week and hour patterns
+        const dayPattern: Record<string, number> = {};
+        const hourPattern: Record<string, number> = {};
+        const dayNames = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+        for (const leak of allLeaks) {
+          if (leak.detectedAt) {
+            const d = new Date(leak.detectedAt);
+            dayPattern[dayNames[d.getDay()]] = (dayPattern[dayNames[d.getDay()]] || 0) + 1;
+            const hour = `${String(d.getHours()).padStart(2, "0")}:00`;
+            hourPattern[hour] = (hourPattern[hour] || 0) + 1;
+          }
+        }
+        result.dayOfWeekPattern = dayPattern;
+        result.hourOfDayPattern = hourPattern;
+      }
+
+      if (params.correlation_type === "pii_correlation" || params.correlation_type === "comprehensive") {
+        // Which PII types appear together
+        const coOccurrence: Record<string, Record<string, number>> = {};
+        for (const leak of allLeaks) {
+          if (Array.isArray(leak.piiTypes) && leak.piiTypes.length > 1) {
+            for (let i = 0; i < leak.piiTypes.length; i++) {
+              for (let j = i + 1; j < leak.piiTypes.length; j++) {
+                const key = leak.piiTypes[i];
+                const val = leak.piiTypes[j];
+                if (!coOccurrence[key]) coOccurrence[key] = {};
+                coOccurrence[key][val] = (coOccurrence[key][val] || 0) + 1;
+              }
+            }
+          }
+        }
+        result.piiCoOccurrence = coOccurrence;
+      }
+
+      if (params.correlation_type === "anomaly_detection" || params.correlation_type === "comprehensive") {
+        // Detect anomalies: sudden spikes, unusual sources, etc.
+        const anomalies: string[] = [];
+        
+        // Check for severity spikes
+        const recentLeaks = allLeaks.filter((l: any) => {
+          const d = new Date(l.detectedAt);
+          const weekAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return d > weekAgo;
+        });
+        const olderLeaks = allLeaks.filter((l: any) => {
+          const d = new Date(l.detectedAt);
+          const weekAgo = new Date();
+          const twoWeeksAgo = new Date();
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+          return d > twoWeeksAgo && d <= weekAgo;
+        });
+
+        if (recentLeaks.length > olderLeaks.length * 1.5 && olderLeaks.length > 0) {
+          anomalies.push(`زيادة ملحوظة: ${recentLeaks.length} تسريب هذا الأسبوع مقابل ${olderLeaks.length} الأسبوع الماضي (زيادة ${Math.round((recentLeaks.length / olderLeaks.length - 1) * 100)}%)`);
+        }
+
+        const recentCritical = recentLeaks.filter((l: any) => l.severity === "critical");
+        if (recentCritical.length > 3) {
+          anomalies.push(`تنبيه: ${recentCritical.length} تسريبات حرجة هذا الأسبوع — يتطلب اهتمام فوري`);
+        }
+
+        // Check for new sources
+        const recentSources = new Set(recentLeaks.map((l: any) => l.source));
+        const olderSources = new Set(olderLeaks.map((l: any) => l.source));
+        for (const src of Array.from(recentSources)) {
+          if (!olderSources.has(src)) {
+            anomalies.push(`مصدر جديد: ظهور تسريبات من مصدر "${src}" لأول مرة هذا الأسبوع`);
+          }
+        }
+
+        result.anomalies = anomalies.length > 0 ? anomalies : ["لم يتم اكتشاف أنماط غير عادية"];
+        result.recentLeaksCount = recentLeaks.length;
+        result.previousWeekCount = olderLeaks.length;
+      }
+
+      if (params.focus_entity) {
+        // Focus analysis on a specific entity
+        const entity = params.focus_entity.toLowerCase();
+        const relatedLeaks = allLeaks.filter((l: any) =>
+          l.title?.toLowerCase().includes(entity) ||
+          l.titleAr?.toLowerCase().includes(entity) ||
+          l.description?.toLowerCase().includes(entity) ||
+          l.descriptionAr?.toLowerCase().includes(entity) ||
+          l.sectorAr?.toLowerCase().includes(entity) ||
+          l.sector?.toLowerCase().includes(entity)
+        );
+        result.focusEntity = params.focus_entity;
+        result.relatedLeaksCount = relatedLeaks.length;
+        result.relatedLeaks = relatedLeaks.slice(0, 10).map((l: any) => ({
+          leakId: l.leakId,
+          title: l.titleAr || l.title,
+          severity: l.severity,
+          source: l.source,
+          detectedAt: l.detectedAt,
+        }));
+      }
+
+      return result;
+    }
+
+    case "get_platform_users_info": {
+      const platformUsersData = await getAllPlatformUsers();
+      return {
+        total: platformUsersData.length,
+        users: platformUsersData.map((u: any) => ({
+          id: u.id,
+          userId: u.userId,
+          name: u.name,
+          displayName: u.displayName,
+          email: u.email,
+          role: u.platformRole,
+          status: u.status,
+          lastLogin: u.lastLoginAt,
+          createdAt: u.createdAt,
+        })),
+      };
+    }
+
+    default:
+      return { error: `أداة غير معروفة: ${toolName}` };
   }
 }
 
@@ -848,7 +1311,7 @@ function getPlatformGuide(topic: string): any {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// MAIN CHAT FUNCTION — Tool Use Loop
+// MAIN CHAT FUNCTION — Governor Agent with Thinking Steps
 // ═══════════════════════════════════════════════════════════════
 
 export async function rasidAIChat(
@@ -856,9 +1319,19 @@ export async function rasidAIChat(
   history: Array<{ role: "user" | "assistant"; content: string }>,
   userName: string,
   userId: number,
-): Promise<{ response: string; toolsUsed: string[] }> {
+): Promise<{ response: string; toolsUsed: string[]; thinkingSteps: ThinkingStep[] }> {
+  const thinkingSteps: ThinkingStep[] = [];
   const stats = await getDashboardStats();
-  const systemPrompt = buildSystemPrompt(userName, stats);
+  
+  // Fetch knowledge base context
+  let knowledgeContext = "";
+  try {
+    knowledgeContext = await getPublishedKnowledgeForAI();
+  } catch {
+    // Knowledge base may not be populated yet
+  }
+
+  const systemPrompt = buildSystemPrompt(userName, stats, knowledgeContext);
 
   const messages: any[] = [
     { role: "system", content: systemPrompt },
@@ -867,7 +1340,18 @@ export async function rasidAIChat(
   ];
 
   const toolsUsed: string[] = [];
-  let maxIterations = 5; // Prevent infinite loops
+  let maxIterations = 8; // Increased for complex multi-step analysis
+
+  // Add initial thinking step
+  thinkingSteps.push({
+    id: `think-${Date.now()}`,
+    agent: "المحافظ الرئيسي",
+    action: "analyze_intent",
+    description: "تحليل نية المستخدم وتحديد الوكيل المختص",
+    status: "completed",
+    timestamp: new Date(),
+    result: `استلام الطلب: "${message.substring(0, 80)}${message.length > 80 ? '...' : ''}"`,
+  });
 
   try {
     let response = await invokeLLM({
@@ -881,29 +1365,23 @@ export async function rasidAIChat(
       const choice = response.choices?.[0];
       if (!choice) break;
 
-      // Check if the model wants to call tools
-      // Some APIs return finish_reason="tool_calls", others return "stop" but include tool_calls
       const hasToolCalls = choice.message?.tool_calls && choice.message.tool_calls.length > 0;
       
       if (hasToolCalls) {
         const toolCalls = choice.message!.tool_calls!;
         
-        // Normalize tool calls - ensure each has an id
         const normalizedToolCalls = toolCalls.map((tc: any, idx: number) => ({
           ...tc,
           id: tc.id || `call_${Date.now()}_${idx}`,
         }));
 
-        // Add assistant message with normalized tool calls
-        // The LLM may return content as null/undefined when using tool_calls
-        // We must ensure content is a valid string for the normalizer
         messages.push({
           role: "assistant" as const,
           content: choice.message?.content || "",
           tool_calls: normalizedToolCalls,
         });
 
-        // Execute each tool call
+        // Execute each tool call with thinking step tracking
         for (const toolCall of normalizedToolCalls) {
           const fnName = toolCall.function?.name;
           let fnArgs: any = {};
@@ -916,13 +1394,12 @@ export async function rasidAIChat(
           toolsUsed.push(fnName);
           let result: any;
           try {
-            result = await executeTool(fnName, fnArgs);
+            result = await executeTool(fnName, fnArgs, thinkingSteps);
           } catch (toolErr: any) {
             console.error(`[RasidAI] Tool ${fnName} error:`, toolErr.message);
             result = { error: `Tool execution failed: ${toolErr.message}` };
           }
 
-          // Add tool result to messages
           messages.push({
             role: "tool",
             tool_call_id: toolCall.id,
@@ -939,7 +1416,6 @@ export async function rasidAIChat(
 
         maxIterations--;
       } else {
-        // Model returned a text response — done
         break;
       }
     }
@@ -947,22 +1423,45 @@ export async function rasidAIChat(
     const rawContent = response.choices?.[0]?.message?.content;
     const content: string = typeof rawContent === "string" ? rawContent : "عذراً، لم أتمكن من معالجة طلبك. حاول مرة أخرى.";
 
+    // Add final thinking step
+    thinkingSteps.push({
+      id: `think-final-${Date.now()}`,
+      agent: "المحافظ الرئيسي",
+      action: "synthesize_response",
+      description: "تجميع النتائج وصياغة الرد النهائي",
+      status: "completed",
+      timestamp: new Date(),
+      result: `تم استخدام ${toolsUsed.length} أداة لصياغة الرد`,
+    });
+
     // Log the interaction
     await logAudit(
       userId,
       "smart_rasid.chat",
-      `Query: ${message.substring(0, 100)} | Tools: ${toolsUsed.join(", ") || "none"} | Response length: ${content.length}`,
+      `Query: ${message.substring(0, 100)} | Tools: ${toolsUsed.join(", ") || "none"} | Steps: ${thinkingSteps.length} | Response length: ${content.length}`,
       "system",
       userName,
     );
 
-    return { response: content, toolsUsed };
+    return { response: content, toolsUsed, thinkingSteps };
   } catch (err: any) {
     console.error("[RasidAI] Chat error:", err);
     await logAudit(userId, "smart_rasid.error", `Error: ${err.message}`, "system", userName);
+
+    thinkingSteps.push({
+      id: `think-error-${Date.now()}`,
+      agent: "المحافظ الرئيسي",
+      action: "error_handling",
+      description: "معالجة خطأ",
+      status: "error",
+      timestamp: new Date(),
+      result: err.message,
+    });
+
     return {
       response: "عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.",
       toolsUsed,
+      thinkingSteps,
     };
   }
 }
