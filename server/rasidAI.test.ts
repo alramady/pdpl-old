@@ -74,15 +74,15 @@ import { getDashboardStats } from "./db";
 
 const mockedInvokeLLM = vi.mocked(invokeLLM);
 
-describe("rasidAI — Platform Governor v6.0", () => {
+describe("rasidAI — Smart Rasid AI v6.0", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   describe("RASID_TOOLS", () => {
-    it("should have 23 tool definitions (upgraded from 19)", () => {
+    it("should have 26 tool definitions (upgraded with personality tools)", () => {
       expect(RASID_TOOLS).toBeDefined();
-      expect(RASID_TOOLS.length).toBe(23);
+      expect(RASID_TOOLS.length).toBe(26);
     });
 
     it("each tool should have required properties", () => {
@@ -134,10 +134,10 @@ describe("rasidAI — Platform Governor v6.0", () => {
   });
 
   describe("buildSystemPrompt", () => {
-    it("should build a comprehensive system prompt with Governor identity", () => {
+    it("should build a comprehensive system prompt with Smart Rasid identity", () => {
       const stats = { totalLeaks: 256, criticalAlerts: 56, totalRecords: 229200000, activeMonitors: 27 };
       const prompt = buildSystemPrompt("TestUser", stats, "");
-      expect(prompt).toContain("محافظ منصة راصد");
+      expect(prompt).toContain("راصد الذكي");
       expect(prompt).toContain("NDMO");
       expect(prompt).toContain("TestUser");
       expect(prompt).toContain("256");
@@ -181,7 +181,7 @@ describe("rasidAI — Platform Governor v6.0", () => {
         choices: [
           {
             message: {
-              content: "مرحباً! أنا محافظ المنصة. كيف يمكنني مساعدتك؟",
+              content: "مرحباً! أنا راصد الذكي. كيف يمكنني مساعدتك؟",
               role: "assistant",
             },
             index: 0,

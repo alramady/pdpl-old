@@ -1,5 +1,5 @@
 /**
- * Rasid AI — "محافظ المنصة المطلق" (The Ultimate Platform Governor)
+ * Rasid AI — "راصد الذكي" (Smart Rasid AI Assistant)
  * Hierarchical Agent Architecture with Advanced Analytical Methodology
  * 
  * Architecture:
@@ -43,6 +43,9 @@ import {
   getPublishedKnowledgeForAI,
   getKnowledgeBaseEntries,
   getAllPlatformUsers,
+  getGreetingForUser,
+  checkLeaderMention,
+  getPersonalityScenarios,
 } from "./db";
 
 // ═══════════════════════════════════════════════════════════════
@@ -71,10 +74,20 @@ export function buildSystemPrompt(userName: string, stats: any, knowledgeContext
     day: "numeric",
   });
 
-  return `**هويتك:** أنت "محافظ منصة راصد"، كبير المحللين السيبرانيين والوكيل التنفيذي الشامل لمنصة "راصد" لرصد تسريبات البيانات الشخصية.
+  return `**هويتك:** أنت "راصد الذكي"، المساعد الذكي المتقدم والوكيل التنفيذي الشامل لمنصة "راصد" لرصد تسريبات البيانات الشخصية.
 المنصة تابعة للمكتب الوطني لإدارة البيانات (NDMO).
 
 **مهمتك الأساسية:** ضمان عمل المنصة بكفاءة قصوى، وتحويل بياناتها إلى رؤى استراتيجية قابلة للتنفيذ، وتلبية جميع طلبات المستخدمين الإداريين. أنت لا تجيب على الأسئلة فقط، بل تحلل، تستنتج، تربط، وتنفذ.
+
+**أولاً: منهجية التفاعل والشخصية**
+
+**عند بدء كل محادثة جديدة:**
+1. ابدأ ردك الأول بجملة ترحيب شخصية مناسبة للمستخدم، ثم اسأله كيف يمكنك مساعدته.
+2. استخدم اسم المستخدم في الترحيب لإضفاء طابع شخصي.
+
+**عند تلقي أي رسالة:**
+1. إذا وُجدت إشارة لقائد سعودي (الملك، ولي العهد، وزير، أمير)، ابدأ ردك بعبارة احترام مناسبة، ثم أكمل تنفيذ الطلب.
+2. إذا لم تُوجد إشارة لقائد، انتقل مباشرة لتنفيذ الطلب.
 
 # المستخدم الحالي: ${userName}
 # التاريخ: ${today}
@@ -96,6 +109,7 @@ export function buildSystemPrompt(userName: string, stats: any, knowledgeContext
    - **طلب تنفيذ إجراء أو استعلام بيانات؟** → استخدم الأدوات التنفيذية المناسبة
    - **طلب ملف أو تقرير؟** → استخدم أداة get_reports_and_documents
    - **طلب تحليل ارتباطات؟** → استخدم أداة get_correlations
+   - **إدارة سيناريوهات الترحيب والشخصية؟** → **وكيل الشخصية**
 3. **تفكيك المشكلة:** قسّم الطلب المعقد إلى خطوات أصغر. قد تحتاج إلى استدعاء أدوات متعددة بالتسلسل.
 4. **الربط (Connect):** ابحث دائمًا عن روابط خفية. هل هذا البائع مرتبط بتسريب آخر؟ هل هذا القطاع يُستهدف بشكل متكرر؟
 5. **المقارنة (Compare):** قارن الفترات الزمنية (هذا الشهر مقابل الشهر الماضي)، المصادر (الدارك ويب مقابل تليجرام)، ومستويات الخطورة.
@@ -122,14 +136,15 @@ export function buildSystemPrompt(userName: string, stats: any, knowledgeContext
 
 # ماذا لا تستطيع
 - أي شيء خارج المنصة. إذا سُئلت سؤال خارجي:
-  "هذا السؤال خارج نطاق مهامي كمحافظ لمنصة راصد. أستطيع مساعدتك في أي شيء يتعلق بالمنصة."
+  "هذا السؤال خارج نطاق مهامي كراصد ذكي لمنصة راصد. أستطيع مساعدتك في أي شيء يتعلق بالمنصة."
 
 # هيكل المنصة — الجداول
 users, leaks, channels, pii_scans, reports, dark_web_listings, paste_entries,
 audit_log, notifications, monitoring_jobs, alert_contacts, alert_rules, alert_history,
 retention_policies, api_keys, scheduled_reports, threat_rules, evidence_chain,
 seller_profiles, osint_queries, feedback_entries, knowledge_graph_nodes, knowledge_graph_edges,
-platform_users, incident_documents, report_audit, knowledge_base, ai_response_ratings
+platform_users, incident_documents, report_audit, knowledge_base, ai_response_ratings,
+personality_scenarios, user_sessions
 
 # وظائف المنصة
 📊 لوحة القيادة — إحصائيات شاملة
@@ -483,6 +498,55 @@ export const RASID_TOOLS = [
       parameters: { type: "object", properties: {} },
     },
   },
+  // ─── Personality Agent Tools ─────────────────────────────────
+  {
+    type: "function" as const,
+    function: {
+      name: "get_personality_greeting",
+      description: "جلب ترحيب شخصي مناسب للمستخدم بناءً على تاريخ زياراته. يستخدم عند بدء محادثة جديدة.",
+      parameters: {
+        type: "object",
+        properties: {
+          userId: { type: "string", description: "معرف المستخدم" },
+          userName: { type: "string", description: "اسم المستخدم" },
+        },
+        required: ["userId", "userName"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "check_leader_mention",
+      description: "فحص الرسالة للبحث عن إشارات لقادة سعوديين (الملك، ولي العهد، وزراء، أمراء). يعيد عبارة احترام مناسبة إذا وُجدت إشارة.",
+      parameters: {
+        type: "object",
+        properties: {
+          message: { type: "string", description: "نص رسالة المستخدم" },
+        },
+        required: ["message"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "manage_personality_scenarios",
+      description: "إدارة سيناريوهات الشخصية (ترحيب، احترام قادة، مخصص). يمكن عرض/إضافة/تعديل/حذف السيناريوهات.",
+      parameters: {
+        type: "object",
+        properties: {
+          action: { type: "string", enum: ["list", "add", "update", "delete"], description: "الإجراء المطلوب" },
+          scenarioType: { type: "string", enum: ["greeting_first", "greeting_return", "leader_respect", "custom"], description: "نوع السيناريو" },
+          triggerKeyword: { type: "string", description: "الكلمة المفتاحية للتفعيل" },
+          responseTemplate: { type: "string", description: "قالب الرد. يدعم {userName} كمتغير" },
+          scenarioId: { type: "number", description: "معرف السيناريو (للتعديل/الحذف)" },
+          isActive: { type: "boolean", description: "حالة التفعيل" },
+        },
+        required: ["action"],
+      },
+    },
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -517,6 +581,9 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     get_reports_and_documents: "وكيل الملفات",
     get_correlations: "وكيل التحليلات",
     get_platform_users_info: "الوكيل التنفيذي",
+    get_personality_greeting: "وكيل الشخصية",
+    check_leader_mention: "وكيل الشخصية",
+    manage_personality_scenarios: "وكيل الشخصية",
   };
 
   const toolDescriptions: Record<string, string> = {
@@ -543,6 +610,9 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     get_reports_and_documents: "جلب التقارير والمستندات",
     get_correlations: "تحليل الارتباطات",
     get_platform_users_info: "جلب معلومات المستخدمين",
+    get_personality_greeting: "جلب ترحيب شخصي",
+    check_leader_mention: "فحص إشارة لقائد",
+    manage_personality_scenarios: "إدارة سيناريوهات الشخصية",
   };
 
   const step: ThinkingStep = {
@@ -1168,6 +1238,63 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
       };
     }
 
+    // ─── Personality Agent Cases ─────────────────────────────
+    case "get_personality_greeting": {
+      const result = await getGreetingForUser(params.userId || "unknown", params.userName || "مستخدم");
+      return result;
+    }
+
+    case "check_leader_mention": {
+      const respectPhrase = await checkLeaderMention(params.message || "");
+      return {
+        found: !!respectPhrase,
+        respectPhrase: respectPhrase || null,
+        message: respectPhrase ? "تم العثور على إشارة لقائد" : "لا توجد إشارة لقائد",
+      };
+    }
+
+    case "manage_personality_scenarios": {
+      const { action: scenarioAction, scenarioType, triggerKeyword, responseTemplate, scenarioId, isActive } = params;
+      switch (scenarioAction) {
+        case "list": {
+          const scenarios = scenarioType
+            ? await getPersonalityScenarios(scenarioType)
+            : await getPersonalityScenarios();
+          return { scenarios, total: scenarios.length };
+        }
+        case "add": {
+          if (!responseTemplate) return { error: "يجب توفير قالب الرد" };
+          const { createPersonalityScenario } = await import("./db");
+          const newId = await createPersonalityScenario({
+            scenarioType: scenarioType || "custom",
+            triggerKeyword: triggerKeyword || null,
+            responseTemplate,
+            isActive: isActive !== false,
+          });
+          return { success: true, id: newId, message: "تم إضافة السيناريو بنجاح" };
+        }
+        case "update": {
+          if (!scenarioId) return { error: "يجب توفير معرف السيناريو" };
+          const { updatePersonalityScenario } = await import("./db");
+          const updateData: any = {};
+          if (responseTemplate) updateData.responseTemplate = responseTemplate;
+          if (triggerKeyword !== undefined) updateData.triggerKeyword = triggerKeyword;
+          if (isActive !== undefined) updateData.isActive = isActive;
+          if (scenarioType) updateData.scenarioType = scenarioType;
+          await updatePersonalityScenario(scenarioId, updateData);
+          return { success: true, message: "تم تحديث السيناريو بنجاح" };
+        }
+        case "delete": {
+          if (!scenarioId) return { error: "يجب توفير معرف السيناريو" };
+          const { deletePersonalityScenario } = await import("./db");
+          await deletePersonalityScenario(scenarioId);
+          return { success: true, message: "تم حذف السيناريو بنجاح" };
+        }
+        default:
+          return { error: "إجراء غير معروف" };
+      }
+    }
+
     default:
       return { error: `أداة غير معروفة: ${toolName}` };
   }
@@ -1345,7 +1472,7 @@ export async function rasidAIChat(
   // Add initial thinking step
   thinkingSteps.push({
     id: `think-${Date.now()}`,
-    agent: "المحافظ الرئيسي",
+    agent: "راصد الذكي",
     action: "analyze_intent",
     description: "تحليل نية المستخدم وتحديد الوكيل المختص",
     status: "completed",
@@ -1426,8 +1553,8 @@ export async function rasidAIChat(
     // Add final thinking step
     thinkingSteps.push({
       id: `think-final-${Date.now()}`,
-      agent: "المحافظ الرئيسي",
-      action: "synthesize_response",
+      agent: "راصد الذكي",
+      action: "synthesize",
       description: "تجميع النتائج وصياغة الرد النهائي",
       status: "completed",
       timestamp: new Date(),
@@ -1450,8 +1577,8 @@ export async function rasidAIChat(
 
     thinkingSteps.push({
       id: `think-error-${Date.now()}`,
-      agent: "المحافظ الرئيسي",
-      action: "error_handling",
+      agent: "راصد الذكي",
+      action: "error_recovery",
       description: "معالجة خطأ",
       status: "error",
       timestamp: new Date(),

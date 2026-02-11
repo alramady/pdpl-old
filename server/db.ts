@@ -1108,3 +1108,129 @@ export async function getPublishedKnowledgeForAI(): Promise<string> {
     `[${e.category}] ${e.titleAr || e.title}\n${e.contentAr || e.content}${e.tags?.length ? `\nالعلامات: ${e.tags.join(', ')}` : ''}`
   ).join('\n\n---\n\n');
 }
+
+
+// ═══════════════════════════════════════════════════════════════
+// PERSONALITY SCENARIOS & USER SESSIONS
+// ═══════════════════════════════════════════════════════════════
+import {
+  personalityScenarios,
+  userSessions,
+  type InsertPersonalityScenario,
+} from "../drizzle/schema";
+
+export async function getPersonalityScenarios(type?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  if (type) {
+    return db.select().from(personalityScenarios)
+      .where(and(eq(personalityScenarios.scenarioType, type as any), eq(personalityScenarios.isActive, true)))
+      .orderBy(desc(personalityScenarios.createdAt));
+  }
+  return db.select().from(personalityScenarios).orderBy(desc(personalityScenarios.createdAt));
+}
+
+export async function getAllPersonalityScenarios() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(personalityScenarios).orderBy(desc(personalityScenarios.createdAt));
+}
+
+export async function createPersonalityScenario(data: Omit<InsertPersonalityScenario, "id">) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.insert(personalityScenarios).values(data);
+  return result[0].insertId;
+}
+
+export async function updatePersonalityScenario(id: number, data: Partial<InsertPersonalityScenario>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(personalityScenarios).set(data).where(eq(personalityScenarios.id, id));
+}
+
+export async function deletePersonalityScenario(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(personalityScenarios).where(eq(personalityScenarios.id, id));
+}
+
+export async function getGreetingForUser(userId: string, userName: string): Promise<{ greeting: string; isFirstVisit: boolean }> {
+  const db = await getDb();
+  if (!db) return { greeting: `مرحباً ${userName}! كيف يمكنني مساعدتك اليوم؟`, isFirstVisit: true };
+
+  const today = new Date().toISOString().split("T")[0];
+
+  // Check if user visited today
+  const existing = await db.select().from(userSessions)
+    .where(and(eq(userSessions.userId, userId), eq(userSessions.sessionDate, today)))
+    .limit(1);
+
+  let isFirstVisit = existing.length === 0;
+
+  if (isFirstVisit) {
+    // Check if user has ANY previous sessions
+    const anyPrevious = await db.select({ id: userSessions.id }).from(userSessions)
+      .where(eq(userSessions.userId, userId)).limit(1);
+    const isFirstEver = anyPrevious.length === 0;
+
+    // Create today's session
+    await db.insert(userSessions).values({
+      userId,
+      userName,
+      sessionDate: today,
+      visitCount: 1,
+    });
+
+    // Get appropriate greeting
+    const scenarioType = isFirstEver ? "greeting_first" : "greeting_return";
+    const scenarios = await db.select().from(personalityScenarios)
+      .where(and(eq(personalityScenarios.scenarioType, scenarioType), eq(personalityScenarios.isActive, true)));
+
+    if (scenarios.length > 0) {
+      const chosen = scenarios[Math.floor(Math.random() * scenarios.length)];
+      const greeting = chosen.responseTemplate
+        .replace(/\{userName\}/g, userName)
+        .replace(/\{name\}/g, userName);
+      return { greeting, isFirstVisit: isFirstEver };
+    }
+
+    return {
+      greeting: isFirstEver
+        ? `أهلاً وسهلاً ${userName}! أنا راصد الذكي، مساعدك في منصة رصد تسريبات البيانات الشخصية. كيف يمكنني مساعدتك؟`
+        : `مرحباً بعودتك ${userName}! كيف يمكنني مساعدتك اليوم؟`,
+      isFirstVisit: isFirstEver,
+    };
+  } else {
+    // Update visit count
+    await db.update(userSessions)
+      .set({ visitCount: sql`${userSessions.visitCount} + 1` })
+      .where(and(eq(userSessions.userId, userId), eq(userSessions.sessionDate, today)));
+
+    return {
+      greeting: `مرحباً مجدداً ${userName}! هل تحتاج مساعدة إضافية؟`,
+      isFirstVisit: false,
+    };
+  }
+}
+
+export async function checkLeaderMention(message: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const leaderScenarios = await db.select().from(personalityScenarios)
+    .where(and(eq(personalityScenarios.scenarioType, "leader_respect"), eq(personalityScenarios.isActive, true)));
+
+  for (const scenario of leaderScenarios) {
+    if (scenario.triggerKeyword) {
+      const keywords = scenario.triggerKeyword.split(",").map(k => k.trim());
+      for (const keyword of keywords) {
+        if (keyword && message.includes(keyword)) {
+          return scenario.responseTemplate;
+        }
+      }
+    }
+  }
+
+  return null;
+}

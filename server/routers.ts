@@ -111,6 +111,12 @@ import {
   deleteKnowledgeBaseEntry,
   getKnowledgeBaseStats,
   incrementKnowledgeBaseViewCount,
+  getAllPersonalityScenarios,
+  createPersonalityScenario,
+  updatePersonalityScenario,
+  deletePersonalityScenario,
+  getGreetingForUser,
+  checkLeaderMention,
 } from "./db";
 
 // Helper to get current user info from either auth source
@@ -1614,6 +1620,71 @@ export const appRouter = router({
         );
         return session;
       }),
+  }),
+
+  // ─── Personality Scenarios Management ────────────────────
+  personality: router({
+    getGreeting: protectedProcedure.query(async ({ ctx }) => {
+      const who = getAuthUser(ctx);
+      return getGreetingForUser(String(who.id), who.name);
+    }),
+
+    checkLeader: protectedProcedure
+      .input(z.object({ message: z.string() }))
+      .query(async ({ input }) => {
+        const result = await checkLeaderMention(input.message);
+        return { found: !!result, respectPhrase: result };
+      }),
+
+    scenarios: router({
+      list: protectedProcedure.query(async () => {
+        return getAllPersonalityScenarios();
+      }),
+
+      create: adminProcedure
+        .input(z.object({
+          scenarioType: z.enum(["greeting_first", "greeting_return", "leader_respect", "custom"]),
+          triggerKeyword: z.string().optional(),
+          responseTemplate: z.string().min(1),
+          isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          const id = await createPersonalityScenario({
+            scenarioType: input.scenarioType,
+            triggerKeyword: input.triggerKeyword ?? null,
+            responseTemplate: input.responseTemplate,
+            isActive: input.isActive !== false,
+          });
+          await logAudit(who.id, "personality.create", `Created scenario: ${input.scenarioType}`, "system", who.name);
+          return { id };
+        }),
+
+      update: adminProcedure
+        .input(z.object({
+          id: z.number(),
+          scenarioType: z.enum(["greeting_first", "greeting_return", "leader_respect", "custom"]).optional(),
+          triggerKeyword: z.string().optional(),
+          responseTemplate: z.string().optional(),
+          isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          const { id, ...data } = input;
+          await updatePersonalityScenario(id, data);
+          await logAudit(who.id, "personality.update", `Updated scenario #${id}`, "system", who.name);
+          return { success: true };
+        }),
+
+      delete: adminProcedure
+        .input(z.object({ id: z.number() }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          await deletePersonalityScenario(input.id);
+          await logAudit(who.id, "personality.delete", `Deleted scenario #${input.id}`, "system", who.name);
+          return { success: true };
+        }),
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

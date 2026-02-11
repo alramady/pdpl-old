@@ -504,3 +504,35 @@
 - [x] Add OpenAI API key as environment variable
 - [x] All 157 tests passing (7 test files) including new Governor tool tests
 - [x] Validate OpenAI API key with vitest test
+
+## Phase 35: Smart Rasid Console Redesign (إعادة تصميم راصد الذكي)
+- [x] Rename assistant to "راصد الذكي" (Smart Rasid) instead of "محافظ المنصة"
+- [x] Use official Rasid character as AI avatar image
+- [x] Redesign chat page with console-style UI (terminal/hacker aesthetic)
+- [x] Add impressive motion effects (typing animations, glowing borders, particle effects)
+- [x] Add matrix-style background or cyber grid effects
+- [x] Animate thinking steps with console-style output
+- [x] Add pulsing/glowing effects on AI responses
+- [x] Professional cyber-themed color scheme matching platform theme
+- [x] Run tests and verify
+- [x] Save checkpoint
+
+## Phase 35: Interactive Personality System + Console Redesign
+- [x] Add personality_scenarios table to database schema
+- [x] Add user_sessions table to database schema
+- [x] Push database migration
+- [x] Add personality tools to rasidAI.ts (getGreeting, checkLeaderMention, getPersonalityScenarios)
+- [x] Update system prompt with greeting/leader-respect methodology
+- [x] Add tRPC procedures for personality scenarios CRUD
+- [x] Add tRPC procedures for greeting and leader-check
+- [x] Seed 11 default scenarios (greetings, leader respect, PDPL)
+- [x] Seed default leader respect phrases (Saudi leaders, NDMO, SDAIA, Vision 2030)
+- [x] Redesign SmartRasid.tsx with console-style UI (cyber terminal design)
+- [x] Use official Rasid character as AI avatar (3D character uploaded to CDN)
+- [x] Add matrix/cyber background effects (grid, scan lines, glow)
+- [x] Add auto-greeting on page load
+- [x] Add impressive motion effects (typing, glowing, particles, floating avatar)
+- [x] Create PersonalityScenarios.tsx admin page with full CRUD
+- [x] Add PersonalityScenarios to sidebar under إداري group
+- [x] All 157 tests passing
+- [x] Save checkpoint

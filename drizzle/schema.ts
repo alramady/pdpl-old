@@ -663,3 +663,41 @@ export const knowledgeBase = mysqlTable("knowledge_base", {
 
 export type KnowledgeBaseEntry = typeof knowledgeBase.$inferSelect;
 export type InsertKnowledgeBaseEntry = typeof knowledgeBase.$inferInsert;
+
+
+/**
+ * Personality Scenarios — configurable greeting/respect templates
+ * scenarioType: greeting_first (first visit), greeting_return (returning user),
+ *               leader_respect (Saudi leaders), custom (user-defined)
+ */
+export const personalityScenarios = mysqlTable("personality_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  scenarioType: mysqlEnum("scenarioType", [
+    "greeting_first",
+    "greeting_return",
+    "leader_respect",
+    "custom",
+  ]).notNull(),
+  triggerKeyword: varchar("triggerKeyword", { length: 500 }),
+  responseTemplate: text("responseTemplate").notNull(),
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("psCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("psUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type PersonalityScenario = typeof personalityScenarios.$inferSelect;
+export type InsertPersonalityScenario = typeof personalityScenarios.$inferInsert;
+
+/**
+ * User Sessions — track visit counts for personalized greetings
+ */
+export const userSessions = mysqlTable("user_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("usUserId", { length: 64 }).notNull(),
+  userName: varchar("usUserName", { length: 255 }),
+  sessionDate: varchar("usSessionDate", { length: 10 }).notNull(),
+  visitCount: int("usVisitCount").default(1).notNull(),
+  createdAt: timestamp("usCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("usUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserSession = typeof userSessions.$inferSelect;
+export type InsertUserSession = typeof userSessions.$inferInsert;

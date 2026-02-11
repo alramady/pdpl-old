@@ -52,9 +52,18 @@ import {
   UserCheck,
   FileSearch,
   BarChart2,
+  Fingerprint,
+  Radio,
+  Radar,
+  ShieldCheck,
+  HeartHandshake,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+
+// ═══ CONSTANTS ═══
+const RASID_CHARACTER_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/EcTxzqTDBTbCBkgA.png";
+const RASID_FACE_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/CKohhQCRRyLHdRyE.png";
 
 interface ThinkingStep {
   id: string;
@@ -78,32 +87,32 @@ interface ChatMessage {
 }
 
 const quickCommands = [
-  { label: "ملخص لوحة المعلومات", icon: BarChart3, gradient: "from-cyan-500 to-blue-600", query: "أعطني ملخص شامل للوحة المعلومات مع تحليل" },
-  { label: "تسريبات حرجة", icon: AlertTriangle, gradient: "from-red-500 to-rose-600", query: "ما هي التسريبات الحرجة الحالية؟ أعطني تفاصيل كل واحد" },
-  { label: "تحليل ارتباطات", icon: GitBranch, gradient: "from-emerald-500 to-teal-600", query: "أجرِ تحليل ارتباطات شامل: ربط البائعين بالقطاعات، أنماط زمنية، واكتشاف الشذوذ" },
-  { label: "حالة الحماية", icon: Shield, gradient: "from-amber-500 to-orange-600", query: "ما حالة حماية البيانات الشخصية؟ وما مستوى التهديدات الحالي والتوصيات؟" },
-  { label: "نشاط المستخدمين", icon: UserCheck, gradient: "from-purple-500 to-violet-600", query: "حلل نشاط المستخدمين اليوم: من فعل ماذا؟ كم عملية نُفذت؟" },
-  { label: "خريطة التهديدات", icon: MapPin, gradient: "from-indigo-500 to-blue-600", query: "اعرض خريطة التهديدات الجغرافية والتوزيع حسب المناطق" },
-  { label: "التقارير والمستندات", icon: FileSearch, gradient: "from-teal-500 to-cyan-600", query: "اعرض لي كل التقارير والمستندات المتاحة مع روابطها" },
-  { label: "قواعد الكشف", icon: Crosshair, gradient: "from-pink-500 to-rose-600", query: "اعرض قواعد صيد التهديدات النشطة وأداءها" },
+  { label: "ملخص لوحة المعلومات", icon: BarChart3, color: "text-cyan-400", bgColor: "bg-cyan-500/10 border-cyan-500/20", query: "أعطني ملخص شامل للوحة المعلومات مع تحليل" },
+  { label: "تسريبات حرجة", icon: AlertTriangle, color: "text-red-400", bgColor: "bg-red-500/10 border-red-500/20", query: "ما هي التسريبات الحرجة الحالية؟ أعطني تفاصيل كل واحد" },
+  { label: "تحليل ارتباطات", icon: GitBranch, color: "text-emerald-400", bgColor: "bg-emerald-500/10 border-emerald-500/20", query: "أجرِ تحليل ارتباطات شامل: ربط البائعين بالقطاعات، أنماط زمنية، واكتشاف الشذوذ" },
+  { label: "حالة الحماية", icon: Shield, color: "text-amber-400", bgColor: "bg-amber-500/10 border-amber-500/20", query: "ما حالة حماية البيانات الشخصية؟ وما مستوى التهديدات الحالي والتوصيات؟" },
+  { label: "نشاط المستخدمين", icon: UserCheck, color: "text-purple-400", bgColor: "bg-purple-500/10 border-purple-500/20", query: "حلل نشاط المستخدمين اليوم: من فعل ماذا؟ كم عملية نُفذت؟" },
+  { label: "خريطة التهديدات", icon: MapPin, color: "text-indigo-400", bgColor: "bg-indigo-500/10 border-indigo-500/20", query: "اعرض خريطة التهديدات الجغرافية والتوزيع حسب المناطق" },
+  { label: "التقارير والمستندات", icon: FileSearch, color: "text-teal-400", bgColor: "bg-teal-500/10 border-teal-500/20", query: "اعرض لي كل التقارير والمستندات المتاحة مع روابطها" },
+  { label: "قواعد الكشف", icon: Crosshair, color: "text-rose-400", bgColor: "bg-rose-500/10 border-rose-500/20", query: "اعرض قواعد صيد التهديدات النشطة وأداءها" },
 ];
 
 const capabilities = [
-  { icon: BarChart3, label: "تحليل لوحة القيادة", desc: "إحصائيات وتقارير شاملة", gradient: "from-cyan-500/20 to-blue-500/20" },
-  { icon: Search, label: "البحث في التسريبات", desc: "بحث متقدم بكل الفلاتر", gradient: "from-emerald-500/20 to-teal-500/20" },
-  { icon: Shield, label: "حماية البيانات", desc: "نظام PDPL والتوصيات", gradient: "from-amber-500/20 to-orange-500/20" },
-  { icon: Globe, label: "الدارك ويب واللصق", desc: "رصد المصادر المظلمة", gradient: "from-blue-500/20 to-indigo-500/20" },
-  { icon: Users, label: "البائعون والتهديدات", desc: "ملفات تعريف المهددين", gradient: "from-purple-500/20 to-violet-500/20" },
-  { icon: GitBranch, label: "تحليل الارتباطات", desc: "ربط البيانات واكتشاف الأنماط", gradient: "from-pink-500/20 to-rose-500/20" },
-  { icon: UserCheck, label: "مراقبة الأنشطة", desc: "تتبع نشاط الموظفين", gradient: "from-orange-500/20 to-amber-500/20" },
-  { icon: BookOpen, label: "قاعدة المعرفة", desc: "مقالات وسياسات وإرشادات", gradient: "from-violet-500/20 to-purple-500/20" },
-  { icon: FileSearch, label: "إدارة الملفات", desc: "جلب التقارير والمستندات", gradient: "from-indigo-500/20 to-blue-500/20" },
-  { icon: Network, label: "رسم المعرفة", desc: "شبكة العلاقات والروابط", gradient: "from-teal-500/20 to-cyan-500/20" },
-  { icon: Activity, label: "المراقبة والتنبيهات", desc: "حالة مهام الرصد", gradient: "from-red-500/20 to-rose-500/20" },
-  { icon: BarChart2, label: "تحليل الاتجاهات", desc: "أنماط زمنية وتوزيعات", gradient: "from-slate-500/20 to-gray-500/20" },
-  { icon: Crosshair, label: "صيد التهديدات", desc: "قواعد YARA-like", gradient: "from-rose-500/20 to-red-500/20" },
-  { icon: Link2, label: "سلسلة الأدلة", desc: "توثيق وحفظ الأدلة", gradient: "from-amber-500/20 to-yellow-500/20" },
-  { icon: Database, label: "صحة النظام", desc: "حالة المنصة والبنية", gradient: "from-gray-500/20 to-slate-500/20" },
+  { icon: BarChart3, label: "تحليل لوحة القيادة", desc: "إحصائيات وتقارير شاملة" },
+  { icon: Search, label: "البحث في التسريبات", desc: "بحث متقدم بكل الفلاتر" },
+  { icon: Shield, label: "حماية البيانات", desc: "نظام PDPL والتوصيات" },
+  { icon: Globe, label: "الدارك ويب واللصق", desc: "رصد المصادر المظلمة" },
+  { icon: Users, label: "البائعون والتهديدات", desc: "ملفات تعريف المهددين" },
+  { icon: GitBranch, label: "تحليل الارتباطات", desc: "ربط البيانات واكتشاف الأنماط" },
+  { icon: UserCheck, label: "مراقبة الأنشطة", desc: "تتبع نشاط الموظفين" },
+  { icon: BookOpen, label: "قاعدة المعرفة", desc: "مقالات وسياسات وإرشادات" },
+  { icon: FileSearch, label: "إدارة الملفات", desc: "جلب التقارير والمستندات" },
+  { icon: Network, label: "رسم المعرفة", desc: "شبكة العلاقات والروابط" },
+  { icon: Activity, label: "المراقبة والتنبيهات", desc: "حالة مهام الرصد" },
+  { icon: BarChart2, label: "تحليل الاتجاهات", desc: "أنماط زمنية وتوزيعات" },
+  { icon: Crosshair, label: "صيد التهديدات", desc: "قواعد YARA-like" },
+  { icon: Link2, label: "سلسلة الأدلة", desc: "توثيق وحفظ الأدلة" },
+  { icon: HeartHandshake, label: "الشخصية التفاعلية", desc: "ترحيب ذكي واحترام القادة" },
 ];
 
 // Tool name to Arabic label mapping
@@ -131,28 +140,114 @@ const toolLabels: Record<string, string> = {
   search_knowledge_base: "البحث في قاعدة المعرفة",
   get_correlations: "تحليل الارتباطات",
   get_platform_users_info: "معلومات المستخدمين",
+  get_personality_greeting: "ترحيب شخصي",
+  check_leader_mention: "فحص إشارة لقائد",
+  manage_personality_scenarios: "إدارة سيناريوهات الشخصية",
 };
 
 // Agent icons mapping
 const agentIcons: Record<string, typeof Brain> = {
-  "المحافظ الرئيسي": Crown,
+  "راصد الذكي": Radar,
   "الوكيل التنفيذي": Zap,
   "وكيل التحليلات": BarChart2,
   "وكيل سجل المراجعة": Eye,
   "وكيل المعرفة": BookOpen,
   "وكيل الملفات": FileSearch,
+  "وكيل الشخصية": HeartHandshake,
 };
 
 const agentColors: Record<string, string> = {
-  "المحافظ الرئيسي": "text-amber-400",
-  "الوكيل التنفيذي": "text-cyan-400",
-  "وكيل التحليلات": "text-emerald-400",
+  "راصد الذكي": "text-cyan-400",
+  "الوكيل التنفيذي": "text-emerald-400",
+  "وكيل التحليلات": "text-violet-400",
   "وكيل سجل المراجعة": "text-orange-400",
-  "وكيل المعرفة": "text-violet-400",
-  "وكيل الملفات": "text-blue-400",
+  "وكيل المعرفة": "text-blue-400",
+  "وكيل الملفات": "text-teal-400",
+  "وكيل الشخصية": "text-pink-400",
 };
 
-// ═══ Thinking Steps Component ═══
+// ═══ MATRIX RAIN BACKGROUND ═══
+function MatrixRain() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const chars = "01راصدحمايةبياناتأمنسيبرانيرصدتسريبكشف";
+    const fontSize = 12;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops: number[] = Array(columns).fill(1);
+
+    const draw = () => {
+      ctx.fillStyle = "rgba(10, 15, 28, 0.06)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(0, 200, 180, 0.08)";
+      ctx.font = `${fontSize}px 'Tajawal', monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    };
+
+    const interval = setInterval(draw, 50);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
+    />
+  );
+}
+
+// ═══ SCANNING LINE EFFECT ═══
+function ScanLine() {
+  return (
+    <motion.div
+      className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent pointer-events-none z-10"
+      animate={{ top: ["0%", "100%"] }}
+      transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+    />
+  );
+}
+
+// ═══ PULSE RING EFFECT ═══
+function PulseRings({ size = 80 }: { size?: number }) {
+  return (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          className="absolute rounded-full border border-cyan-500/20"
+          style={{ width: size + i * 30, height: size + i * 30 }}
+          animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0, 0.3] }}
+          transition={{ duration: 3, repeat: Infinity, delay: i * 0.8, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ═══ THINKING STEPS COMPONENT — Console Style ═══
 function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: ThinkingStep[]; isExpanded: boolean; onToggle: () => void }) {
   if (!steps || steps.length === 0) return null;
 
@@ -160,22 +255,20 @@ function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: Thinking
   const errorCount = steps.filter(s => s.status === "error").length;
 
   return (
-    <div className="mb-2">
+    <div className="mb-3">
       <button
         onClick={onToggle}
-        className="flex items-center gap-2 text-[11px] px-3 py-1.5 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/15 text-amber-400 hover:bg-amber-500/15 transition-all w-full"
+        className="flex items-center gap-2 text-[11px] px-3 py-2 rounded-lg bg-[#0a1628]/80 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/10 transition-all w-full font-mono"
       >
-        <Workflow className="w-3.5 h-3.5" />
-        <span className="font-medium">خطوات التفكير</span>
-        <span className="text-[10px] text-amber-400/70">
-          {completedCount} مكتملة{errorCount > 0 ? ` · ${errorCount} خطأ` : ""}
+        <Terminal className="w-3.5 h-3.5 animate-pulse" />
+        <span className="font-medium tracking-wide">THINKING_PROCESS</span>
+        <span className="text-[10px] text-cyan-400/60">
+          [{completedCount}/{steps.length}]{errorCount > 0 ? ` ERR:${errorCount}` : ""}
         </span>
         <div className="flex-1" />
-        {isExpanded ? (
-          <ChevronDown className="w-3 h-3" />
-        ) : (
-          <ChevronRight className="w-3 h-3" />
-        )}
+        <span className="text-[9px] text-cyan-500/40 font-mono">
+          {isExpanded ? "▼ COLLAPSE" : "▶ EXPAND"}
+        </span>
       </button>
 
       <AnimatePresence>
@@ -184,45 +277,34 @@ function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: Thinking
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.25 }}
             className="overflow-hidden"
           >
-            <div className="mt-1.5 space-y-0.5 pr-2">
+            <div className="mt-1 bg-[#060d1b]/90 border border-cyan-500/10 rounded-lg p-3 font-mono text-[11px] space-y-1">
               {steps.map((step, idx) => {
                 const AgentIcon = agentIcons[step.agent] || Brain;
-                const agentColor = agentColors[step.agent] || "text-violet-400";
-                const StatusIcon = step.status === "completed" ? CheckCircle2 : step.status === "error" ? XCircle : CircleDot;
+                const agentColor = agentColors[step.agent] || "text-cyan-400";
+                const statusSymbol = step.status === "completed" ? "✓" : step.status === "error" ? "✗" : "◉";
                 const statusColor = step.status === "completed" ? "text-emerald-400" : step.status === "error" ? "text-red-400" : "text-amber-400";
 
                 return (
                   <motion.div
                     key={step.id}
-                    initial={{ opacity: 0, x: -10 }}
+                    initial={{ opacity: 0, x: -8 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: idx * 0.05 }}
-                    className="flex items-start gap-2 py-1.5 px-2 rounded-md hover:bg-white/[0.02] transition-colors group"
+                    transition={{ delay: idx * 0.04 }}
+                    className="flex items-start gap-2 py-1 group"
                   >
-                    {/* Timeline connector */}
-                    <div className="flex flex-col items-center flex-shrink-0 mt-0.5">
-                      <StatusIcon className={`w-3 h-3 ${statusColor}`} />
-                      {idx < steps.length - 1 && (
-                        <div className="w-px h-full min-h-[12px] bg-white/[0.06] mt-0.5" />
-                      )}
-                    </div>
-
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <AgentIcon className={`w-3 h-3 ${agentColor} flex-shrink-0`} />
-                        <span className={`text-[10px] font-medium ${agentColor}`}>{step.agent}</span>
-                        <span className="text-[9px] text-muted-foreground/50">·</span>
-                        <span className="text-[10px] text-muted-foreground/70">{step.description}</span>
-                      </div>
-                      {step.result && (
-                        <p className="text-[9px] text-muted-foreground/50 mt-0.5 truncate group-hover:whitespace-normal">
-                          {step.result}
-                        </p>
-                      )}
-                    </div>
+                    <span className={`${statusColor} w-4 text-center flex-shrink-0`}>{statusSymbol}</span>
+                    <AgentIcon className={`w-3 h-3 ${agentColor} flex-shrink-0 mt-0.5`} />
+                    <span className={`${agentColor} min-w-[80px]`}>{step.agent}</span>
+                    <span className="text-slate-500">→</span>
+                    <span className="text-slate-300">{step.description}</span>
+                    {step.result && (
+                      <span className="text-slate-600 truncate group-hover:whitespace-normal max-w-[200px]">
+                        // {step.result}
+                      </span>
+                    )}
                   </motion.div>
                 );
               })}
@@ -234,6 +316,7 @@ function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: Thinking
   );
 }
 
+// ═══ MAIN COMPONENT ═══
 export default function SmartRasid() {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -321,11 +404,10 @@ export default function SmartRasid() {
     setSuggestions([]);
     setIsLoading(true);
 
-    // Simulate initial thinking steps while waiting
     setLoadingSteps([
       {
         id: "loading-1",
-        agent: "المحافظ الرئيسي",
+        agent: "راصد الذكي",
         action: "analyze_intent",
         description: "تحليل نية المستخدم وتحديد الوكيل المختص",
         status: "running",
@@ -406,7 +488,6 @@ export default function SmartRasid() {
     return date.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
   };
 
-  // Extract leak IDs from message content for drill-down
   const extractLeakIds = (content: string): string[] => {
     const matches = content.match(/LK-\d{4}-\d{4}/g);
     return matches ? Array.from(new Set(matches)) : [];
@@ -417,60 +498,93 @@ export default function SmartRasid() {
   };
 
   return (
-    <div className="h-full flex flex-col" dir="rtl">
-      {/* ═══ HEADER — Frosted Glass with Governor Branding ═══ */}
-      <div className="flex-shrink-0 border-b border-white/[0.06] dark:bg-[oklch(0.12_0.04_278_/_60%)] backdrop-blur-2xl">
+    <div className="h-full flex flex-col relative overflow-hidden" dir="rtl">
+      {/* ═══ BACKGROUND EFFECTS ═══ */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[#060d1b] via-[#0a1628] to-[#0d1a30] z-0" />
+      <MatrixRain />
+      <ScanLine />
+
+      {/* ═══ HEADER — Console Style with Rasid Character ═══ */}
+      <div className="flex-shrink-0 border-b border-cyan-500/15 bg-[#0a1628]/80 backdrop-blur-2xl z-20 relative">
+        {/* Top accent line */}
+        <div className="h-[2px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
+
         <div className="flex items-center justify-between px-5 py-3">
-          <div className="flex items-center gap-3">
-            {/* AI Avatar with crown glow */}
-            <div className="relative">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-500 via-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-amber-500/20 dark:shadow-[0_4px_20px_oklch(0.65_0.20_85_/_25%)]">
-                <Crown className="w-5.5 h-5.5 text-white" />
-              </div>
-              <div className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-[2.5px] border-[oklch(0.12_0.04_278)] dark:shadow-[0_0_6px_oklch(0.72_0.17_160_/_50%)]" />
+          <div className="flex items-center gap-4">
+            {/* Rasid Character Avatar with glow */}
+            <div className="relative group">
+              <motion.div
+                animate={{ boxShadow: ["0 0 15px rgba(0,200,180,0.2)", "0 0 30px rgba(0,200,180,0.4)", "0 0 15px rgba(0,200,180,0.2)"] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-cyan-500/30 relative"
+              >
+                <img
+                  src={RASID_FACE_URL}
+                  alt="راصد الذكي"
+                  className="w-full h-full object-cover object-top"
+                />
+              </motion.div>
+              {/* Online indicator */}
+              <motion.div
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-[2.5px] border-[#0a1628] shadow-[0_0_8px_rgba(52,211,153,0.5)]"
+              />
             </div>
+
             <div>
-              <h1 className="text-[15px] font-bold text-foreground flex items-center gap-2">
-                محافظ المنصة
-                <span className="text-[10px] font-medium bg-gradient-to-r from-amber-500/20 to-violet-500/20 text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-500/20">
-                  v6.0 Governor
+              <h1 className="text-[15px] font-bold text-white flex items-center gap-2 font-[Tajawal]">
+                <span className="bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300 bg-clip-text text-transparent">
+                  راصد الذكي
+                </span>
+                <span className="text-[9px] font-mono font-normal bg-cyan-500/10 text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/20 tracking-wider">
+                  v6.0
                 </span>
               </h1>
-              <p className="text-[11px] text-muted-foreground">
-                كبير المحللين السيبرانيين — بنية وكلاء هرمية · {Object.keys(toolLabels).length} أداة متصلة
+              <p className="text-[11px] text-cyan-400/60 font-mono tracking-wide">
+                SMART_RASID // {Object.keys(toolLabels).length} TOOLS · 7 AGENTS · ACTIVE
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+
+          <div className="flex items-center gap-2">
+            {/* Status indicators */}
+            <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[#060d1b]/60 border border-cyan-500/10 font-mono text-[10px]">
+              <span className="flex items-center gap-1 text-emerald-400">
+                <motion.span animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                ONLINE
+              </span>
+              <span className="text-cyan-500/30">|</span>
+              <span className="text-cyan-400/50">{Object.keys(toolLabels).length} أداة</span>
+            </div>
+
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={startNewChat}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-amber-500/30 text-muted-foreground hover:text-foreground text-xs transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 text-xs transition-all font-mono"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">محادثة جديدة</span>
+              <span className="hidden sm:inline tracking-wide">NEW_SESSION</span>
             </motion.button>
           </div>
         </div>
 
-        {/* Quick Commands — Scrollable chips */}
+        {/* Quick Commands — Console-style chips */}
         <div className="flex items-center gap-2 px-5 pb-3 overflow-x-auto scrollbar-hide">
-          <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap flex items-center gap-1">
-            <Zap className="w-3 h-3" />
-            أوامر سريعة
+          <span className="text-[10px] text-cyan-500/40 whitespace-nowrap flex items-center gap-1 font-mono">
+            <Terminal className="w-3 h-3" />
+            CMD &gt;
           </span>
           {quickCommands.map((cmd, i) => (
             <motion.button
               key={i}
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.03, y: -1 }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => sendMessage(cmd.query)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-amber-500/25 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap transition-all"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg ${cmd.bgColor} border text-xs ${cmd.color} whitespace-nowrap transition-all font-mono hover:shadow-lg`}
             >
-              <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${cmd.gradient} flex items-center justify-center`}>
-                <cmd.icon className="w-2.5 h-2.5 text-white" />
-              </div>
+              <cmd.icon className="w-3 h-3" />
               {cmd.label}
             </motion.button>
           ))}
@@ -478,96 +592,134 @@ export default function SmartRasid() {
       </div>
 
       {/* ═══ CHAT AREA ═══ */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 z-10 relative">
         {messages.length === 0 ? (
-          /* ═══ WELCOME SCREEN ═══ */
+          /* ═══ WELCOME SCREEN — Console Style ═══ */
           <div className="flex flex-col items-center justify-center h-full max-w-3xl mx-auto">
-            {/* Governor Icon with orbital animation */}
+            {/* Rasid Character with effects */}
             <div className="relative mb-8">
+              <PulseRings size={130} />
+
+              {/* Rotating tech ring */}
               <motion.div
                 animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-[-12px] rounded-3xl border border-amber-500/10 border-dashed"
-              />
+                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-[-20px] rounded-full border border-dashed border-cyan-500/15"
+              >
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,200,180,0.6)]" />
+              </motion.div>
+
               <motion.div
                 animate={{ rotate: -360 }}
-                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-[-24px] rounded-3xl border border-purple-500/5 border-dashed"
-              />
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-amber-500 via-violet-500 to-purple-700 flex items-center justify-center shadow-2xl shadow-amber-500/25 dark:shadow-[0_8px_40px_oklch(0.65_0.20_85_/_30%)]">
-                <Crown className="w-10 h-10 text-white" />
-              </div>
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-                className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center border-[3px] border-[oklch(0.12_0.04_278)] shadow-lg shadow-emerald-500/30"
+                transition={{ duration: 40, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-[-35px] rounded-full border border-dashed border-teal-500/8"
               >
-                <Sparkles className="w-3.5 h-3.5 text-white" />
+                <div className="absolute bottom-0 right-0 w-1.5 h-1.5 rounded-full bg-teal-400/60" />
+              </motion.div>
+
+              {/* Character image */}
+              <motion.div
+                animate={{ y: [0, -6, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                className="relative"
+              >
+                <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_40px_rgba(0,200,180,0.2)] bg-[#0a1628]">
+                  <img
+                    src={RASID_FACE_URL}
+                    alt="راصد الذكي"
+                    className="w-full h-full object-cover object-top"
+                  />
+                </div>
+
+                {/* Sparkle badge */}
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] }}
+                  transition={{ duration: 3, repeat: Infinity }}
+                  className="absolute -top-3 -right-3 w-8 h-8 bg-gradient-to-br from-cyan-400 to-teal-500 rounded-full flex items-center justify-center border-[3px] border-[#0a1628] shadow-[0_0_15px_rgba(0,200,180,0.4)]"
+                >
+                  <Radar className="w-4 h-4 text-white" />
+                </motion.div>
               </motion.div>
             </div>
 
-            <motion.h2
-              initial={{ opacity: 0, y: 10 }}
+            {/* Title with typewriter effect */}
+            <motion.div
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              className="text-2xl font-bold text-foreground mb-2"
+              transition={{ delay: 0.2 }}
+              className="text-center mb-2"
             >
-              مرحباً بك في <span className="bg-gradient-to-r from-amber-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">محافظ المنصة</span>
-            </motion.h2>
+              <h2 className="text-3xl font-bold font-[Tajawal] mb-1">
+                <span className="bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300 bg-clip-text text-transparent">
+                  راصد الذكي
+                </span>
+              </h2>
+              <div className="flex items-center justify-center gap-2 text-cyan-400/60 font-mono text-xs">
+                <motion.span
+                  animate={{ opacity: [0, 1] }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+                  className="text-cyan-400"
+                >
+                  _
+                </motion.span>
+                <span>SMART RASID AI ASSISTANT</span>
+                <motion.span
+                  animate={{ opacity: [0, 1] }}
+                  transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
+                  className="text-cyan-400"
+                >
+                  _
+                </motion.span>
+              </div>
+            </motion.div>
+
             <motion.p
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-sm text-muted-foreground mb-3 text-center max-w-lg"
+              transition={{ delay: 0.3 }}
+              className="text-sm text-slate-400 mb-4 text-center max-w-lg font-[Tajawal]"
             >
               كبير المحللين السيبرانيين — يحلل، يستنتج، يربط، وينفذ
             </motion.p>
 
-            {/* Hierarchical Agent Architecture Badge */}
+            {/* Agent Architecture — Console Display */}
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15 }}
-              className="flex items-center gap-3 mb-8 px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500/5 to-violet-500/5 border border-amber-500/10"
+              transition={{ delay: 0.35 }}
+              className="flex items-center gap-2 mb-8 px-4 py-2.5 rounded-xl bg-[#060d1b]/80 border border-cyan-500/15 font-mono text-[10px]"
             >
-              <div className="flex items-center gap-1.5">
-                <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span className="text-[10px] text-amber-400 font-medium">المحافظ</span>
-              </div>
-              <ChevronRight className="w-3 h-3 text-muted-foreground/30" />
-              <div className="flex items-center gap-1.5">
-                <Zap className="w-3 h-3 text-cyan-400" />
-                <span className="text-[10px] text-cyan-400">تنفيذي</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <BarChart2 className="w-3 h-3 text-emerald-400" />
-                <span className="text-[10px] text-emerald-400">تحليلات</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <Eye className="w-3 h-3 text-orange-400" />
-                <span className="text-[10px] text-orange-400">مراجعة</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <BookOpen className="w-3 h-3 text-violet-400" />
-                <span className="text-[10px] text-violet-400">معرفة</span>
-              </div>
-              <div className="flex items-center gap-1.5">
-                <FileSearch className="w-3 h-3 text-blue-400" />
-                <span className="text-[10px] text-blue-400">ملفات</span>
-              </div>
+              <Radar className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="text-cyan-400 font-medium">RASID</span>
+              <span className="text-cyan-500/30">→</span>
+              {[
+                { icon: Zap, label: "تنفيذي", color: "text-emerald-400" },
+                { icon: BarChart2, label: "تحليلات", color: "text-violet-400" },
+                { icon: Eye, label: "مراجعة", color: "text-orange-400" },
+                { icon: BookOpen, label: "معرفة", color: "text-blue-400" },
+                { icon: FileSearch, label: "ملفات", color: "text-teal-400" },
+                { icon: HeartHandshake, label: "شخصية", color: "text-pink-400" },
+              ].map((agent, i) => (
+                <div key={i} className={`flex items-center gap-1 ${agent.color}`}>
+                  <agent.icon className="w-3 h-3" />
+                  <span>{agent.label}</span>
+                  {i < 5 && <span className="text-cyan-500/20 mr-1">·</span>}
+                </div>
+              ))}
             </motion.div>
 
-            {/* Capabilities Grid — Glass Cards */}
+            {/* Capabilities Grid — Console Cards */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] dark:bg-[oklch(0.13_0.04_278_/_40%)] backdrop-blur-xl p-5 mb-6"
+              transition={{ delay: 0.4 }}
+              className="w-full rounded-xl border border-cyan-500/15 bg-[#060d1b]/60 backdrop-blur-xl p-5 mb-6"
             >
               <div className="flex items-center gap-2 mb-4">
-                <Cpu className="w-4 h-4 text-amber-400" />
-                <p className="text-sm font-medium text-foreground">قدرات محافظ المنصة</p>
-                <span className="text-[10px] text-muted-foreground bg-white/[0.04] px-2 py-0.5 rounded-full">
-                  {Object.keys(toolLabels).length} أداة · 6 وكلاء متخصصين
+                <Cpu className="w-4 h-4 text-cyan-400" />
+                <p className="text-sm font-medium text-white font-[Tajawal]">قدرات راصد الذكي</p>
+                <span className="text-[10px] text-cyan-400/50 font-mono bg-cyan-500/5 px-2 py-0.5 rounded border border-cyan-500/10">
+                  {Object.keys(toolLabels).length} TOOLS · 7 AGENTS
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
@@ -576,13 +728,14 @@ export default function SmartRasid() {
                     key={i}
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: 0.3 + i * 0.03 }}
-                    className={`flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-br ${cap.gradient} border border-white/[0.04] hover:border-amber-500/20 transition-all cursor-default group`}
+                    transition={{ delay: 0.5 + i * 0.03 }}
+                    whileHover={{ scale: 1.03, borderColor: "rgba(0,200,180,0.3)" }}
+                    className="flex items-center gap-2.5 p-2.5 rounded-lg bg-[#0a1628]/80 border border-cyan-500/10 hover:bg-cyan-500/5 transition-all cursor-default group"
                   >
-                    <cap.icon className="w-4 h-4 text-foreground/80 group-hover:text-amber-400 transition-colors flex-shrink-0" />
+                    <cap.icon className="w-4 h-4 text-cyan-400/70 group-hover:text-cyan-300 transition-colors flex-shrink-0" />
                     <div className="min-w-0">
-                      <span className="text-[11px] font-medium text-foreground block truncate">{cap.label}</span>
-                      <span className="text-[9px] text-muted-foreground block truncate">{cap.desc}</span>
+                      <span className="text-[11px] font-medium text-slate-200 block truncate font-[Tajawal]">{cap.label}</span>
+                      <span className="text-[9px] text-slate-500 block truncate">{cap.desc}</span>
                     </div>
                   </motion.div>
                 ))}
@@ -593,23 +746,23 @@ export default function SmartRasid() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              transition={{ delay: 0.6 }}
               className="w-full"
             >
-              <p className="text-xs text-muted-foreground mb-3 text-center">ابدأ بأحد هذه الأوامر أو اكتب أي سؤال</p>
+              <p className="text-xs text-slate-500 mb-3 text-center font-mono">// ابدأ بأحد هذه الأوامر أو اكتب أي سؤال</p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {quickCommands.slice(0, 4).map((cmd, i) => (
                   <motion.button
                     key={i}
-                    whileHover={{ scale: 1.02, y: -2 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileHover={{ scale: 1.03, y: -3 }}
+                    whileTap={{ scale: 0.97 }}
                     onClick={() => sendMessage(cmd.query)}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-amber-500/25 transition-all group"
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl bg-[#0a1628]/60 hover:bg-cyan-500/5 border border-cyan-500/10 hover:border-cyan-500/25 transition-all group`}
                   >
-                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${cmd.gradient} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
-                      <cmd.icon className="w-4.5 h-4.5 text-white" />
+                    <div className={`w-10 h-10 rounded-xl ${cmd.bgColor} border flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
+                      <cmd.icon className={`w-5 h-5 ${cmd.color}`} />
                     </div>
-                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{cmd.label}</span>
+                    <span className="text-xs text-slate-400 group-hover:text-slate-200 transition-colors font-[Tajawal]">{cmd.label}</span>
                   </motion.button>
                 ))}
               </div>
@@ -618,7 +771,7 @@ export default function SmartRasid() {
         ) : (
           /* ═══ MESSAGE LIST ═══ */
           <>
-            {messages.map((msg, idx) => (
+            {messages.map((msg) => (
               <motion.div
                 key={msg.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -629,11 +782,15 @@ export default function SmartRasid() {
                 {/* Avatar */}
                 <div className="flex-shrink-0 mt-1">
                   {msg.role === "assistant" ? (
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 via-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                      <Crown className="w-4.5 h-4.5 text-white" />
-                    </div>
+                    <motion.div
+                      animate={{ boxShadow: ["0 0 8px rgba(0,200,180,0.15)", "0 0 16px rgba(0,200,180,0.3)", "0 0 8px rgba(0,200,180,0.15)"] }}
+                      transition={{ duration: 3, repeat: Infinity }}
+                      className="w-9 h-9 rounded-xl overflow-hidden border border-cyan-500/30"
+                    >
+                      <img src={RASID_FACE_URL} alt="راصد" className="w-full h-full object-cover object-top" />
+                    </motion.div>
                   ) : (
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center border border-slate-600/30">
                       <span className="text-xs text-white font-bold">
                         {user?.name?.charAt(0) || (user as any)?.displayName?.charAt(0) || "م"}
                       </span>
@@ -643,7 +800,7 @@ export default function SmartRasid() {
 
                 {/* Message Bubble */}
                 <div className={`max-w-[85%] lg:max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
-                  {/* Thinking Steps — NEW */}
+                  {/* Thinking Steps */}
                   {msg.role === "assistant" && msg.thinkingSteps && msg.thinkingSteps.length > 0 && (
                     <ThinkingStepsDisplay
                       steps={msg.thinkingSteps}
@@ -658,7 +815,7 @@ export default function SmartRasid() {
                       {msg.toolsUsed.map((tool, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/15"
+                          className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/15 font-mono"
                         >
                           <Terminal className="w-2.5 h-2.5" />
                           {toolLabels[tool] || tool}
@@ -668,10 +825,10 @@ export default function SmartRasid() {
                   )}
 
                   <div
-                    className={`rounded-2xl px-4 py-3 relative group ${
+                    className={`rounded-xl px-4 py-3 relative group ${
                       msg.role === "user"
-                        ? "bg-gradient-to-br from-violet-600/20 to-purple-600/20 border border-violet-500/20 text-foreground"
-                        : "bg-white/[0.03] dark:bg-[oklch(0.14_0.04_278_/_50%)] border border-white/[0.06] text-foreground"
+                        ? "bg-gradient-to-br from-cyan-900/30 to-teal-900/20 border border-cyan-500/20 text-slate-100"
+                        : "bg-[#0a1628]/80 border border-cyan-500/10 text-slate-200"
                     }`}
                   >
                     {/* Copy button */}
@@ -683,22 +840,22 @@ export default function SmartRasid() {
                       {copiedId === msg.id ? (
                         <Check className="w-3 h-3 text-emerald-400" />
                       ) : (
-                        <Copy className="w-3 h-3 text-muted-foreground" />
+                        <Copy className="w-3 h-3 text-slate-500" />
                       )}
                     </button>
 
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-invert prose-sm max-w-none [&_table]:text-xs [&_th]:bg-white/5 [&_td]:border-white/5 [&_th]:border-white/5 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-1.5">
+                      <div className="prose prose-invert prose-sm max-w-none [&_table]:text-xs [&_th]:bg-cyan-500/5 [&_td]:border-cyan-500/10 [&_th]:border-cyan-500/10 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-1.5 [&_a]:text-cyan-400 [&_strong]:text-cyan-200 [&_code]:text-cyan-300 [&_code]:bg-cyan-500/10">
                         <Streamdown>{msg.content}</Streamdown>
                         {/* Clickable Leak IDs */}
                         {extractLeakIds(msg.content).length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap gap-2">
-                            <span className="text-[10px] text-muted-foreground">عرض تفاصيل:</span>
+                          <div className="mt-3 pt-3 border-t border-cyan-500/10 flex flex-wrap gap-2">
+                            <span className="text-[10px] text-slate-500">عرض تفاصيل:</span>
                             {extractLeakIds(msg.content).map(id => (
                               <button
                                 key={id}
                                 onClick={() => setDrillLeakId(id)}
-                                className="text-[10px] px-2 py-1 rounded-lg bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 border border-amber-500/15 transition-colors font-mono"
+                                className="text-[10px] px-2 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 border border-cyan-500/15 transition-colors font-mono"
                               >
                                 {id}
                               </button>
@@ -707,18 +864,18 @@ export default function SmartRasid() {
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm leading-relaxed">{msg.content}</p>
+                      <p className="text-sm leading-relaxed font-[Tajawal]">{msg.content}</p>
                     )}
                   </div>
 
                   {/* Timestamp + Rating */}
                   <div className={`flex items-center gap-1.5 mt-1.5 ${msg.role === "user" ? "justify-end" : "justify-between"}`}>
                     <div className="flex items-center gap-1.5">
-                      <Clock className="w-2.5 h-2.5 text-muted-foreground/50" />
-                      <span className="text-[10px] text-muted-foreground/60">{formatTime(msg.timestamp)}</span>
+                      <Clock className="w-2.5 h-2.5 text-slate-600" />
+                      <span className="text-[10px] text-slate-600 font-mono">{formatTime(msg.timestamp)}</span>
                       {msg.role === "assistant" && (
-                        <span className="text-[10px] text-emerald-500/70 flex items-center gap-0.5">
-                          <Check className="w-2.5 h-2.5" /> مكتمل
+                        <span className="text-[10px] text-emerald-500/70 flex items-center gap-0.5 font-mono">
+                          <CheckCircle2 className="w-2.5 h-2.5" /> DONE
                         </span>
                       )}
                     </div>
@@ -738,8 +895,8 @@ export default function SmartRasid() {
                               <Star
                                 className={`w-3.5 h-3.5 transition-colors ${
                                   isActive
-                                    ? 'text-amber-400 fill-amber-400'
-                                    : 'text-muted-foreground/30 hover:text-amber-400/50'
+                                    ? 'text-cyan-400 fill-cyan-400'
+                                    : 'text-slate-700 hover:text-cyan-400/50'
                                 }`}
                               />
                             </button>
@@ -758,7 +915,7 @@ export default function SmartRasid() {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => sendMessage(suggestion)}
-                          className="text-[11px] px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-amber-500/20 text-muted-foreground hover:text-foreground transition-all"
+                          className="text-[11px] px-3 py-1.5 rounded-lg bg-[#0a1628]/60 hover:bg-cyan-500/10 border border-cyan-500/10 hover:border-cyan-500/25 text-slate-400 hover:text-cyan-300 transition-all font-mono"
                         >
                           {suggestion}
                         </motion.button>
@@ -769,7 +926,7 @@ export default function SmartRasid() {
               </motion.div>
             ))}
 
-            {/* Loading Indicator — Enhanced with thinking steps */}
+            {/* Loading Indicator — Console Style */}
             <AnimatePresence>
               {isLoading && (
                 <motion.div
@@ -778,32 +935,35 @@ export default function SmartRasid() {
                   exit={{ opacity: 0, y: -10 }}
                   className="flex gap-3"
                 >
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500 via-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                    <Crown className="w-4.5 h-4.5 text-white animate-pulse" />
-                  </div>
-                  <div className="bg-white/[0.03] dark:bg-[oklch(0.14_0.04_278_/_50%)] border border-white/[0.06] rounded-2xl px-4 py-3 max-w-md">
+                  <motion.div
+                    animate={{ boxShadow: ["0 0 8px rgba(0,200,180,0.2)", "0 0 20px rgba(0,200,180,0.4)", "0 0 8px rgba(0,200,180,0.2)"] }}
+                    transition={{ duration: 1.5, repeat: Infinity }}
+                    className="w-9 h-9 rounded-xl overflow-hidden border border-cyan-500/40"
+                  >
+                    <img src={RASID_FACE_URL} alt="راصد" className="w-full h-full object-cover object-top animate-pulse" />
+                  </motion.div>
+                  <div className="bg-[#0a1628]/80 border border-cyan-500/15 rounded-xl px-4 py-3 max-w-md">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="flex gap-1">
-                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-amber-400" />
-                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-violet-400" />
-                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-purple-400" />
+                      <div className="flex gap-1.5">
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-cyan-400" />
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-teal-400" />
+                        <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-emerald-400" />
                       </div>
-                      <span className="text-sm text-muted-foreground">المحافظ يحلل ويستعلم...</span>
+                      <span className="text-sm text-cyan-400/80 font-mono">PROCESSING...</span>
                     </div>
-                    {/* Show loading thinking steps */}
                     {loadingSteps.length > 0 && (
-                      <div className="space-y-1 mt-2 border-t border-white/[0.04] pt-2">
+                      <div className="space-y-1 mt-2 border-t border-cyan-500/10 pt-2 font-mono text-[10px]">
                         {loadingSteps.map((step) => (
-                          <div key={step.id} className="flex items-center gap-2 text-[10px]">
+                          <div key={step.id} className="flex items-center gap-2">
                             <motion.div
                               animate={{ rotate: 360 }}
                               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                             >
-                              <CircleDot className="w-3 h-3 text-amber-400" />
+                              <Radar className="w-3 h-3 text-cyan-400" />
                             </motion.div>
-                            <span className="text-amber-400">{step.agent}</span>
-                            <span className="text-muted-foreground/60">·</span>
-                            <span className="text-muted-foreground/70">{step.description}</span>
+                            <span className="text-cyan-400">{step.agent}</span>
+                            <span className="text-cyan-500/30">→</span>
+                            <span className="text-slate-500">{step.description}</span>
                           </div>
                         ))}
                       </div>
@@ -818,8 +978,11 @@ export default function SmartRasid() {
         )}
       </div>
 
-      {/* ═══ INPUT AREA — Frosted Glass ═══ */}
-      <div className="flex-shrink-0 border-t border-white/[0.06] dark:bg-[oklch(0.12_0.04_278_/_60%)] backdrop-blur-2xl p-4">
+      {/* ═══ INPUT AREA — Console Style ═══ */}
+      <div className="flex-shrink-0 border-t border-cyan-500/15 bg-[#0a1628]/90 backdrop-blur-2xl p-4 z-20 relative">
+        {/* Bottom accent line */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-400/30 to-transparent" />
+
         {/* Suggestions Dropdown */}
         <AnimatePresence>
           {showSuggestions && suggestions.length > 0 && (
@@ -827,15 +990,15 @@ export default function SmartRasid() {
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 5 }}
-              className="mb-2 bg-[oklch(0.14_0.04_278_/_90%)] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl"
+              className="mb-2 bg-[#060d1b]/95 border border-cyan-500/15 rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl"
             >
               {suggestions.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => selectSuggestion(s)}
-                  className="w-full text-right px-4 py-2.5 text-sm text-muted-foreground hover:bg-white/[0.05] hover:text-foreground transition-colors flex items-center gap-2 border-b border-white/[0.04] last:border-0"
+                  className="w-full text-right px-4 py-2.5 text-sm text-slate-400 hover:bg-cyan-500/5 hover:text-cyan-300 transition-colors flex items-center gap-2 border-b border-cyan-500/5 last:border-0 font-[Tajawal]"
                 >
-                  <Search className="w-3 h-3 text-amber-400 flex-shrink-0" />
+                  <Search className="w-3 h-3 text-cyan-400 flex-shrink-0" />
                   <span>{s}</span>
                 </button>
               ))}
@@ -846,6 +1009,10 @@ export default function SmartRasid() {
         <div className="max-w-4xl mx-auto">
           <div className="flex items-end gap-2">
             <div className="flex-1 relative">
+              {/* Console prompt indicator */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-cyan-500/30 font-mono text-xs pointer-events-none">
+                &gt;_
+              </div>
               <textarea
                 ref={inputRef}
                 value={inputValue}
@@ -865,18 +1032,18 @@ export default function SmartRasid() {
                 onBlur={() => {
                   setTimeout(() => setShowSuggestions(false), 200);
                 }}
-                placeholder="اسأل محافظ المنصة أي شيء — تحليل، تنفيذ، مراقبة، استعلام..."
+                placeholder="اسأل راصد الذكي أي شيء — تحليل، تنفيذ، مراقبة، استعلام..."
                 rows={1}
-                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/40 focus:ring-1 focus:ring-amber-500/20 transition-all resize-none overflow-hidden"
+                className="w-full bg-[#060d1b]/80 border border-cyan-500/15 rounded-xl px-4 py-3 pr-10 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/40 focus:ring-1 focus:ring-cyan-500/20 focus:shadow-[0_0_15px_rgba(0,200,180,0.1)] transition-all resize-none overflow-hidden font-[Tajawal]"
                 disabled={isLoading}
               />
             </div>
             <motion.button
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, boxShadow: "0 0 20px rgba(0,200,180,0.3)" }}
               whileTap={{ scale: 0.95 }}
               onClick={() => sendMessage()}
               disabled={!inputValue.trim() || isLoading}
-              className="w-11 h-11 rounded-xl bg-gradient-to-br from-amber-500 via-violet-500 to-purple-700 flex items-center justify-center text-white disabled:opacity-30 shadow-lg shadow-amber-500/20 hover:shadow-xl hover:shadow-amber-500/30 transition-all flex-shrink-0"
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center text-white disabled:opacity-30 shadow-lg shadow-cyan-500/20 hover:shadow-xl transition-all flex-shrink-0"
             >
               {isLoading ? (
                 <Loader2 className="w-4.5 h-4.5 animate-spin" />
@@ -887,12 +1054,12 @@ export default function SmartRasid() {
           </div>
 
           <div className="flex items-center justify-between mt-2">
-            <p className="text-[10px] text-muted-foreground/40 flex items-center gap-1">
-              <Crown className="w-3 h-3" />
-              محافظ المنصة v6.0 — {Object.keys(toolLabels).length} أداة · 6 وكلاء · بنية هرمية
+            <p className="text-[10px] text-slate-600 flex items-center gap-1 font-mono">
+              <Radar className="w-3 h-3 text-cyan-500/40" />
+              SMART_RASID v6.0 // {Object.keys(toolLabels).length} TOOLS · 7 AGENTS
             </p>
-            <p className="text-[10px] text-muted-foreground/40">
-              Enter للإرسال · Shift+Enter لسطر جديد
+            <p className="text-[10px] text-slate-600 font-mono">
+              Enter ↵ · Shift+Enter ⏎
             </p>
           </div>
         </div>
