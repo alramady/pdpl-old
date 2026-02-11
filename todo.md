@@ -290,3 +290,46 @@
 - [x] Professional formatting with Rasid branding on all reports
 - [x] All 103 tests passing
 - [x] Checkpoint saved
+
+## Phase 27: Smart AI Assistant, Sidebar Groups, Royal Blue Theme, Verification Pages, Live Scanning, Deep-Drill All Pages
+
+### A. Sidebar Redesign with Collapsible Groups
+- [x] Group sidebar pages into logical categories (قيادي، تنفيذي، متقدم، إداري)
+- [x] Add collapsible/expandable group headers
+- [x] Improve visual organization of navigation
+
+### B. Royal Blue Dark Theme (matching rasid.vip)
+- [x] Visit rasid.vip/login to capture exact color scheme
+- [x] Replace black dark theme with royal blue dark theme
+- [x] Update login page to match rasid.vip design (dark and light modes)
+- [x] Apply royal blue theme across entire platform
+
+### C. Verification Pages
+- [x] Add internal verification page in dashboard sidebar
+- [x] Create public verification page at standalone URL (no login required)
+- [x] Both pages support code entry and QR scanning
+
+### D. Deep-Drill on ALL Pages
+- [x] Audit all pages for missing deep-drill functionality
+- [x] Add LeakDetailDrilldown to every page that displays leak-related data (Dashboard, Leaks, TelegramMonitor, DarkWebMonitor, PasteSites, SellerProfiles, EvidenceChain, ThreatMap, AlertChannels)
+- [x] Ensure every clickable stat/card/item drills into full details
+
+### E. Live Scanning/Monitoring Page
+- [x] Create dedicated scanning page for employees
+- [x] Custom source selection (Telegram, Dark Web, Paste Sites)
+- [x] Custom scan parameters and settings
+- [x] Real-time scan progress and results display
+
+### F. Smart Rasid AI Assistant (الطلب الذهبي)
+- [x] Create full-page AI chat interface matching Fabric AI design
+- [x] Quick command buttons at top (ملخص لوحة المعلومات، تسريبات حرجة، حالة الامتثال، إنشاء تقرير، تقرير استخباراتي، تحديث البيانات)
+- [x] Smart search across ALL platform data (leaks, reports, channels, evidence, sellers, etc.)
+- [x] Auto-suggestions while typing (هل تقصد...، هل تبحث عن...)
+- [x] Typo correction and smart recommendations
+- [x] Context-aware hints (هل تريد مني مساعدتك في...)
+- [x] Chat with streaming responses and markdown rendering
+- [x] Capabilities: dashboard summary, leak search, compliance status, report generation, intelligence queries, data updates
+- [x] All scenarios and expected keywords handled
+- [x] Professional UI with Rasid branding
+- [x] All 120 tests passing (4 test files)
+- [x] Checkpoint saved

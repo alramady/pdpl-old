@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
+import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
 
 const severityColors: Record<string, string> = {
   critical: "text-red-400 bg-red-500/10 border-red-500/30",
@@ -37,6 +38,7 @@ export default function AlertChannels() {
   const [activeTab, setActiveTab] = useState<"contacts" | "rules" | "history">("contacts");
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
+  const [drillLeakId, setDrillLeakId] = useState<string | null>(null);
 
   const { data: contacts = [], refetch: refetchContacts } = trpc.alerts.contacts.list.useQuery();
   const { data: rules = [], refetch: refetchRules } = trpc.alerts.rules.list.useQuery();
@@ -511,14 +513,16 @@ export default function AlertChannels() {
               <p className="text-sm text-foreground">{selectedEntry.subject}</p>
             </div>
             {selectedEntry.leakId && (
-              <div className="bg-primary/5 rounded-xl p-3 border border-primary/10">
+              <div className="bg-primary/5 rounded-xl p-3 border border-primary/10 cursor-pointer hover:bg-primary/10 transition-colors" onClick={() => setDrillLeakId(selectedEntry.leakId)}>
                 <p className="text-xs text-muted-foreground">التسريب المرتبط</p>
                 <p className="text-sm font-mono text-primary mt-1">{selectedEntry.leakId}</p>
+                <p className="text-[10px] text-primary/60 mt-1">اضغط لعرض تفاصيل التسريب</p>
               </div>
             )}
           </div>
         )}
       </DetailModal>
+      <LeakDetailDrilldown leak={drillLeakId ? { leakId: drillLeakId } : null} open={!!drillLeakId} onClose={() => setDrillLeakId(null)} />
     </div>
   );
 }

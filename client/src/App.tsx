@@ -29,13 +29,40 @@ import KnowledgeGraph from "./pages/KnowledgeGraph";
 import PlatformLogin from "./pages/PlatformLogin";
 import UserManagement from "./pages/UserManagement";
 import VerifyDocument from "./pages/VerifyDocument";
+import { lazy, Suspense } from "react";
+
+// Lazy load heavy pages
+const SmartRasid = lazy(() => import("./pages/SmartRasid"));
+const LiveScan = lazy(() => import("./pages/LiveScan"));
+const PublicVerify = lazy(() => import("./pages/PublicVerify"));
+
+function LazyFallback() {
+  return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
 
 function Router() {
   return (
     <Switch>
       {/* Platform Login - outside DashboardLayout */}
       <Route path="/login" component={PlatformLogin} />
-      {/* Document Verification - outside DashboardLayout (public) */}
+      {/* Public Document Verification - outside DashboardLayout (no login required) */}
+      <Route path="/public/verify/:code">
+        {(params) => (
+          <Suspense fallback={<LazyFallback />}>
+            <PublicVerify />
+          </Suspense>
+        )}
+      </Route>
+      <Route path="/public/verify">
+        <Suspense fallback={<LazyFallback />}>
+          <PublicVerify />
+        </Suspense>
+      </Route>
+      {/* Internal verify routes (inside dashboard) handled below */}
       <Route path="/verify/:code" component={VerifyDocument} />
       <Route path="/verify" component={VerifyDocument} />
 
@@ -65,6 +92,18 @@ function Router() {
             <Route path="/feedback-accuracy" component={FeedbackAccuracy} />
             <Route path="/knowledge-graph" component={KnowledgeGraph} />
             <Route path="/user-management" component={UserManagement} />
+            <Route path="/smart-rasid">
+              <Suspense fallback={<LazyFallback />}>
+                <SmartRasid />
+              </Suspense>
+            </Route>
+            <Route path="/live-scan">
+              <Suspense fallback={<LazyFallback />}>
+                <LiveScan />
+              </Suspense>
+            </Route>
+            <Route path="/verify/:code" component={VerifyDocument} />
+            <Route path="/verify" component={VerifyDocument} />
             <Route path="/404" component={NotFound} />
             <Route component={NotFound} />
           </Switch>

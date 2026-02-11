@@ -1,10 +1,9 @@
 /**
  * DashboardLayout — Rasid Platform
- * RTL-first sidebar layout with Rasid branding
- * Collapsible sidebar with icon+label navigation
- * Integrated auth, role-based nav, user profile, theme toggle, real-time notifications
+ * RTL-first sidebar with collapsible navigation groups
+ * Royal blue dark theme matching rasid.vip
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -18,6 +17,7 @@ import {
   Settings,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Menu,
   X,
   Search,
@@ -41,6 +41,10 @@ import {
   Network,
   Sun,
   Moon,
+  Bot,
+  CheckCircle2,
+  Scan,
+  FileCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -49,7 +53,6 @@ import { getLoginUrl } from "@/const";
 import NotificationBell from "./NotificationBell";
 import { useTheme } from "@/contexts/ThemeContext";
 
-// Rasid calligraphy logo with gold outline
 const RASID_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/ziWPuMClYqvYmkJG.png";
 
 interface NavItem {
@@ -61,29 +64,83 @@ interface NavItem {
   minRole?: string;
 }
 
-const navItems: NavItem[] = [
-  { label: "لوحة القيادة", labelEn: "Dashboard", icon: LayoutDashboard, path: "/" },
-  { label: "رصد تليجرام", labelEn: "Telegram", icon: Send, path: "/telegram" },
-  { label: "الدارك ويب", labelEn: "Dark Web", icon: Globe, path: "/darkweb" },
-  { label: "مواقع اللصق", labelEn: "Paste Sites", icon: FileText, path: "/paste-sites" },
-  { label: "مصنّف PII", labelEn: "PII Classifier", icon: ScanSearch, path: "/pii-classifier" },
-  { label: "التسريبات", labelEn: "Leaks", icon: ShieldAlert, path: "/leaks" },
-  { label: "التقارير", labelEn: "Reports", icon: BarChart3, path: "/reports" },
-  { label: "مهام الرصد", labelEn: "Monitoring Jobs", icon: Radio, path: "/monitoring-jobs" },
-  { label: "خريطة التهديدات", labelEn: "Threat Map", icon: Map, path: "/threat-map" },
-  { label: "قنوات التنبيه", labelEn: "Alert Channels", icon: Bell, path: "/alert-channels" },
-  { label: "التقارير المجدولة", labelEn: "Scheduled Reports", icon: CalendarClock, path: "/scheduled-reports" },
-  { label: "مفاتيح API", labelEn: "API Keys", icon: KeyRound, path: "/api-keys", requiresAuth: true, minRole: "admin" },
-  { label: "الاحتفاظ بالبيانات", labelEn: "Data Retention", icon: Archive, path: "/data-retention", requiresAuth: true, minRole: "admin" },
-  { label: "قواعد صيد التهديدات", labelEn: "Threat Rules", icon: Crosshair, path: "/threat-rules" },
-  { label: "سلسلة الأدلة", labelEn: "Evidence Chain", icon: Link2, path: "/evidence-chain" },
-  { label: "ملفات البائعين", labelEn: "Seller Profiles", icon: UserX, path: "/seller-profiles" },
-  { label: "أدوات OSINT", labelEn: "OSINT Tools", icon: Radar, path: "/osint-tools" },
-  { label: "مقاييس الدقة", labelEn: "Accuracy Metrics", icon: Brain, path: "/feedback-accuracy" },
-  { label: "رسم المعرفة", labelEn: "Knowledge Graph", icon: Network, path: "/knowledge-graph" },
-  { label: "سجل المراجعة", labelEn: "Audit Log", icon: ScrollText, path: "/audit-log", requiresAuth: true, minRole: "admin" },
-  { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/user-management", requiresAuth: true, minRole: "admin" },
+interface NavGroup {
+  id: string;
+  label: string;
+  labelEn: string;
+  icon: React.ElementType;
+  items: NavItem[];
+}
+
+const navGroups: NavGroup[] = [
+  {
+    id: "command",
+    label: "قيادي",
+    labelEn: "Command",
+    icon: LayoutDashboard,
+    items: [
+      { label: "لوحة القيادة", labelEn: "Dashboard", icon: LayoutDashboard, path: "/" },
+      { label: "التقارير", labelEn: "Reports", icon: BarChart3, path: "/reports" },
+      { label: "خريطة التهديدات", labelEn: "Threat Map", icon: Map, path: "/threat-map" },
+      { label: "راصد الذكي", labelEn: "Smart Rasid", icon: Bot, path: "/smart-rasid" },
+    ],
+  },
+  {
+    id: "operational",
+    label: "تنفيذي",
+    labelEn: "Operational",
+    icon: ShieldAlert,
+    items: [
+      { label: "التسريبات", labelEn: "Leaks", icon: ShieldAlert, path: "/leaks" },
+      { label: "رصد تليجرام", labelEn: "Telegram", icon: Send, path: "/telegram" },
+      { label: "الدارك ويب", labelEn: "Dark Web", icon: Globe, path: "/darkweb" },
+      { label: "مواقع اللصق", labelEn: "Paste Sites", icon: FileText, path: "/paste-sites" },
+      { label: "ملفات البائعين", labelEn: "Seller Profiles", icon: UserX, path: "/seller-profiles" },
+      { label: "الرصد المباشر", labelEn: "Live Scan", icon: Scan, path: "/live-scan" },
+    ],
+  },
+  {
+    id: "advanced",
+    label: "متقدم",
+    labelEn: "Advanced",
+    icon: Brain,
+    items: [
+      { label: "مصنّف PII", labelEn: "PII Classifier", icon: ScanSearch, path: "/pii-classifier" },
+      { label: "سلسلة الأدلة", labelEn: "Evidence Chain", icon: Link2, path: "/evidence-chain" },
+      { label: "قواعد صيد التهديدات", labelEn: "Threat Rules", icon: Crosshair, path: "/threat-rules" },
+      { label: "أدوات OSINT", labelEn: "OSINT Tools", icon: Radar, path: "/osint-tools" },
+      { label: "رسم المعرفة", labelEn: "Knowledge Graph", icon: Network, path: "/knowledge-graph" },
+      { label: "مقاييس الدقة", labelEn: "Accuracy Metrics", icon: Brain, path: "/feedback-accuracy" },
+    ],
+  },
+  {
+    id: "management",
+    label: "إداري",
+    labelEn: "Management",
+    icon: Settings,
+    items: [
+      { label: "مهام الرصد", labelEn: "Monitoring Jobs", icon: Radio, path: "/monitoring-jobs" },
+      { label: "قنوات التنبيه", labelEn: "Alert Channels", icon: Bell, path: "/alert-channels" },
+      { label: "التقارير المجدولة", labelEn: "Scheduled Reports", icon: CalendarClock, path: "/scheduled-reports" },
+      { label: "التحقق من التوثيق", labelEn: "Verify Document", icon: FileCheck, path: "/verify" },
+    ],
+  },
+  {
+    id: "admin",
+    label: "النظام",
+    labelEn: "System",
+    icon: Shield,
+    items: [
+      { label: "مفاتيح API", labelEn: "API Keys", icon: KeyRound, path: "/api-keys", requiresAuth: true, minRole: "admin" },
+      { label: "الاحتفاظ بالبيانات", labelEn: "Data Retention", icon: Archive, path: "/data-retention", requiresAuth: true, minRole: "admin" },
+      { label: "سجل المراجعة", labelEn: "Audit Log", icon: ScrollText, path: "/audit-log", requiresAuth: true, minRole: "admin" },
+      { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/user-management", requiresAuth: true, minRole: "admin" },
+    ],
+  },
 ];
+
+// Flatten for lookup
+const allNavItems = navGroups.flatMap((g) => g.items);
 
 const roleLabels: Record<string, string> = {
   executive: "تنفيذي",
@@ -99,15 +156,38 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, isAuthenticated, loading, logout, isAdmin, ndmoRole } = useNdmoAuth();
   const { theme, toggleTheme, switchable } = useTheme();
 
-  const currentPage = navItems.find((item) => item.path === location);
+  // Track which groups are expanded
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    navGroups.forEach((g) => {
+      initial[g.id] = true; // all expanded by default
+    });
+    return initial;
+  });
+
+  const currentPage = allNavItems.find((item) => item.path === location);
+
+  const toggleGroup = (groupId: string) => {
+    setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
 
   // Filter nav items based on role
-  const visibleNavItems = navItems.filter((item) => {
+  const isItemVisible = (item: NavItem) => {
     if (!item.requiresAuth) return true;
     if (!isAuthenticated) return false;
     if (item.minRole === "admin" && !isAdmin) return false;
     return true;
-  });
+  };
+
+  // Check if a group has any visible items
+  const isGroupVisible = (group: NavGroup) => {
+    return group.items.some(isItemVisible);
+  };
+
+  // Check if current page is in a group
+  const isGroupActive = (group: NavGroup) => {
+    return group.items.some((item) => item.path === location);
+  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
@@ -131,18 +211,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           bg-sidebar border-l border-sidebar-border
           transition-all duration-300 ease-in-out
           flex flex-col
-          ${collapsed ? "w-[72px]" : "w-[260px]"}
+          ${collapsed ? "w-[72px]" : "w-[270px]"}
           ${mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
           right-0 lg:right-auto
         `}
       >
-        {/* Logo area with Rasid branding */}
+        {/* Logo area */}
         <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
           <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
             <img
               src={RASID_LOGO}
               alt="راصد"
               className="w-9 h-9 object-contain"
+              style={{ animation: "pulse-glow 3s ease-in-out infinite" }}
             />
           </div>
           {!collapsed && (
@@ -158,42 +239,95 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
-          {visibleNavItems.map((item) => {
-            const isActive = location === item.path;
-            const Icon = item.icon;
+        {/* Navigation with groups */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2 space-y-1">
+          {navGroups.filter(isGroupVisible).map((group) => {
+            const isExpanded = expandedGroups[group.id];
+            const isActive = isGroupActive(group);
+            const GroupIcon = group.icon;
+            const visibleItems = group.items.filter(isItemVisible);
+
             return (
-              <Link key={item.path} href={item.path}>
-                <motion.div
-                  whileHover={{ x: -2 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer
-                    transition-colors duration-200 group relative
-                    ${isActive
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
-                    }
-                  `}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeNav"
-                      className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-6 bg-primary rounded-l-full"
-                    />
-                  )}
-                  <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  {!collapsed && (
-                    <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
-                  )}
-                  {collapsed && (
-                    <div className="absolute right-14 bg-popover text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
-                      {item.label}
+              <div key={group.id} className="mb-1">
+                {/* Group header */}
+                {!collapsed ? (
+                  <button
+                    onClick={() => toggleGroup(group.id)}
+                    className={`
+                      w-full flex items-center justify-between px-3 py-2 rounded-lg
+                      text-xs font-semibold uppercase tracking-wider
+                      transition-colors duration-200
+                      ${isActive
+                        ? "text-primary bg-primary/5"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-2">
+                      <GroupIcon className="w-3.5 h-3.5" />
+                      <span>{group.label}</span>
+                      <span className="text-[9px] opacity-60 font-normal normal-case">{group.labelEn}</span>
                     </div>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ${isExpanded ? "" : "-rotate-90"}`}
+                    />
+                  </button>
+                ) : (
+                  <div className="h-px bg-sidebar-border mx-2 my-2" />
+                )}
+
+                {/* Group items */}
+                <AnimatePresence initial={false}>
+                  {(isExpanded || collapsed) && (
+                    <motion.div
+                      initial={collapsed ? false : { height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={collapsed ? undefined : { height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className={`space-y-0.5 ${collapsed ? "" : "mt-1 mr-2"}`}>
+                        {visibleItems.map((item) => {
+                          const isItemActive = location === item.path;
+                          const Icon = item.icon;
+                          return (
+                            <Link key={item.path} href={item.path}>
+                              <motion.div
+                                whileHover={{ x: -2 }}
+                                whileTap={{ scale: 0.98 }}
+                                className={`
+                                  flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
+                                  transition-colors duration-200 group relative
+                                  ${isItemActive
+                                    ? "bg-primary/15 text-primary"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                  }
+                                `}
+                              >
+                                {isItemActive && (
+                                  <motion.div
+                                    layoutId="activeNav"
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-l-full"
+                                  />
+                                )}
+                                <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isItemActive ? "text-primary" : ""}`} />
+                                {!collapsed && (
+                                  <span className="text-[13px] font-medium whitespace-nowrap">{item.label}</span>
+                                )}
+                                {collapsed && (
+                                  <div className="absolute right-14 bg-popover text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                                    {item.label}
+                                  </div>
+                                )}
+                              </motion.div>
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
                   )}
-                </motion.div>
-              </Link>
+                </AnimatePresence>
+              </div>
             );
           })}
         </nav>
@@ -302,15 +436,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Button>
             )}
 
-            {/* Search */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-foreground"
-              onClick={() => toast("البحث المتقدم قريباً", { description: "Advanced search coming soon" })}
-            >
-              <Search className="w-4 h-4" />
-            </Button>
+            {/* Search — link to Smart Rasid */}
+            <Link href="/smart-rasid">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+                title="البحث الذكي"
+              >
+                <Search className="w-4 h-4" />
+              </Button>
+            </Link>
 
             {/* Real-time Notifications */}
             <NotificationBell userId={user?.id} />
