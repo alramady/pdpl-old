@@ -1,7 +1,6 @@
 /**
- * DashboardLayout — Rasid Platform
- * RTL-first sidebar with collapsible navigation groups
- * Royal blue dark theme matching rasid.vip
+ * DashboardLayout — Ultra Premium Glassmorphism
+ * RTL-first sidebar with frosted glass effects and purple accents
  */
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
@@ -46,6 +45,7 @@ import {
   Scan,
   FileCheck,
   FileBarChart,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -63,6 +63,7 @@ interface NavItem {
   path: string;
   requiresAuth?: boolean;
   minRole?: string;
+  badge?: number;
 }
 
 interface NavGroup {
@@ -141,7 +142,6 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-// Flatten for lookup
 const allNavItems = navGroups.flatMap((g) => g.items);
 
 const roleLabels: Record<string, string> = {
@@ -158,11 +158,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, isAuthenticated, loading, logout, isAdmin, ndmoRole } = useNdmoAuth();
   const { theme, toggleTheme, switchable } = useTheme();
 
-  // Track which groups are expanded
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     navGroups.forEach((g) => {
-      initial[g.id] = true; // all expanded by default
+      initial[g.id] = true;
     });
     return initial;
   });
@@ -173,7 +172,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
-  // Filter nav items based on role
   const isItemVisible = (item: NavItem) => {
     if (!item.requiresAuth) return true;
     if (!isAuthenticated) return false;
@@ -181,18 +179,41 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return true;
   };
 
-  // Check if a group has any visible items
   const isGroupVisible = (group: NavGroup) => {
     return group.items.some(isItemVisible);
   };
 
-  // Check if current page is in a group
   const isGroupActive = (group: NavGroup) => {
     return group.items.some((item) => item.path === location);
   };
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
+      {/* ═══ AURORA BACKGROUND (dark mode only) ═══ */}
+      <div className="fixed inset-0 pointer-events-none z-0 dark:block hidden">
+        {/* Top-right purple aurora */}
+        <div
+          className="absolute top-0 right-0 w-[60%] h-[50%] opacity-30"
+          style={{
+            background: "radial-gradient(ellipse at 70% 20%, oklch(0.45 0.2 285 / 40%), transparent 70%)",
+          }}
+        />
+        {/* Bottom-left blue aurora */}
+        <div
+          className="absolute bottom-0 left-0 w-[50%] h-[40%] opacity-20"
+          style={{
+            background: "radial-gradient(ellipse at 30% 80%, oklch(0.4 0.15 260 / 30%), transparent 60%)",
+          }}
+        />
+        {/* Center violet glow */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[60%] opacity-10"
+          style={{
+            background: "radial-gradient(ellipse at center, oklch(0.5 0.18 290 / 25%), transparent 50%)",
+          }}
+        />
+      </div>
+
       {/* Mobile overlay */}
       <AnimatePresence>
         {mobileOpen && (
@@ -206,26 +227,28 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </AnimatePresence>
 
-      {/* Sidebar */}
+      {/* ═══ SIDEBAR — Frosted Glass ═══ */}
       <aside
         className={`
           fixed lg:relative z-50 h-full
-          bg-sidebar border-l border-sidebar-border
           transition-all duration-300 ease-in-out
           flex flex-col
           ${collapsed ? "w-[72px]" : "w-[270px]"}
           ${mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
           right-0 lg:right-auto
+          bg-sidebar dark:bg-[oklch(0.11_0.04_278_/_80%)]
+          dark:backdrop-blur-2xl dark:border-l dark:border-[oklch(0.35_0.1_285_/_20%)]
+          border-l border-sidebar-border
         `}
       >
         {/* Logo area */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border dark:border-[oklch(0.3_0.08_285_/_25%)]">
+          <div className="relative w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+            <div className="absolute inset-0 rounded-xl dark:animate-glow-pulse" />
             <img
               src={RASID_LOGO}
               alt="راصد"
-              className="w-9 h-9 object-contain"
-              style={{ animation: "pulse-glow 3s ease-in-out infinite" }}
+              className="w-9 h-9 object-contain relative z-10"
             />
           </div>
           {!collapsed && (
@@ -258,10 +281,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     className={`
                       w-full flex items-center justify-between px-3 py-2 rounded-lg
                       text-xs font-semibold uppercase tracking-wider
-                      transition-colors duration-200
+                      transition-all duration-200
                       ${isActive
-                        ? "text-primary bg-primary/5"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30"
+                        ? "text-primary dark:text-[oklch(0.75_0.2_285)] bg-primary/5 dark:bg-[oklch(0.55_0.25_285_/_8%)]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30 dark:hover:bg-[oklch(0.3_0.08_285_/_15%)]"
                       }
                     `}
                   >
@@ -275,7 +298,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     />
                   </button>
                 ) : (
-                  <div className="h-px bg-sidebar-border mx-2 my-2" />
+                  <div className="h-px bg-sidebar-border dark:bg-[oklch(0.3_0.08_285_/_20%)] mx-2 my-2" />
                 )}
 
                 {/* Group items */}
@@ -299,25 +322,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 whileTap={{ scale: 0.98 }}
                                 className={`
                                   flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
-                                  transition-colors duration-200 group relative
+                                  transition-all duration-200 group relative
                                   ${isItemActive
-                                    ? "bg-primary/15 text-primary"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50"
+                                    ? "dark:bg-[oklch(0.55_0.25_285_/_12%)] dark:border dark:border-[oklch(0.55_0.2_285_/_25%)] bg-primary/15 text-primary dark:text-[oklch(0.8_0.15_285)]"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 dark:hover:bg-[oklch(0.25_0.06_285_/_30%)]"
                                   }
                                 `}
                               >
                                 {isItemActive && (
                                   <motion.div
                                     layoutId="activeNav"
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary rounded-l-full"
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary dark:bg-[oklch(0.65_0.22_285)] rounded-l-full dark:shadow-[0_0_8px_oklch(0.55_0.25_285_/_40%)]"
                                   />
                                 )}
-                                <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isItemActive ? "text-primary" : ""}`} />
+                                <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isItemActive ? "text-primary dark:text-[oklch(0.75_0.2_285)]" : ""}`} />
                                 {!collapsed && (
                                   <span className="text-[13px] font-medium whitespace-nowrap">{item.label}</span>
                                 )}
                                 {collapsed && (
-                                  <div className="absolute right-14 bg-popover text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50">
+                                  <div className="absolute right-14 bg-popover dark:bg-[oklch(0.18_0.05_278_/_90%)] dark:backdrop-blur-xl text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 dark:border dark:border-[oklch(0.35_0.1_285_/_20%)]">
                                     {item.label}
                                   </div>
                                 )}
@@ -335,15 +358,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User profile / login at bottom */}
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border dark:border-[oklch(0.3_0.08_285_/_25%)]">
           {loading ? (
             <div className="flex items-center justify-center py-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             </div>
           ) : isAuthenticated && user ? (
             <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
-                <span className="text-xs font-bold text-primary">
+              <div className="w-8 h-8 rounded-full bg-primary/20 dark:bg-[oklch(0.55_0.25_285_/_20%)] flex items-center justify-center flex-shrink-0 dark:border dark:border-[oklch(0.55_0.2_285_/_30%)]">
+                <span className="text-xs font-bold text-primary dark:text-[oklch(0.75_0.2_285)]">
                   {user.name?.charAt(0) || "U"}
                 </span>
               </div>
@@ -375,7 +398,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 text-xs w-full ${collapsed ? "px-0 justify-center" : ""}`}
+                className={`gap-2 text-xs w-full dark:border-[oklch(0.4_0.1_285_/_30%)] dark:hover:bg-[oklch(0.55_0.25_285_/_15%)] ${collapsed ? "px-0 justify-center" : ""}`}
               >
                 <LogIn className="w-3.5 h-3.5" />
                 {!collapsed && "تسجيل الدخول"}
@@ -385,7 +408,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Collapse toggle */}
-        <div className="p-2 border-t border-sidebar-border hidden lg:block">
+        <div className="p-2 border-t border-sidebar-border dark:border-[oklch(0.3_0.08_285_/_25%)] hidden lg:block">
           <Button
             variant="ghost"
             size="sm"
@@ -405,10 +428,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </button>
       </aside>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Top header */}
-        <header className="h-16 border-b border-border flex items-center justify-between px-4 lg:px-6 bg-background/80 backdrop-blur-md sticky top-0 z-30">
+      {/* ═══ MAIN CONTENT AREA ═══ */}
+      <div className="flex-1 flex flex-col overflow-hidden relative z-10">
+        {/* Top header — frosted glass */}
+        <header className="h-16 border-b border-border dark:border-[oklch(0.28_0.06_280_/_35%)] flex items-center justify-between px-4 lg:px-6 bg-background/80 dark:bg-[oklch(0.13_0.04_275_/_70%)] backdrop-blur-xl sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden text-muted-foreground hover:text-foreground"
@@ -430,7 +453,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground dark:hover:bg-[oklch(0.25_0.06_285_/_30%)]"
                 onClick={toggleTheme}
                 title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
               >
@@ -443,7 +466,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground dark:hover:bg-[oklch(0.25_0.06_285_/_30%)]"
                 title="البحث الذكي"
               >
                 <Search className="w-4 h-4" />
@@ -453,10 +476,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Real-time Notifications */}
             <NotificationBell userId={user?.id} />
 
-            {/* Status indicator */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-glow" />
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">نشط</span>
+            {/* Status indicator — premium glow */}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 dark:bg-[oklch(0.72_0.17_160_/_8%)] dark:border-[oklch(0.72_0.17_160_/_25%)]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-[oklch(0.72_0.17_160)] animate-pulse-glow dark:shadow-[0_0_6px_oklch(0.72_0.17_160_/_50%)]" />
+              <span className="text-xs text-emerald-600 dark:text-[oklch(0.72_0.17_160)] font-medium">نشط</span>
             </div>
           </div>
         </header>

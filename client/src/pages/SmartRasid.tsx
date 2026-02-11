@@ -14,47 +14,92 @@ import {
   Database,
   RefreshCw,
   Sparkles,
-  ChevronLeft,
   Clock,
   Zap,
   Globe,
   Eye,
   TrendingUp,
   Loader2,
-  X,
   MessageSquare,
   Plus,
   History,
+  Bot,
+  Network,
+  Users,
+  MapPin,
+  Crosshair,
+  Link2,
+  Mic,
+  Paperclip,
+  ChevronDown,
+  Wand2,
+  Activity,
+  BookOpen,
+  Layers,
+  Terminal,
+  Cpu,
+  Copy,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
-  searchResults?: any;
+  toolsUsed?: string[];
 }
 
 const quickCommands = [
-  { label: "ملخص لوحة المعلومات", icon: BarChart3, color: "text-cyan-400", query: "ملخص لوحة المعلومات" },
-  { label: "تسريبات حرجة", icon: AlertTriangle, color: "text-red-400", query: "ابحث عن تسريبات حرجة" },
-  { label: "أنشئ تقرير أسبوعي", icon: FileText, color: "text-emerald-400", query: "أنشئ تقرير أسبوعي" },
-  { label: "حالة الامتثال", icon: Shield, color: "text-amber-400", query: "حالة الامتثال" },
-  { label: "تقرير استخباراتي", icon: Eye, color: "text-purple-400", query: "أنشئ تقرير استخباراتي شامل" },
-  { label: "تحديث البيانات", icon: RefreshCw, color: "text-blue-400", query: "حدث البيانات" },
+  { label: "ملخص لوحة المعلومات", icon: BarChart3, gradient: "from-cyan-500 to-blue-600", query: "أعطني ملخص شامل للوحة المعلومات مع تحليل" },
+  { label: "تسريبات حرجة", icon: AlertTriangle, gradient: "from-red-500 to-rose-600", query: "ما هي التسريبات الحرجة الحالية؟ أعطني تفاصيل كل واحد" },
+  { label: "تحليل شامل", icon: TrendingUp, gradient: "from-emerald-500 to-teal-600", query: "أجرِ تحليل شامل للاتجاهات: توزيع الخطورة والمصادر والقطاعات" },
+  { label: "حالة الامتثال", icon: Shield, gradient: "from-amber-500 to-orange-600", query: "ما حالة الامتثال لنظام PDPL؟ وما التوصيات؟" },
+  { label: "البائعون المرصودون", icon: Users, gradient: "from-purple-500 to-violet-600", query: "أعطني تقرير عن البائعين المرصودين ومستوى خطرهم" },
+  { label: "خريطة التهديدات", icon: MapPin, gradient: "from-indigo-500 to-blue-600", query: "اعرض خريطة التهديدات الجغرافية والتوزيع حسب المناطق" },
+  { label: "الأدلة الرقمية", icon: Link2, gradient: "from-teal-500 to-cyan-600", query: "ما حالة سلسلة الأدلة الرقمية؟ كم دليل محفوظ؟" },
+  { label: "قواعد الكشف", icon: Crosshair, gradient: "from-pink-500 to-rose-600", query: "اعرض قواعد صيد التهديدات النشطة وأداءها" },
 ];
 
 const capabilities = [
-  { icon: BarChart3, label: "عرض ملخص لوحة المعلومات", color: "text-cyan-400" },
-  { icon: Search, label: "البحث في التسريبات", color: "text-emerald-400" },
-  { icon: Shield, label: "فحص سياسات الخصوصية", color: "text-amber-400" },
-  { icon: Globe, label: "فحص شهادات SSL/TLS", color: "text-blue-400" },
-  { icon: Database, label: "عرض حالة الامتثال", color: "text-purple-400" },
-  { icon: Zap, label: "استعلامات استخباراتية", color: "text-orange-400" },
-  { icon: FileText, label: "إنشاء تقارير PDF", color: "text-indigo-400" },
-  { icon: RefreshCw, label: "تحديث بيانات المنصة", color: "text-teal-400" },
+  { icon: BarChart3, label: "تحليل لوحة القيادة", desc: "إحصائيات وتقارير شاملة", gradient: "from-cyan-500/20 to-blue-500/20" },
+  { icon: Search, label: "البحث في التسريبات", desc: "بحث متقدم بكل الفلاتر", gradient: "from-emerald-500/20 to-teal-500/20" },
+  { icon: Shield, label: "الامتثال والسياسات", desc: "PDPL وأفضل الممارسات", gradient: "from-amber-500/20 to-orange-500/20" },
+  { icon: Globe, label: "الدارك ويب واللصق", desc: "رصد المصادر المظلمة", gradient: "from-blue-500/20 to-indigo-500/20" },
+  { icon: Users, label: "البائعون والتهديدات", desc: "ملفات تعريف المهددين", gradient: "from-purple-500/20 to-violet-500/20" },
+  { icon: Network, label: "رسم المعرفة", desc: "شبكة العلاقات والروابط", gradient: "from-pink-500/20 to-rose-500/20" },
+  { icon: FileText, label: "التقارير والتوثيق", desc: "إنشاء ومراجعة التقارير", gradient: "from-indigo-500/20 to-blue-500/20" },
+  { icon: Activity, label: "المراقبة والتنبيهات", desc: "حالة مهام الرصد", gradient: "from-teal-500/20 to-cyan-500/20" },
+  { icon: Crosshair, label: "صيد التهديدات", desc: "قواعد YARA-like", gradient: "from-red-500/20 to-rose-500/20" },
+  { icon: Link2, label: "سلسلة الأدلة", desc: "توثيق وحفظ الأدلة", gradient: "from-orange-500/20 to-amber-500/20" },
+  { icon: BookOpen, label: "الدليل الإرشادي", desc: "شرح المفاهيم والإجراءات", gradient: "from-violet-500/20 to-purple-500/20" },
+  { icon: Database, label: "صحة النظام", desc: "حالة المنصة والبنية", gradient: "from-slate-500/20 to-gray-500/20" },
 ];
+
+// Tool name to Arabic label mapping
+const toolLabels: Record<string, string> = {
+  query_leaks: "استعلام التسريبات",
+  get_leak_details: "تفاصيل التسريب",
+  get_dashboard_stats: "إحصائيات لوحة القيادة",
+  get_channels_info: "معلومات القنوات",
+  get_monitoring_status: "حالة المراقبة",
+  get_alert_info: "معلومات التنبيهات",
+  get_sellers_info: "البائعون المرصودون",
+  get_evidence_info: "الأدلة الرقمية",
+  get_threat_rules_info: "قواعد التهديدات",
+  get_darkweb_pastes: "الدارك ويب واللصق",
+  get_feedback_accuracy: "مقاييس الدقة",
+  get_knowledge_graph: "رسم المعرفة",
+  get_osint_info: "استخبارات OSINT",
+  get_reports_info: "التقارير",
+  get_threat_map: "خريطة التهديدات",
+  get_audit_log: "سجل المراجعة",
+  get_system_health: "صحة النظام",
+  analyze_trends: "تحليل الاتجاهات",
+  get_platform_guide: "الدليل الإرشادي",
+};
 
 export default function SmartRasid() {
   const { user } = useAuth();
@@ -64,9 +109,9 @@ export default function SmartRasid() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [drillLeakId, setDrillLeakId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const chatMutation = trpc.smartRasid.chat.useMutation();
@@ -76,6 +121,14 @@ export default function SmartRasid() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.style.height = "auto";
+      inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 120) + "px";
+    }
+  }, [inputValue]);
+
   // Debounced suggestions
   const fetchSuggestions = useCallback(async (partial: string) => {
     if (partial.length < 2) {
@@ -84,7 +137,6 @@ export default function SmartRasid() {
       return;
     }
     try {
-      // Use a simple fetch instead of trpc for suggestions to avoid re-render loops
       const res = await fetch(`/api/trpc/smartRasid.suggestions?input=${encodeURIComponent(JSON.stringify({ partial }))}`);
       const data = await res.json();
       const result = data?.result?.data;
@@ -132,7 +184,7 @@ export default function SmartRasid() {
     setIsLoading(true);
 
     try {
-      const history = messages.slice(-10).map(m => ({
+      const history = messages.slice(-16).map(m => ({
         role: m.role,
         content: m.content,
       }));
@@ -147,6 +199,7 @@ export default function SmartRasid() {
         role: "assistant",
         content: (typeof result.response === 'string' ? result.response : '') as string,
         timestamp: new Date(),
+        toolsUsed: (result as any).toolsUsed,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
@@ -170,6 +223,13 @@ export default function SmartRasid() {
     inputRef.current?.focus();
   };
 
+  const copyMessage = (id: string, content: string) => {
+    navigator.clipboard.writeText(content);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+    toast.success("تم النسخ");
+  };
+
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("ar-SA", { hour: "2-digit", minute: "2-digit" });
   };
@@ -181,121 +241,189 @@ export default function SmartRasid() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-[#0a1628] to-[#0d1f3c]" dir="rtl">
-      {/* Header */}
-      <div className="flex-shrink-0 border-b border-white/5 bg-[#0d1a30]/80 backdrop-blur-xl">
-        <div className="flex items-center justify-between px-6 py-3">
+    <div className="h-full flex flex-col" dir="rtl">
+      {/* ═══ HEADER — Frosted Glass ═══ */}
+      <div className="flex-shrink-0 border-b border-white/[0.06] dark:bg-[oklch(0.12_0.04_278_/_60%)] backdrop-blur-2xl">
+        <div className="flex items-center justify-between px-5 py-3">
           <div className="flex items-center gap-3">
+            {/* AI Avatar with glow */}
             <div className="relative">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-                <Brain className="w-5 h-5 text-white" />
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/25 dark:shadow-[0_4px_20px_oklch(0.55_0.25_285_/_30%)]">
+                <Brain className="w-5.5 h-5.5 text-white" />
               </div>
-              <div className="absolute -bottom-0.5 -left-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-[#0d1a30]" />
+              <div className="absolute -bottom-0.5 -left-0.5 w-3.5 h-3.5 bg-emerald-400 rounded-full border-[2.5px] border-[oklch(0.12_0.04_278)] dark:shadow-[0_0_6px_oklch(0.72_0.17_160_/_50%)]" />
             </div>
             <div>
-              <h1 className="text-base font-bold text-white flex items-center gap-2">
+              <h1 className="text-[15px] font-bold text-foreground flex items-center gap-2">
                 راصد الذكي
-                <span className="text-[10px] font-normal bg-cyan-500/20 text-cyan-300 px-2 py-0.5 rounded-full">RASID AI</span>
+                <span className="text-[10px] font-medium bg-gradient-to-r from-violet-500/20 to-purple-500/20 text-violet-300 px-2.5 py-0.5 rounded-full border border-violet-500/20">
+                  v5.5
+                </span>
               </h1>
-              <p className="text-[11px] text-slate-400">المساعد الذكي لمنصة راصد — تحليل أمني متقدم</p>
+              <p className="text-[11px] text-muted-foreground">
+                المساعد الذكي الشامل — مطّلع على كل بيانات ووظائف المنصة
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors"
-              title="سجل المحادثات"
-            >
-              <History className="w-4 h-4" />
-            </button>
-            <button
+          <div className="flex items-center gap-1.5">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={startNewChat}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white text-xs transition-colors"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] hover:border-violet-500/30 text-muted-foreground hover:text-foreground text-xs transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
-              محادثة جديدة
-            </button>
+              <span className="hidden sm:inline">محادثة جديدة</span>
+            </motion.button>
           </div>
         </div>
 
-        {/* Quick Command Bar */}
-        <div className="flex items-center gap-2 px-6 pb-3 overflow-x-auto scrollbar-hide">
-          <span className="text-[10px] text-slate-500 whitespace-nowrap">أوامر سريعة</span>
+        {/* Quick Commands — Scrollable chips */}
+        <div className="flex items-center gap-2 px-5 pb-3 overflow-x-auto scrollbar-hide">
+          <span className="text-[10px] text-muted-foreground/60 whitespace-nowrap flex items-center gap-1">
+            <Zap className="w-3 h-3" />
+            أوامر سريعة
+          </span>
           {quickCommands.map((cmd, i) => (
-            <button
+            <motion.button
               key={i}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.98 }}
               onClick={() => sendMessage(cmd.query)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-500/30 text-xs text-slate-300 hover:text-white whitespace-nowrap transition-all"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-violet-500/25 text-xs text-muted-foreground hover:text-foreground whitespace-nowrap transition-all"
             >
-              <cmd.icon className={`w-3 h-3 ${cmd.color}`} />
+              <div className={`w-4 h-4 rounded-md bg-gradient-to-br ${cmd.gradient} flex items-center justify-center`}>
+                <cmd.icon className="w-2.5 h-2.5 text-white" />
+              </div>
               {cmd.label}
-            </button>
+            </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Chat Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+      {/* ═══ CHAT AREA ═══ */}
+      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
         {messages.length === 0 ? (
-          /* Welcome Screen */
-          <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto">
-            <div className="relative mb-6">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-2xl shadow-cyan-500/30 animate-pulse">
+          /* ═══ WELCOME SCREEN ═══ */
+          <div className="flex flex-col items-center justify-center h-full max-w-3xl mx-auto">
+            {/* AI Brain Icon with orbital animation */}
+            <div className="relative mb-8">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-[-12px] rounded-3xl border border-violet-500/10 border-dashed"
+              />
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+                className="absolute inset-[-24px] rounded-3xl border border-purple-500/5 border-dashed"
+              />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-2xl shadow-violet-500/30 dark:shadow-[0_8px_40px_oklch(0.55_0.25_285_/_35%)]">
                 <Brain className="w-10 h-10 text-white" />
               </div>
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-emerald-400 rounded-full flex items-center justify-center border-2 border-[#0d1a30]">
-                <Sparkles className="w-3 h-3 text-white" />
-              </div>
+              <motion.div
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="absolute -top-2 -right-2 w-7 h-7 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full flex items-center justify-center border-[3px] border-[oklch(0.12_0.04_278)] shadow-lg shadow-emerald-500/30"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </motion.div>
             </div>
 
-            <h2 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-              🤖 مرحباً بك في <span className="text-cyan-400">راصد الذكي</span>
-            </h2>
-            <p className="text-sm text-slate-400 mb-6 text-center">
-              المساعد الذكي لمنصة راصد الوطنية لرصد تسريبات البيانات الشخصية
-            </p>
+            <motion.h2
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-2xl font-bold text-foreground mb-2"
+            >
+              مرحباً بك في <span className="bg-gradient-to-r from-violet-400 to-purple-400 bg-clip-text text-transparent">راصد الذكي</span>
+            </motion.h2>
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="text-sm text-muted-foreground mb-8 text-center max-w-lg"
+            >
+              المساعد الذكي الشامل لمنصة راصد — مطّلع على جميع البيانات والوظائف، قادر على التحليل والإجابة والتنفيذ
+            </motion.p>
 
-            <div className="w-full bg-[#0d1f3c]/80 rounded-2xl border border-white/5 p-5 mb-6">
-              <p className="text-sm text-slate-300 mb-4 text-center">يمكنني مساعدتك في:</p>
-              <div className="grid grid-cols-2 gap-2">
+            {/* Capabilities Grid — Glass Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="w-full rounded-2xl border border-white/[0.06] bg-white/[0.02] dark:bg-[oklch(0.13_0.04_278_/_40%)] backdrop-blur-xl p-5 mb-6"
+            >
+              <div className="flex items-center gap-2 mb-4">
+                <Cpu className="w-4 h-4 text-violet-400" />
+                <p className="text-sm font-medium text-foreground">قدرات المساعد الذكي</p>
+                <span className="text-[10px] text-muted-foreground bg-white/[0.04] px-2 py-0.5 rounded-full">
+                  19 أداة متصلة
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                 {capabilities.map((cap, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white/5 transition-colors">
-                    <cap.icon className={`w-4 h-4 ${cap.color}`} />
-                    <span className="text-xs text-slate-300">{cap.label}</span>
-                  </div>
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 + i * 0.03 }}
+                    className={`flex items-center gap-2.5 p-2.5 rounded-xl bg-gradient-to-br ${cap.gradient} border border-white/[0.04] hover:border-violet-500/20 transition-all cursor-default group`}
+                  >
+                    <cap.icon className="w-4 h-4 text-foreground/80 group-hover:text-violet-400 transition-colors flex-shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-[11px] font-medium text-foreground block truncate">{cap.label}</span>
+                      <span className="text-[9px] text-muted-foreground block truncate">{cap.desc}</span>
+                    </div>
+                  </motion.div>
                 ))}
               </div>
-              <p className="text-[11px] text-slate-500 mt-4 text-center">
-                💡 اكتب <span className="text-cyan-400 font-bold">مساعدة</span> لعرض جميع الأوامر المتاحة
-              </p>
-            </div>
+            </motion.div>
 
-            {/* Quick Action Chips */}
-            <div className="flex flex-wrap gap-2 justify-center">
-              {quickCommands.map((cmd, i) => (
-                <button
-                  key={i}
-                  onClick={() => sendMessage(cmd.query)}
-                  className="px-4 py-2 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-sm text-cyan-300 hover:text-cyan-200 transition-all"
-                >
-                  {cmd.label}
-                </button>
-              ))}
-            </div>
+            {/* Quick Action Cards */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="w-full"
+            >
+              <p className="text-xs text-muted-foreground mb-3 text-center">ابدأ بأحد هذه الأوامر أو اكتب أي سؤال</p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {quickCommands.slice(0, 4).map((cmd, i) => (
+                  <motion.button
+                    key={i}
+                    whileHover={{ scale: 1.02, y: -2 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => sendMessage(cmd.query)}
+                    className="flex flex-col items-center gap-2 p-4 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] hover:border-violet-500/25 transition-all group"
+                  >
+                    <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${cmd.gradient} flex items-center justify-center shadow-lg group-hover:shadow-xl transition-shadow`}>
+                      <cmd.icon className="w-4.5 h-4.5 text-white" />
+                    </div>
+                    <span className="text-xs text-muted-foreground group-hover:text-foreground transition-colors">{cmd.label}</span>
+                  </motion.button>
+                ))}
+              </div>
+            </motion.div>
           </div>
         ) : (
-          /* Message List */
+          /* ═══ MESSAGE LIST ═══ */
           <>
-            {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
+            {messages.map((msg, idx) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3 }}
+                className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+              >
                 {/* Avatar */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 mt-1">
                   {msg.role === "assistant" ? (
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                      <Brain className="w-4 h-4 text-white" />
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                      <Brain className="w-4.5 h-4.5 text-white" />
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-lg bg-slate-600 flex items-center justify-center">
+                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center">
                       <span className="text-xs text-white font-bold">
                         {user?.name?.charAt(0) || (user as any)?.displayName?.charAt(0) || "م"}
                       </span>
@@ -304,143 +432,205 @@ export default function SmartRasid() {
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`max-w-[80%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                <div className={`max-w-[85%] lg:max-w-[75%] ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                  {/* Tool usage indicator */}
+                  {msg.role === "assistant" && msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {msg.toolsUsed.map((tool, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/15"
+                        >
+                          <Terminal className="w-2.5 h-2.5" />
+                          {toolLabels[tool] || tool}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   <div
-                    className={`rounded-2xl px-4 py-3 ${
+                    className={`rounded-2xl px-4 py-3 relative group ${
                       msg.role === "user"
-                        ? "bg-cyan-600/20 border border-cyan-500/20 text-white"
-                        : "bg-[#0d1f3c] border border-white/5 text-slate-200"
+                        ? "bg-gradient-to-br from-violet-600/20 to-purple-600/20 border border-violet-500/20 text-foreground"
+                        : "bg-white/[0.03] dark:bg-[oklch(0.14_0.04_278_/_50%)] border border-white/[0.06] text-foreground"
                     }`}
                   >
+                    {/* Copy button */}
+                    <button
+                      onClick={() => copyMessage(msg.id, msg.content)}
+                      className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-white/10"
+                      title="نسخ"
+                    >
+                      {copiedId === msg.id ? (
+                        <Check className="w-3 h-3 text-emerald-400" />
+                      ) : (
+                        <Copy className="w-3 h-3 text-muted-foreground" />
+                      )}
+                    </button>
+
                     {msg.role === "assistant" ? (
-                      <div className="prose prose-invert prose-sm max-w-none">
+                      <div className="prose prose-invert prose-sm max-w-none [&_table]:text-xs [&_th]:bg-white/5 [&_td]:border-white/5 [&_th]:border-white/5 [&_th]:px-3 [&_th]:py-2 [&_td]:px-3 [&_td]:py-1.5">
                         <Streamdown>{msg.content}</Streamdown>
                         {/* Clickable Leak IDs */}
                         {extractLeakIds(msg.content).length > 0 && (
-                          <div className="mt-3 pt-3 border-t border-white/5 flex flex-wrap gap-2">
+                          <div className="mt-3 pt-3 border-t border-white/[0.06] flex flex-wrap gap-2">
+                            <span className="text-[10px] text-muted-foreground">عرض تفاصيل:</span>
                             {extractLeakIds(msg.content).map(id => (
                               <button
                                 key={id}
                                 onClick={() => setDrillLeakId(id)}
-                                className="text-[10px] px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 transition-colors font-mono"
+                                className="text-[10px] px-2 py-1 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 border border-violet-500/15 transition-colors font-mono"
                               >
-                                📋 {id}
+                                {id}
                               </button>
                             ))}
                           </div>
                         )}
                       </div>
                     ) : (
-                      <p className="text-sm">{msg.content}</p>
-                    )}
-                  </div>
-                  <div className={`flex items-center gap-1 mt-1 ${msg.role === "user" ? "justify-end" : ""}`}>
-                    <span className="text-[10px] text-slate-500">{formatTime(msg.timestamp)}</span>
-                    {msg.role === "assistant" && (
-                      <span className="text-[10px] text-emerald-500">✓ مكتمل</span>
+                      <p className="text-sm leading-relaxed">{msg.content}</p>
                     )}
                   </div>
 
-                  {/* Follow-up suggestions after assistant messages */}
+                  {/* Timestamp */}
+                  <div className={`flex items-center gap-1.5 mt-1.5 ${msg.role === "user" ? "justify-end" : ""}`}>
+                    <Clock className="w-2.5 h-2.5 text-muted-foreground/50" />
+                    <span className="text-[10px] text-muted-foreground/60">{formatTime(msg.timestamp)}</span>
+                    {msg.role === "assistant" && (
+                      <span className="text-[10px] text-emerald-500/70 flex items-center gap-0.5">
+                        <Check className="w-2.5 h-2.5" /> مكتمل
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Follow-up suggestions */}
                   {msg.role === "assistant" && msg.id === messages[messages.length - 1]?.id && (
-                    <div className="flex flex-wrap gap-2 mt-3">
+                    <div className="flex flex-wrap gap-1.5 mt-3">
                       {getFollowUpSuggestions(msg.content).map((suggestion, i) => (
-                        <button
+                        <motion.button
                           key={i}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                           onClick={() => sendMessage(suggestion)}
-                          className="text-[11px] px-3 py-1.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-500/20 text-slate-400 hover:text-white transition-all"
+                          className="text-[11px] px-3 py-1.5 rounded-full bg-white/[0.03] hover:bg-white/[0.07] border border-white/[0.06] hover:border-violet-500/20 text-muted-foreground hover:text-foreground transition-all"
                         >
                           {suggestion}
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
                   )}
                 </div>
-              </div>
+              </motion.div>
             ))}
 
-            {/* Loading Indicator */}
-            {isLoading && (
-              <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-                  <Brain className="w-4 h-4 text-white animate-pulse" />
-                </div>
-                <div className="bg-[#0d1f3c] border border-white/5 rounded-2xl px-4 py-3">
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
-                    <span className="text-sm text-slate-400">جارٍ التحليل...</span>
+            {/* Loading Indicator — Animated */}
+            <AnimatePresence>
+              {isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex gap-3"
+                >
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                    <Brain className="w-4.5 h-4.5 text-white animate-pulse" />
                   </div>
-                </div>
-              </div>
-            )}
+                  <div className="bg-white/[0.03] dark:bg-[oklch(0.14_0.04_278_/_50%)] border border-white/[0.06] rounded-2xl px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-1">
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0 }} className="w-2 h-2 rounded-full bg-violet-400" />
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-purple-400" />
+                        <motion.div animate={{ scale: [1, 1.3, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-violet-400" />
+                      </div>
+                      <span className="text-sm text-muted-foreground">جارٍ التحليل والاستعلام...</span>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div ref={messagesEndRef} />
           </>
         )}
       </div>
 
-      {/* Input Area */}
-      <div className="flex-shrink-0 border-t border-white/5 bg-[#0d1a30]/80 backdrop-blur-xl p-4">
+      {/* ═══ INPUT AREA — Frosted Glass ═══ */}
+      <div className="flex-shrink-0 border-t border-white/[0.06] dark:bg-[oklch(0.12_0.04_278_/_60%)] backdrop-blur-2xl p-4">
         {/* Suggestions Dropdown */}
-        {showSuggestions && suggestions.length > 0 && (
-          <div className="mb-2 bg-[#0d1f3c] border border-white/10 rounded-xl overflow-hidden shadow-2xl">
-            {suggestions.map((s, i) => (
-              <button
-                key={i}
-                onClick={() => selectSuggestion(s)}
-                className="w-full text-right px-4 py-2.5 text-sm text-slate-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2 border-b border-white/5 last:border-0"
-              >
-                <Search className="w-3 h-3 text-cyan-400 flex-shrink-0" />
-                <span>{s}</span>
-              </button>
-            ))}
-          </div>
-        )}
+        <AnimatePresence>
+          {showSuggestions && suggestions.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 5 }}
+              className="mb-2 bg-[oklch(0.14_0.04_278_/_90%)] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl backdrop-blur-xl"
+            >
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => selectSuggestion(s)}
+                  className="w-full text-right px-4 py-2.5 text-sm text-muted-foreground hover:bg-white/[0.05] hover:text-foreground transition-colors flex items-center gap-2 border-b border-white/[0.04] last:border-0"
+                >
+                  <Search className="w-3 h-3 text-violet-400 flex-shrink-0" />
+                  <span>{s}</span>
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        <div className="flex items-center gap-3 max-w-4xl mx-auto">
-          <div className="flex-1 relative">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => handleInputChange(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendMessage();
-                }
-                if (e.key === "Escape") {
-                  setShowSuggestions(false);
-                }
-              }}
-              onFocus={() => {
-                if (suggestions.length > 0) setShowSuggestions(true);
-              }}
-              onBlur={() => {
-                setTimeout(() => setShowSuggestions(false), 200);
-              }}
-              placeholder="اكتب أمراً أو سؤالاً..."
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
-              disabled={isLoading}
-            />
-            <ChevronLeft className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-end gap-2">
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => handleInputChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                  if (e.key === "Escape") {
+                    setShowSuggestions(false);
+                  }
+                }}
+                onFocus={() => {
+                  if (suggestions.length > 0) setShowSuggestions(true);
+                }}
+                onBlur={() => {
+                  setTimeout(() => setShowSuggestions(false), 200);
+                }}
+                placeholder="اسأل راصد الذكي أي شيء عن المنصة..."
+                rows={1}
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all resize-none overflow-hidden"
+                disabled={isLoading}
+              />
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => sendMessage()}
+              disabled={!inputValue.trim() || isLoading}
+              className="w-11 h-11 rounded-xl bg-gradient-to-br from-violet-500 to-purple-700 flex items-center justify-center text-white disabled:opacity-30 shadow-lg shadow-violet-500/20 hover:shadow-xl hover:shadow-violet-500/30 transition-all flex-shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4.5 h-4.5 animate-spin" />
+              ) : (
+                <Send className="w-4.5 h-4.5" />
+              )}
+            </motion.button>
           </div>
-          <button
-            onClick={() => sendMessage()}
-            disabled={!inputValue.trim() || isLoading}
-            className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white disabled:opacity-30 hover:shadow-lg hover:shadow-cyan-500/20 transition-all"
-          >
-            <Send className="w-4 h-4" />
-          </button>
-        </div>
 
-        <div className="flex items-center justify-between mt-2 max-w-4xl mx-auto">
-          <p className="text-[10px] text-slate-600">
-            RASID AI v2.0 — مكتب إدارة البيانات الوطنية
-          </p>
-          <p className="text-[10px] text-slate-600">
-            ⌨️ Enter للإرسال · ⇧ لسطر جديد
-          </p>
+          <div className="flex items-center justify-between mt-2">
+            <p className="text-[10px] text-muted-foreground/40 flex items-center gap-1">
+              <Bot className="w-3 h-3" />
+              RASID AI v5.5 — 19 أداة متصلة · 27 جدول بيانات
+            </p>
+            <p className="text-[10px] text-muted-foreground/40">
+              Enter للإرسال · Shift+Enter لسطر جديد
+            </p>
+          </div>
         </div>
       </div>
 
@@ -460,26 +650,34 @@ function getFollowUpSuggestions(content: string): string[] {
   const lower = content.toLowerCase();
 
   if (lower.includes("تسريب") || lower.includes("leak")) {
-    suggestions.push("ابحث عن تسريبات حرجة");
-    suggestions.push("فحص سياسة الخصوصية");
+    suggestions.push("تفاصيل أكثر عن التسريبات الحرجة");
+    suggestions.push("ما التوصيات الأمنية؟");
   }
-  if (lower.includes("ملخص") || lower.includes("لوحة")) {
-    suggestions.push("ابحث عن تسريبات حرجة");
-    suggestions.push("حالة الامتثال");
+  if (lower.includes("ملخص") || lower.includes("لوحة") || lower.includes("إحصائي")) {
+    suggestions.push("تحليل الاتجاهات الشهرية");
+    suggestions.push("مقارنة بالفترة السابقة");
   }
   if (lower.includes("تقرير")) {
-    suggestions.push("أنشئ تقرير أسبوعي");
-    suggestions.push("ملخص لوحة المعلومات");
+    suggestions.push("تفاصيل التقارير المجدولة");
+    suggestions.push("سجل التوثيقات الرسمية");
   }
-  if (lower.includes("امتثال") || lower.includes("خصوصية")) {
-    suggestions.push("فحص شهادات SSL/TLS");
-    suggestions.push("ملخص لوحة المعلومات");
+  if (lower.includes("امتثال") || lower.includes("pdpl") || lower.includes("خصوصية")) {
+    suggestions.push("ما مواد PDPL ذات الصلة؟");
+    suggestions.push("أفضل الممارسات الأمنية");
+  }
+  if (lower.includes("بائع") || lower.includes("seller")) {
+    suggestions.push("البائعون عالي الخطورة");
+    suggestions.push("الأدلة الرقمية المرتبطة");
+  }
+  if (lower.includes("تحليل") || lower.includes("اتجاه") || lower.includes("trend")) {
+    suggestions.push("توزيع التسريبات حسب القطاع");
+    suggestions.push("أنواع PII الأكثر تسريباً");
   }
 
   if (suggestions.length === 0) {
     suggestions.push("ملخص لوحة المعلومات");
-    suggestions.push("ابحث عن تسريبات حرجة");
-    suggestions.push("مساعدة");
+    suggestions.push("تحليل شامل");
+    suggestions.push("دليل استخدام المنصة");
   }
 
   return suggestions.slice(0, 3);

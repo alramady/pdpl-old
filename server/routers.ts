@@ -98,6 +98,7 @@ import {
 import { generateIncidentDocumentation } from "./pdfService";
 import { notifyOwner } from "./_core/notification";
 import { invokeLLM } from "./_core/llm";
+import { rasidAIChat } from "./rasidAI";
 
 // Helper to get current user info from either auth source
 function getAuthUser(ctx: { user: any; platformUser: any }) {
@@ -1353,57 +1354,29 @@ export const appRouter = router({
       }),
    }),
 
-  // ─── Smart Rasid AI Assistant ──────────────────────────────
+  // ─── Smart Rasid AI Assistant (v5.5 — Full Platform Access) ──────────────
   smartRasid: router({
     search: publicProcedure
       .input(z.object({ query: z.string().min(1) }))
       .query(async ({ input }) => {
         const q = input.query.toLowerCase();
         const results: Array<{ type: string; items: any[] }> = [];
-
-        // Search leaks
         const allLeaks = await getLeaks({ search: input.query });
-        if (allLeaks.length > 0) {
-          results.push({ type: "leaks", items: allLeaks.slice(0, 10) });
-        }
-
-        // Search sellers
+        if (allLeaks.length > 0) results.push({ type: "leaks", items: allLeaks.slice(0, 10) });
         const sellers = await getSellerProfiles();
         const matchedSellers = sellers.filter((s: any) =>
-          s.alias?.toLowerCase().includes(q) || s.aliasAr?.toLowerCase().includes(q) ||
-          s.sellerId?.toLowerCase().includes(q)
+          s.alias?.toLowerCase().includes(q) || s.aliasAr?.toLowerCase().includes(q) || s.sellerId?.toLowerCase().includes(q)
         );
-        if (matchedSellers.length > 0) {
-          results.push({ type: "sellers", items: matchedSellers.slice(0, 5) });
-        }
-
-        // Search dark web listings
+        if (matchedSellers.length > 0) results.push({ type: "sellers", items: matchedSellers.slice(0, 5) });
         const darkweb = await getDarkWebListings();
-        const matchedDW = darkweb.filter((d: any) =>
-          d.title?.toLowerCase().includes(q) || d.titleAr?.toLowerCase().includes(q)
-        );
-        if (matchedDW.length > 0) {
-          results.push({ type: "darkweb", items: matchedDW.slice(0, 5) });
-        }
-
-        // Search paste entries
+        const matchedDW = darkweb.filter((d: any) => d.title?.toLowerCase().includes(q) || d.titleAr?.toLowerCase().includes(q));
+        if (matchedDW.length > 0) results.push({ type: "darkweb", items: matchedDW.slice(0, 5) });
         const pastes = await getPasteEntries();
-        const matchedPastes = pastes.filter((p: any) =>
-          p.title?.toLowerCase().includes(q) || p.titleAr?.toLowerCase().includes(q)
-        );
-        if (matchedPastes.length > 0) {
-          results.push({ type: "pastes", items: matchedPastes.slice(0, 5) });
-        }
-
-        // Search monitoring jobs
+        const matchedPastes = pastes.filter((p: any) => p.title?.toLowerCase().includes(q) || p.titleAr?.toLowerCase().includes(q));
+        if (matchedPastes.length > 0) results.push({ type: "pastes", items: matchedPastes.slice(0, 5) });
         const jobs = await getMonitoringJobs();
-        const matchedJobs = jobs.filter((j: any) =>
-          j.name?.toLowerCase().includes(q) || j.nameAr?.toLowerCase().includes(q)
-        );
-        if (matchedJobs.length > 0) {
-          results.push({ type: "jobs", items: matchedJobs.slice(0, 5) });
-        }
-
+        const matchedJobs = jobs.filter((j: any) => j.name?.toLowerCase().includes(q) || j.nameAr?.toLowerCase().includes(q));
+        if (matchedJobs.length > 0) results.push({ type: "jobs", items: matchedJobs.slice(0, 5) });
         return { results, totalResults: results.reduce((s, r) => s + r.items.length, 0) };
       }),
 
@@ -1413,8 +1386,6 @@ export const appRouter = router({
         if (input.partial.length < 2) return { suggestions: [] };
         const q = input.partial.toLowerCase();
         const suggestions: string[] = [];
-
-        // Get leak titles for suggestions
         const allLeaks = await getLeaks();
         for (const leak of allLeaks) {
           if (leak.titleAr?.toLowerCase().includes(q)) suggestions.push(leak.titleAr);
@@ -1422,19 +1393,16 @@ export const appRouter = router({
           if (leak.sectorAr?.toLowerCase().includes(q)) suggestions.push(leak.sectorAr);
           if (suggestions.length >= 8) break;
         }
-
-        // Add common search terms
         const commonTerms = [
           "تسريبات حرجة", "القطاع الحكومي", "القطاع الصحي", "القطاع المالي",
           "تليجرام", "دارك ويب", "مواقع لصق", "بيانات شخصية",
           "هوية وطنية", "أرقام هواتف", "بريد إلكتروني", "سجلات طبية",
-          "بيانات مالية", "عناوين سكنية", "جوازات سفر",
           "ملخص لوحة المعلومات", "تقرير أسبوعي", "حالة الامتثال",
+          "تحليل شامل", "البائعون", "الأدلة الرقمية", "خريطة التهديدات",
         ];
         for (const term of commonTerms) {
           if (term.includes(q) && !suggestions.includes(term)) suggestions.push(term);
         }
-
         return { suggestions: Array.from(new Set(suggestions)).slice(0, 8) };
       }),
 
@@ -1448,54 +1416,13 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const who = getAuthUser(ctx);
-
-        // Get platform context data
-        const stats = await getDashboardStats();
-        const recentLeaks = await getLeaks();
-        const topLeaks = recentLeaks.slice(0, 20);
-
-        const systemPrompt = `أنت "راصد الذكي" — المساعد الذكي لمنصة راصد الوطنية لرصد تسريبات البيانات الشخصية.
-أنت تعمل تحت إشراف مكتب إدارة البيانات الوطنية (NDMO) في المملكة العربية السعودية.
-
-مهامك:
-1. الإجابة على استفسارات المستخدمين حول التسريبات والبيانات الشخصية
-2. تقديم ملخصات وتحليلات للوحة المعلومات
-3. البحث في التسريبات وتقديم معلومات تفصيلية
-4. تقديم نصائح أمنية وتوصيات
-5. المساعدة في إنشاء التقارير
-
-بيانات المنصة الحالية:
-- إجمالي التسريبات: ${stats?.totalLeaks ?? 0}
-- التنبيهات الحرجة: ${stats?.criticalAlerts ?? 0}
-- إجمالي السجلات المكشوفة: ${stats?.totalRecords ?? 0}
-- أجهزة الرصد النشطة: ${stats?.activeMonitors ?? 0}
-
-أحدث التسريبات:
-${topLeaks.map(l => `- [${l.leakId}] ${l.titleAr} | ${l.severity} | ${l.sectorAr} | ${l.recordCount?.toLocaleString()} سجل`).join('\n')}
-
-قواعد:
-- أجب دائماً باللغة العربية
-- كن دقيقاً ومهنياً
-- استخدم البيانات الحقيقية من المنصة
-- لا تختلق بيانات غير موجودة
-- قدم إجابات مفصلة وشاملة
-- اسم المستخدم الحالي: ${who.name}`;
-
-        const messages = [
-          { role: "system" as const, content: systemPrompt },
-          ...(input.history?.map(h => ({ role: h.role as "user" | "assistant", content: h.content })) ?? []),
-          { role: "user" as const, content: input.message },
-        ];
-
-        try {
-          const response = await invokeLLM({ messages });
-          const content = response.choices?.[0]?.message?.content ?? "عذراً، لم أتمكن من معالجة طلبك. حاول مرة أخرى.";
-          await logAudit(who.id, "smart_rasid.chat", `Smart Rasid query: ${input.message.substring(0, 100)}`, "system", who.name);
-          return { response: content };
-        } catch (err) {
-          console.error("Smart Rasid LLM error:", err);
-          return { response: "عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى." };
-        }
+        const result = await rasidAIChat(
+          input.message,
+          input.history ?? [],
+          who.name,
+          who.id,
+        );
+        return { response: result.response, toolsUsed: result.toolsUsed };
       }),
 
     dashboardSummary: publicProcedure.query(async () => {
