@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  sector, \n  COUNT(*) as total,\n  SUM(CASE WHEN sampleData IS NOT NULL AND sampleData != '[]' THEN 1 ELSE 0 END) as has_samples,\n  SUM(CASE WHEN screenshotUrls IS NOT NULL AND screenshotUrls != '[]' THEN 1 ELSE 0 END) as has_screenshots,\n  SUM(CASE WHEN sourceUrl IS NOT NULL AND sourceUrl != '' THEN 1 ELSE 0 END) as has_source,\n  SUM(CASE WHEN attackerName IS NOT NULL AND attackerName != '' THEN 1 ELSE 0 END) as has_attacker\nFROM leaks \nGROUP BY sector \nORDER BY total DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute \nSELECT \n  sector, \n  COUNT(*) as total,\n  SUM(CASE WHEN sampleData IS NOT NULL AND sampleData != '[]' THEN 1 ELSE 0 END) as has_samples,\n  SUM(CASE WHEN screenshotUrls IS NOT NULL AND screenshotUrls != '[]' THEN 1 ELSE 0 END) as has_screenshots,\n  SUM(CASE WHEN sourceUrl IS NOT NULL AND sourceUrl != '' THEN 1 ELSE 0 END) as has_source,\n  SUM(CASE WHEN attackerName IS NOT NULL AND attackerName != '' THEN 1 ELSE 0 END) as has_attacker\nFROM leaks \nGROUP BY sector \nORDER BY total DESC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'attackername' in 'group statement'"
+  ]
+}

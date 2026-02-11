@@ -1,0 +1,37 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'leaks' AND COLUMN_NAME LIKE '%sample%' OR COLUMN_NAME LIKE '%screenshot%' OR COLUMN_NAME LIKE '%source%' OR COLUMN_NAME LIKE '%attacker%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'leaks' AND COLUMN_NAME LIKE '%sample%' OR COLUMN_NAME LIKE '%screenshot%' OR COLUMN_NAME LIKE '%source%' OR COLUMN_NAME LIKE '%attacker%';",
+  "rows": [
+    {
+      "COLUMN_NAME": "sourceName"
+    },
+    {
+      "COLUMN_NAME": "sourceChannelId"
+    },
+    {
+      "COLUMN_NAME": "sourceName"
+    },
+    {
+      "COLUMN_NAME": "sourceNodeId"
+    },
+    {
+      "COLUMN_NAME": "source"
+    },
+    {
+      "COLUMN_NAME": "sampleData"
+    },
+    {
+      "COLUMN_NAME": "sourceUrl"
+    },
+    {
+      "COLUMN_NAME": "sourcePlatform"
+    },
+    {
+      "COLUMN_NAME": "screenshotUrls"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nsourceName\nsourceChannelId\nsourceName\nsourceNodeId\nsource\nsampleData\nsourceUrl\nsourcePlatform\nscreenshotUrls\n",
+  "stderr": "",
+  "execution_time_ms": 1525
+}

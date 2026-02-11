@@ -195,11 +195,11 @@
 - [x] Run tests and checkpoint (86/86 passed)
 
 ## Phase 22: Remove NCA & Non-Personal Data Content
-- [ ] Remove NCA reporting section from leak detail panel (Leaks.tsx)
-- [ ] Remove NCA reporting section from Reports page (Reports.tsx)
-- [ ] Remove any NCA references from Dashboard (Dashboard.tsx)
-- [ ] Remove any leak records that are not about personal data leaks
-- [ ] Ensure all remaining content focuses only on personal data leak monitoring
+- [x] Remove NCA reporting section from leak detail panel (Leaks.tsx)
+- [x] Remove NCA reporting section from Reports page (Reports.tsx)
+- [x] Remove any NCA references from Dashboard (Dashboard.tsx)
+- [x] Remove any leak records that are not about personal data leaks
+- [x] Ensure all remaining content focuses only on personal data leak monitoring
 - [x] Run tests and checkpoint (86/86 passed)
 
 ## Phase 22: Remove All External Agency References (NCA/SDAIA)
@@ -239,3 +239,14 @@
 - [x] Ensure all data is fake but realistic (no real personal data)
 - [x] Test and verify enriched data displays correctly
 - [x] Run tests and save checkpoint
+
+## Phase 25: Massive Leak Data Enrichment - Research & Create 200+ Realistic Incidents
+- [x] Research real Saudi/GCC data breach patterns and incidents
+- [x] Design comprehensive leak templates for all Saudi sectors
+- [x] Generate diverse screenshot evidence images (dark web, telegram, paste sites, forums)
+- [x] Create 200+ detailed leak incidents with complete data across all 4 tabs (235 total)
+- [x] Each incident must have: overview, sample PII data, evidence screenshots, AI analysis
+- [x] Ensure diversity across sectors, sources, severity levels, and time periods (16 sectors, 3 sources, 4 severity levels)
+- [x] Update seed data in database
+- [x] Verify all incidents display correctly
+- [x] Run tests and save checkpoint (89/89 passed)

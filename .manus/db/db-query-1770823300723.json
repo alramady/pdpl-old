@@ -1,0 +1,138 @@
+{
+  "query": "\nSELECT \n  sector, \n  COUNT(*) as total,\n  SUM(CASE WHEN sampleData IS NOT NULL AND sampleData != '[]' THEN 1 ELSE 0 END) as has_samples,\n  SUM(CASE WHEN screenshotUrls IS NOT NULL AND screenshotUrls != '[]' THEN 1 ELSE 0 END) as has_screenshots,\n  SUM(CASE WHEN sourceUrl IS NOT NULL AND sourceUrl != '' THEN 1 ELSE 0 END) as has_source,\n  SUM(CASE WHEN threatActor IS NOT NULL AND threatActor != '' THEN 1 ELSE 0 END) as has_actor\nFROM leaks \nGROUP BY sector \nORDER BY total DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute \nSELECT \n  sector, \n  COUNT(*) as total,\n  SUM(CASE WHEN sampleData IS NOT NULL AND sampleData != '[]' THEN 1 ELSE 0 END) as has_samples,\n  SUM(CASE WHEN screenshotUrls IS NOT NULL AND screenshotUrls != '[]' THEN 1 ELSE 0 END) as has_screenshots,\n  SUM(CASE WHEN sourceUrl IS NOT NULL AND sourceUrl != '' THEN 1 ELSE 0 END) as has_source,\n  SUM(CASE WHEN threatActor IS NOT NULL AND threatActor != '' THEN 1 ELSE 0 END) as has_actor\nFROM leaks \nGROUP BY sector \nORDER BY total DESC;\n",
+  "rows": [
+    {
+      "sector": "Hospitality/Tourism",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Construction",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Recruitment/HR",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Telecommunications",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Banking/Finance",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Transportation",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Fintech",
+      "total": "16",
+      "has_samples": "16",
+      "has_screenshots": "16",
+      "has_source": "16",
+      "has_actor": "16"
+    },
+    {
+      "sector": "Food Delivery",
+      "total": "15",
+      "has_samples": "15",
+      "has_screenshots": "15",
+      "has_source": "15",
+      "has_actor": "15"
+    },
+    {
+      "sector": "Education",
+      "total": "15",
+      "has_samples": "14",
+      "has_screenshots": "14",
+      "has_source": "14",
+      "has_actor": "14"
+    },
+    {
+      "sector": "Healthcare",
+      "total": "15",
+      "has_samples": "15",
+      "has_screenshots": "15",
+      "has_source": "15",
+      "has_actor": "15"
+    },
+    {
+      "sector": "Sports/Entertainment",
+      "total": "14",
+      "has_samples": "14",
+      "has_screenshots": "14",
+      "has_source": "14",
+      "has_actor": "14"
+    },
+    {
+      "sector": "Energy/Oil & Gas",
+      "total": "14",
+      "has_samples": "14",
+      "has_screenshots": "14",
+      "has_source": "14",
+      "has_actor": "14"
+    },
+    {
+      "sector": "Insurance",
+      "total": "13",
+      "has_samples": "12",
+      "has_screenshots": "13",
+      "has_source": "12",
+      "has_actor": "12"
+    },
+    {
+      "sector": "Government",
+      "total": "13",
+      "has_samples": "13",
+      "has_screenshots": "13",
+      "has_source": "13",
+      "has_actor": "13"
+    },
+    {
+      "sector": "E-commerce/Retail",
+      "total": "12",
+      "has_samples": "12",
+      "has_screenshots": "12",
+      "has_source": "12",
+      "has_actor": "12"
+    },
+    {
+      "sector": "Real Estate",
+      "total": "12",
+      "has_samples": "12",
+      "has_screenshots": "12",
+      "has_source": "12",
+      "has_actor": "12"
+    }
+  ],
+  "messages": [],
+  "stdout": "sector\ttotal\thas_samples\thas_screenshots\thas_source\thas_actor\nHospitality/Tourism\t16\t16\t16\t16\t16\nConstruction\t16\t16\t16\t16\t16\nRecruitment/HR\t16\t16\t16\t16\t16\nTelecommunications\t16\t16\t16\t16\t16\nBanking/Finance\t16\t16\t16\t16\t16\nTransportation\t16\t16\t16\t16\t16\nFintech\t16\t16\t16\t16\t16\nFood Delivery\t15\t15\t15\t15\t15\nEducation\t15\t14\t14\t14\t14\nHealthcare\t15\t15\t15\t15\t15\nSports/Entertainment\t14\t14\t14\t14\t14\nEnergy/Oil & Gas\t14\t14\t14\t14\t14\nInsurance\t13\t12\t13\t12\t12\nGovernment\t13\t13\t13\t13\t13\nE-commerce/Retail\t12\t12\t12\t12\t12\nReal Estate\t12\t12\t12\t12\t12\n",
+  "stderr": "",
+  "execution_time_ms": 1545
+}

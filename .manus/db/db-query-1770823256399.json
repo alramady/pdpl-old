@@ -1,0 +1,121 @@
+{
+  "query": "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'leaks' ORDER BY ORDINAL_POSITION;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'leaks' ORDER BY ORDINAL_POSITION;",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "leakId"
+    },
+    {
+      "COLUMN_NAME": "title"
+    },
+    {
+      "COLUMN_NAME": "titleAr"
+    },
+    {
+      "COLUMN_NAME": "source"
+    },
+    {
+      "COLUMN_NAME": "severity"
+    },
+    {
+      "COLUMN_NAME": "sector"
+    },
+    {
+      "COLUMN_NAME": "sectorAr"
+    },
+    {
+      "COLUMN_NAME": "piiTypes"
+    },
+    {
+      "COLUMN_NAME": "recordCount"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "description"
+    },
+    {
+      "COLUMN_NAME": "descriptionAr"
+    },
+    {
+      "COLUMN_NAME": "detectedAt"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    },
+    {
+      "COLUMN_NAME": "aiSeverity"
+    },
+    {
+      "COLUMN_NAME": "aiSummary"
+    },
+    {
+      "COLUMN_NAME": "aiSummaryAr"
+    },
+    {
+      "COLUMN_NAME": "aiRecommendations"
+    },
+    {
+      "COLUMN_NAME": "aiRecommendationsAr"
+    },
+    {
+      "COLUMN_NAME": "aiConfidence"
+    },
+    {
+      "COLUMN_NAME": "enrichedAt"
+    },
+    {
+      "COLUMN_NAME": "region"
+    },
+    {
+      "COLUMN_NAME": "regionAr"
+    },
+    {
+      "COLUMN_NAME": "city"
+    },
+    {
+      "COLUMN_NAME": "cityAr"
+    },
+    {
+      "COLUMN_NAME": "latitude"
+    },
+    {
+      "COLUMN_NAME": "longitude"
+    },
+    {
+      "COLUMN_NAME": "sampleData"
+    },
+    {
+      "COLUMN_NAME": "sourceUrl"
+    },
+    {
+      "COLUMN_NAME": "sourcePlatform"
+    },
+    {
+      "COLUMN_NAME": "screenshotUrls"
+    },
+    {
+      "COLUMN_NAME": "threatActor"
+    },
+    {
+      "COLUMN_NAME": "leakPrice"
+    },
+    {
+      "COLUMN_NAME": "breachMethod"
+    },
+    {
+      "COLUMN_NAME": "breachMethodAr"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nleakId\ntitle\ntitleAr\nsource\nseverity\nsector\nsectorAr\npiiTypes\nrecordCount\nstatus\ndescription\ndescriptionAr\ndetectedAt\ncreatedAt\nupdatedAt\naiSeverity\naiSummary\naiSummaryAr\naiRecommendations\naiRecommendationsAr\naiConfidence\nenrichedAt\nregion\nregionAr\ncity\ncityAr\nlatitude\nlongitude\nsampleData\nsourceUrl\nsourcePlatform\nscreenshotUrls\nthreatActor\nleakPrice\nbreachMethod\nbreachMethodAr\n",
+  "stderr": "",
+  "execution_time_ms": 1541
+}

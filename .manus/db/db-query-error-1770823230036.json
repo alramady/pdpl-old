@@ -1,0 +1,8 @@
+{
+  "query": "\nSELECT \n  sector, \n  COUNT(*) as count,\n  SUM(CASE WHEN sample_data IS NOT NULL AND sample_data != '' AND sample_data != '[]' THEN 1 ELSE 0 END) as has_sample_data,\n  SUM(CASE WHEN screenshot_urls IS NOT NULL AND screenshot_urls != '' AND screenshot_urls != '[]' THEN 1 ELSE 0 END) as has_screenshots,\n  SUM(CASE WHEN source_url IS NOT NULL AND source_url != '' THEN 1 ELSE 0 END) as has_source_url,\n  SUM(CASE WHEN attacker_name IS NOT NULL AND attacker_name != '' THEN 1 ELSE 0 END) as has_attacker\nFROM leaks \nGROUP BY sector \nORDER BY count DESC;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute \nSELECT \n  sector, \n  COUNT(*) as count,\n  SUM(CASE WHEN sample_data IS NOT NULL AND sample_data != '' AND sample_data != '[]' THEN 1 ELSE 0 END) as has_sample_data,\n  SUM(CASE WHEN screenshot_urls IS NOT NULL AND screenshot_urls != '' AND screenshot_urls != '[]' THEN 1 ELSE 0 END) as has_screenshots,\n  SUM(CASE WHEN source_url IS NOT NULL AND source_url != '' THEN 1 ELSE 0 END) as has_source_url,\n  SUM(CASE WHEN attacker_name IS NOT NULL AND attacker_name != '' THEN 1 ELSE 0 END) as has_attacker\nFROM leaks \nGROUP BY sector \nORDER BY count DESC;\n",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 2: Unknown column 'sample_data' in 'group statement'"
+  ]
+}
