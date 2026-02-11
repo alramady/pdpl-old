@@ -1,4 +1,4 @@
-import { eq, desc, sql, and, like, inArray } from "drizzle-orm";
+import { eq, desc, sql, and, like, inArray, or, gte, lte, type SQL } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -872,6 +872,49 @@ export async function getAllIncidentDocuments(): Promise<IncidentDocument[]> {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(incidentDocuments).orderBy(desc(incidentDocuments.createdAt));
+}
+
+export async function getFilteredIncidentDocuments(filters: {
+  search?: string;
+  employeeName?: string;
+  leakId?: string;
+  documentType?: string;
+  dateFrom?: Date;
+  dateTo?: Date;
+}): Promise<IncidentDocument[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: SQL[] = [];
+  if (filters.search) {
+    conditions.push(
+      or(
+        like(incidentDocuments.documentId, `%${filters.search}%`),
+        like(incidentDocuments.verificationCode, `%${filters.search}%`),
+        like(incidentDocuments.title, `%${filters.search}%`),
+        like(incidentDocuments.titleAr, `%${filters.search}%`)
+      )!
+    );
+  }
+  if (filters.employeeName) {
+    conditions.push(like(incidentDocuments.generatedByName, `%${filters.employeeName}%`));
+  }
+  if (filters.leakId) {
+    conditions.push(eq(incidentDocuments.leakId, filters.leakId));
+  }
+  if (filters.documentType) {
+    conditions.push(eq(incidentDocuments.documentType, filters.documentType as any));
+  }
+  if (filters.dateFrom) {
+    conditions.push(gte(incidentDocuments.createdAt, filters.dateFrom));
+  }
+  if (filters.dateTo) {
+    conditions.push(lte(incidentDocuments.createdAt, filters.dateTo));
+  }
+  const query = db.select().from(incidentDocuments);
+  if (conditions.length > 0) {
+    return query.where(and(...conditions)).orderBy(desc(incidentDocuments.createdAt));
+  }
+  return query.orderBy(desc(incidentDocuments.createdAt));
 }
 
 // ─── Report Audit Helpers ────────────────────────────────────────

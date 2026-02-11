@@ -91,10 +91,12 @@ import {
   getIncidentDocumentByDocumentId,
   getIncidentDocumentsByLeakId,
   getAllIncidentDocuments,
+  getFilteredIncidentDocuments,
   createReportAudit,
   getReportAuditEntries,
 } from "./db";
 import { generateIncidentDocumentation } from "./pdfService";
+import { notifyOwner } from "./_core/notification";
 import { invokeLLM } from "./_core/llm";
 
 // Helper to get current user info from either auth source
@@ -1216,6 +1218,12 @@ export const appRouter = router({
         // Log audit
         await logAudit(who.id, "documentation.generate", `Generated incident documentation ${result.documentId} for leak ${input.leakId}`, "report", who.name);
 
+        // Notify supervisor
+        await notifyOwner({
+          title: `📋 توثيق حادثة جديد — ${result.documentId}`,
+          content: `قام ${who.name} بإصدار توثيق حادثة تسرب\nالحادثة: ${input.leakId}\nالقطاع: ${leak.sectorAr || leak.sector}\nالخطورة: ${leak.severity}\nكود التحقق: ${result.verificationCode}\nالتاريخ: ${new Date().toLocaleString("ar-SA")}`,
+        }).catch(() => {/* notification failure should not block */});
+
         // Log report audit with compliance
         await createReportAudit({
           reportId: result.documentId,
@@ -1280,6 +1288,19 @@ export const appRouter = router({
       return getAllIncidentDocuments();
     }),
 
+    listFiltered: protectedProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        employeeName: z.string().optional(),
+        leakId: z.string().optional(),
+        documentType: z.string().optional(),
+        dateFrom: z.date().optional(),
+        dateTo: z.date().optional(),
+      }))
+      .query(async ({ input }) => {
+        return getFilteredIncidentDocuments(input);
+      }),
+
     getById: publicProcedure
       .input(z.object({ documentId: z.string() }))
       .query(async ({ input }) => {
@@ -1314,6 +1335,20 @@ export const appRouter = router({
           filters: input.filters as Record<string, unknown>,
         });
         await logAudit(who.id, "report.generate", `Generated ${input.reportType} report (${reportId})`, "report", who.name);
+
+        // Notify supervisor
+        const reportTypeLabels: Record<string, string> = {
+          executive_summary: "ملخص تنفيذي",
+          sector_analysis: "تحليل قطاعي",
+          severity_report: "تقرير الخطورة",
+          compliance_report: "تقرير الامتثال",
+          custom_report: "تقرير مخصص",
+        };
+        await notifyOwner({
+          title: `📊 تقرير جديد — ${reportId}`,
+          content: `قام ${who.name} بإصدار ${reportTypeLabels[input.reportType] || input.reportType}\nرقم التقرير: ${reportId}\nالتاريخ: ${new Date().toLocaleString("ar-SA")}`,
+        }).catch(() => {/* notification failure should not block */});
+
         return { id, reportId };
       }),
    }),

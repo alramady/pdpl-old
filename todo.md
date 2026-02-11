@@ -333,3 +333,33 @@
 - [x] Professional UI with Rasid branding
 - [x] All 120 tests passing (4 test files)
 - [x] Checkpoint saved
+
+## Phase 28: Documents Registry, Instant Notifications, Enhanced Login
+
+### A. Issued Documents Registry Page
+- [x] Create new page "سجل التوثيقات" in dashboard sidebar (under إداري group)
+- [x] Display all issued documents in a professional table
+- [x] Search by document ID, verification code, or leak title
+- [x] Filter by date range (from/to)
+- [x] Filter by employee who issued the document
+- [x] Filter by incident/leak ID
+- [x] Show document details: ID, verification code, leak title, employee, date, status
+- [x] Click on any document to view full details
+- [x] Add tRPC route for listing documents with filters
+- [x] Add DB helper for querying documents with filters
+
+### B. Instant Notifications for Supervisors
+- [x] Send notification to supervisor when a document is issued
+- [x] Send notification to supervisor when a report is generated
+- [x] Use notifyOwner helper for notification delivery
+- [x] Include document/report details in notification
+- [x] Log notification in audit trail
+
+### C. Enhanced Login Screen with 3D Animation
+- [x] Add 3D animated background with 3D particles, hexagonal grid, floating orbs, scan line
+- [x] Animate Rasid logo with creative motion effects (pulse, glow, float, rotating ring, shield badge)
+- [x] Add depth and parallax effects (3D perspective particles, orbiting particles around character)
+- [x] Ensure both dark and light modes look professional
+- [x] Smooth transitions and loading animations
+- [x] All 120 tests passing (4 test files)
+- [x] Checkpoint saved

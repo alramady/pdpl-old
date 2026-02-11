@@ -28,6 +28,7 @@ import FeedbackAccuracy from "./pages/FeedbackAccuracy";
 import KnowledgeGraph from "./pages/KnowledgeGraph";
 import PlatformLogin from "./pages/PlatformLogin";
 import UserManagement from "./pages/UserManagement";
+import DocumentsRegistry from "./pages/DocumentsRegistry";
 import VerifyDocument from "./pages/VerifyDocument";
 import { lazy, Suspense } from "react";
 
@@ -92,6 +93,7 @@ function Router() {
             <Route path="/feedback-accuracy" component={FeedbackAccuracy} />
             <Route path="/knowledge-graph" component={KnowledgeGraph} />
             <Route path="/user-management" component={UserManagement} />
+            <Route path="/documents-registry" component={DocumentsRegistry} />
             <Route path="/smart-rasid">
               <Suspense fallback={<LazyFallback />}>
                 <SmartRasid />
