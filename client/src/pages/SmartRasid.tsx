@@ -56,7 +56,7 @@ const quickCommands = [
   { label: "ملخص لوحة المعلومات", icon: BarChart3, gradient: "from-cyan-500 to-blue-600", query: "أعطني ملخص شامل للوحة المعلومات مع تحليل" },
   { label: "تسريبات حرجة", icon: AlertTriangle, gradient: "from-red-500 to-rose-600", query: "ما هي التسريبات الحرجة الحالية؟ أعطني تفاصيل كل واحد" },
   { label: "تحليل شامل", icon: TrendingUp, gradient: "from-emerald-500 to-teal-600", query: "أجرِ تحليل شامل للاتجاهات: توزيع الخطورة والمصادر والقطاعات" },
-  { label: "حالة الامتثال", icon: Shield, gradient: "from-amber-500 to-orange-600", query: "ما حالة الامتثال لنظام PDPL؟ وما التوصيات؟" },
+  { label: "حالة الحماية", icon: Shield, gradient: "from-amber-500 to-orange-600", query: "ما حالة حماية البيانات الشخصية؟ وما مستوى التهديدات الحالي والتوصيات؟" },
   { label: "البائعون المرصودون", icon: Users, gradient: "from-purple-500 to-violet-600", query: "أعطني تقرير عن البائعين المرصودين ومستوى خطرهم" },
   { label: "خريطة التهديدات", icon: MapPin, gradient: "from-indigo-500 to-blue-600", query: "اعرض خريطة التهديدات الجغرافية والتوزيع حسب المناطق" },
   { label: "الأدلة الرقمية", icon: Link2, gradient: "from-teal-500 to-cyan-600", query: "ما حالة سلسلة الأدلة الرقمية؟ كم دليل محفوظ؟" },
@@ -66,7 +66,7 @@ const quickCommands = [
 const capabilities = [
   { icon: BarChart3, label: "تحليل لوحة القيادة", desc: "إحصائيات وتقارير شاملة", gradient: "from-cyan-500/20 to-blue-500/20" },
   { icon: Search, label: "البحث في التسريبات", desc: "بحث متقدم بكل الفلاتر", gradient: "from-emerald-500/20 to-teal-500/20" },
-  { icon: Shield, label: "الامتثال والسياسات", desc: "PDPL وأفضل الممارسات", gradient: "from-amber-500/20 to-orange-500/20" },
+  { icon: Shield, label: "حماية البيانات", desc: "نظام PDPL والتوصيات", gradient: "from-amber-500/20 to-orange-500/20" },
   { icon: Globe, label: "الدارك ويب واللصق", desc: "رصد المصادر المظلمة", gradient: "from-blue-500/20 to-indigo-500/20" },
   { icon: Users, label: "البائعون والتهديدات", desc: "ملفات تعريف المهددين", gradient: "from-purple-500/20 to-violet-500/20" },
   { icon: Network, label: "رسم المعرفة", desc: "شبكة العلاقات والروابط", gradient: "from-pink-500/20 to-rose-500/20" },
@@ -661,7 +661,7 @@ function getFollowUpSuggestions(content: string): string[] {
     suggestions.push("تفاصيل التقارير المجدولة");
     suggestions.push("سجل التوثيقات الرسمية");
   }
-  if (lower.includes("امتثال") || lower.includes("pdpl") || lower.includes("خصوصية")) {
+  if (lower.includes("حماية") || lower.includes("pdpl") || lower.includes("خصوصية") || lower.includes("تهديد")) {
     suggestions.push("ما مواد PDPL ذات الصلة؟");
     suggestions.push("أفضل الممارسات الأمنية");
   }

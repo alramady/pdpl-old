@@ -30,6 +30,7 @@ export type Message = {
   content: MessageContent | MessageContent[];
   name?: string;
   tool_call_id?: string;
+  tool_calls?: ToolCall[];
 };
 
 export type Tool = {
@@ -137,7 +138,7 @@ const normalizeContentPart = (
 };
 
 const normalizeMessage = (message: Message) => {
-  const { role, name, tool_call_id } = message;
+  const { role, name, tool_call_id, tool_calls } = message;
 
   if (role === "tool" || role === "function") {
     const content = ensureArray(message.content)
@@ -149,6 +150,31 @@ const normalizeMessage = (message: Message) => {
       name,
       tool_call_id,
       content,
+    };
+  }
+
+  // Handle assistant messages with tool_calls (content may be null/empty)
+  if (role === "assistant" && tool_calls && tool_calls.length > 0) {
+    const result: Record<string, unknown> = {
+      role,
+      tool_calls,
+    };
+    // Content can be empty string or null when assistant uses tools
+    if (message.content && message.content !== "") {
+      result.content = typeof message.content === "string" ? message.content : "";
+    } else {
+      result.content = "";
+    }
+    if (name) result.name = name;
+    return result;
+  }
+
+  // Handle messages with empty/null content
+  if (!message.content && message.content !== "") {
+    return {
+      role,
+      name,
+      content: "",
     };
   }
 

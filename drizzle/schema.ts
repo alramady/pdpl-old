@@ -609,3 +609,57 @@ export const reportAudit = mysqlTable("report_audit", {
 
 export type ReportAudit = typeof reportAudit.$inferSelect;
 export type InsertReportAudit = typeof reportAudit.$inferInsert;
+
+
+/**
+ * AI Response Ratings — track quality of Smart Rasid AI responses
+ * Users rate each AI response 1-5 stars with optional feedback text
+ */
+export const aiResponseRatings = mysqlTable("ai_response_ratings", {
+  id: int("id").autoincrement().primaryKey(),
+  messageId: varchar("messageId", { length: 64 }).notNull(),
+  userId: int("ratingUserId").notNull(),
+  userName: varchar("ratingUserName", { length: 255 }),
+  rating: int("rating").notNull(), // 1-5 stars
+  userMessage: text("userMessage"), // The user's original question
+  aiResponse: text("aiResponse"), // The AI's response text
+  toolsUsed: json("toolsUsed").$type<string[]>(), // Which tools the AI used
+  feedback: text("ratingFeedback"), // Optional text feedback
+  createdAt: timestamp("ratingCreatedAt").defaultNow().notNull(),
+});
+
+export type AiResponseRating = typeof aiResponseRatings.$inferSelect;
+export type InsertAiResponseRating = typeof aiResponseRatings.$inferInsert;
+
+/**
+ * Knowledge Base — trainable articles, FAQ, glossary, and instructions
+ * Used by Smart Rasid AI to provide accurate, domain-specific answers
+ */
+export const knowledgeBase = mysqlTable("knowledge_base", {
+  id: int("id").autoincrement().primaryKey(),
+  entryId: varchar("entryId", { length: 64 }).notNull().unique(),
+  category: mysqlEnum("kbCategory", [
+    "article",
+    "faq",
+    "glossary",
+    "instruction",
+    "policy",
+    "regulation",
+  ]).notNull(),
+  title: varchar("kbTitle", { length: 500 }).notNull(),
+  titleAr: varchar("kbTitleAr", { length: 500 }).notNull(),
+  content: text("kbContent").notNull(),
+  contentAr: text("kbContentAr").notNull(),
+  tags: json("kbTags").$type<string[]>(),
+  isPublished: boolean("kbIsPublished").default(true).notNull(),
+  viewCount: int("kbViewCount").default(0),
+  helpfulCount: int("kbHelpfulCount").default(0),
+  createdBy: int("kbCreatedBy"),
+  createdByName: varchar("kbCreatedByName", { length: 255 }),
+  updatedBy: int("kbUpdatedBy"),
+  createdAt: timestamp("kbCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("kbUpdatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type KnowledgeBaseEntry = typeof knowledgeBase.$inferSelect;
+export type InsertKnowledgeBaseEntry = typeof knowledgeBase.$inferInsert;

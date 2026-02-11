@@ -735,7 +735,7 @@ function getPlatformGuide(topic: string): any {
 - low: أرشفة ومتابعة`,
     },
     pdpl_compliance: {
-      title: "الامتثال لنظام حماية البيانات الشخصية",
+      title: "نظام حماية البيانات الشخصية PDPL",
       content: `
 نظام حماية البيانات الشخصية (PDPL) — المواد ذات الصلة:
 
@@ -881,15 +881,30 @@ export async function rasidAIChat(
       const choice = response.choices?.[0];
       if (!choice) break;
 
-      // If the model wants to call tools
-      if (choice.finish_reason === "tool_calls" || choice.message?.tool_calls?.length) {
-        const toolCalls = choice.message?.tool_calls || [];
+      // Check if the model wants to call tools
+      // Some APIs return finish_reason="tool_calls", others return "stop" but include tool_calls
+      const hasToolCalls = choice.message?.tool_calls && choice.message.tool_calls.length > 0;
+      
+      if (hasToolCalls) {
+        const toolCalls = choice.message!.tool_calls!;
         
-        // Add assistant message with tool calls
-        messages.push(choice.message);
+        // Normalize tool calls - ensure each has an id
+        const normalizedToolCalls = toolCalls.map((tc: any, idx: number) => ({
+          ...tc,
+          id: tc.id || `call_${Date.now()}_${idx}`,
+        }));
+
+        // Add assistant message with normalized tool calls
+        // The LLM may return content as null/undefined when using tool_calls
+        // We must ensure content is a valid string for the normalizer
+        messages.push({
+          role: "assistant" as const,
+          content: choice.message?.content || "",
+          tool_calls: normalizedToolCalls,
+        });
 
         // Execute each tool call
-        for (const toolCall of toolCalls) {
+        for (const toolCall of normalizedToolCalls) {
           const fnName = toolCall.function?.name;
           let fnArgs: any = {};
           try {
@@ -899,13 +914,19 @@ export async function rasidAIChat(
           }
 
           toolsUsed.push(fnName);
-          const result = await executeTool(fnName, fnArgs);
+          let result: any;
+          try {
+            result = await executeTool(fnName, fnArgs);
+          } catch (toolErr: any) {
+            console.error(`[RasidAI] Tool ${fnName} error:`, toolErr.message);
+            result = { error: `Tool execution failed: ${toolErr.message}` };
+          }
 
           // Add tool result to messages
           messages.push({
             role: "tool",
             tool_call_id: toolCall.id,
-            content: JSON.stringify(result, null, 0).substring(0, 8000), // Limit size
+            content: typeof result === 'string' ? result.substring(0, 8000) : JSON.stringify(result, null, 0).substring(0, 8000),
           });
         }
 

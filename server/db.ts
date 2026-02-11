@@ -931,3 +931,180 @@ export async function getReportAuditEntries(limit = 100): Promise<ReportAudit[]>
   if (!db) return [];
   return db.select().from(reportAudit).orderBy(desc(reportAudit.createdAt)).limit(limit);
 }
+
+
+// ─── AI Response Ratings Helpers ────────────────────────────────
+import {
+  aiResponseRatings,
+  type InsertAiResponseRating,
+  type AiResponseRating,
+  knowledgeBase,
+  type InsertKnowledgeBaseEntry,
+  type KnowledgeBaseEntry,
+} from "../drizzle/schema";
+
+export async function createAiRating(rating: InsertAiResponseRating): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(aiResponseRatings).values(rating);
+  return result[0].insertId;
+}
+
+export async function getAiRatings(filters?: {
+  limit?: number;
+  minRating?: number;
+  maxRating?: number;
+}): Promise<AiResponseRating[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: SQL[] = [];
+  if (filters?.minRating) conditions.push(gte(aiResponseRatings.rating, filters.minRating));
+  if (filters?.maxRating) conditions.push(lte(aiResponseRatings.rating, filters.maxRating));
+  const query = db.select().from(aiResponseRatings);
+  if (conditions.length > 0) {
+    return query.where(and(...conditions)).orderBy(desc(aiResponseRatings.createdAt)).limit(filters?.limit || 100);
+  }
+  return query.orderBy(desc(aiResponseRatings.createdAt)).limit(filters?.limit || 100);
+}
+
+export async function getAiRatingStats(): Promise<{
+  totalRatings: number;
+  averageRating: number;
+  ratingDistribution: Record<number, number>;
+}> {
+  const db = await getDb();
+  if (!db) return { totalRatings: 0, averageRating: 0, ratingDistribution: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } };
+  const result = await db.select({
+    totalRatings: sql<number>`COUNT(*)`,
+    averageRating: sql<number>`COALESCE(AVG(rating), 0)`,
+    r1: sql<number>`SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END)`,
+    r2: sql<number>`SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END)`,
+    r3: sql<number>`SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END)`,
+    r4: sql<number>`SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END)`,
+    r5: sql<number>`SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END)`,
+  }).from(aiResponseRatings);
+  const row = result[0];
+  return {
+    totalRatings: Number(row?.totalRatings || 0),
+    averageRating: Math.round(Number(row?.averageRating || 0) * 10) / 10,
+    ratingDistribution: {
+      1: Number(row?.r1 || 0),
+      2: Number(row?.r2 || 0),
+      3: Number(row?.r3 || 0),
+      4: Number(row?.r4 || 0),
+      5: Number(row?.r5 || 0),
+    },
+  };
+}
+
+// ─── Knowledge Base Helpers ─────────────────────────────────────
+
+export async function getKnowledgeBaseEntries(filters?: {
+  category?: string;
+  search?: string;
+  isPublished?: boolean;
+  limit?: number;
+}): Promise<KnowledgeBaseEntry[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: SQL[] = [];
+  if (filters?.category) conditions.push(eq(knowledgeBase.category, filters.category as any));
+  if (filters?.isPublished !== undefined) conditions.push(eq(knowledgeBase.isPublished, filters.isPublished));
+  if (filters?.search) {
+    conditions.push(
+      or(
+        like(knowledgeBase.title, `%${filters.search}%`),
+        like(knowledgeBase.titleAr, `%${filters.search}%`),
+        like(knowledgeBase.content, `%${filters.search}%`),
+        like(knowledgeBase.contentAr, `%${filters.search}%`)
+      )!
+    );
+  }
+  const query = db.select().from(knowledgeBase);
+  if (conditions.length > 0) {
+    return query.where(and(...conditions)).orderBy(desc(knowledgeBase.createdAt)).limit(filters?.limit || 100);
+  }
+  return query.orderBy(desc(knowledgeBase.createdAt)).limit(filters?.limit || 100);
+}
+
+export async function getKnowledgeBaseEntryById(entryId: string): Promise<KnowledgeBaseEntry | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(knowledgeBase).where(eq(knowledgeBase.entryId, entryId)).limit(1);
+  return result[0];
+}
+
+export async function createKnowledgeBaseEntry(entry: InsertKnowledgeBaseEntry): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(knowledgeBase).values(entry);
+  return result[0].insertId;
+}
+
+export async function updateKnowledgeBaseEntry(
+  entryId: string,
+  data: Partial<InsertKnowledgeBaseEntry>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(knowledgeBase).set(data).where(eq(knowledgeBase.entryId, entryId));
+}
+
+export async function deleteKnowledgeBaseEntry(entryId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(knowledgeBase).where(eq(knowledgeBase.entryId, entryId));
+}
+
+export async function getKnowledgeBaseStats(): Promise<{
+  total: number;
+  published: number;
+  byCategory: Record<string, number>;
+}> {
+  const db = await getDb();
+  if (!db) return { total: 0, published: 0, byCategory: {} };
+  const result = await db.select({
+    total: sql<number>`COUNT(*)`,
+    published: sql<number>`SUM(CASE WHEN ${knowledgeBase.isPublished} = true THEN 1 ELSE 0 END)`,
+  }).from(knowledgeBase);
+  const catResult = await db.select({
+    category: knowledgeBase.category,
+    count: sql<number>`COUNT(*)`,
+  }).from(knowledgeBase).groupBy(knowledgeBase.category);
+  const byCategory: Record<string, number> = {};
+  for (const row of catResult) {
+    byCategory[row.category] = Number(row.count);
+  }
+  return {
+    total: Number(result[0]?.total || 0),
+    published: Number(result[0]?.published || 0),
+    byCategory,
+  };
+}
+
+export async function incrementKnowledgeBaseViewCount(entryId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(knowledgeBase)
+    .set({ viewCount: sql`${knowledgeBase.viewCount} + 1` })
+    .where(eq(knowledgeBase.entryId, entryId));
+}
+
+export async function getPublishedKnowledgeForAI(): Promise<string> {
+  const db = await getDb();
+  if (!db) return "";
+  const entries = await db.select({
+    category: knowledgeBase.category,
+    title: knowledgeBase.title,
+    titleAr: knowledgeBase.titleAr,
+    content: knowledgeBase.content,
+    contentAr: knowledgeBase.contentAr,
+    tags: knowledgeBase.tags,
+  }).from(knowledgeBase).where(eq(knowledgeBase.isPublished, true)).limit(50);
+  
+  if (entries.length === 0) return "";
+  
+  return entries.map(e => 
+    `[${e.category}] ${e.titleAr || e.title}\n${e.contentAr || e.content}${e.tags?.length ? `\nالعلامات: ${e.tags.join(', ')}` : ''}`
+  ).join('\n\n---\n\n');
+}

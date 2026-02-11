@@ -396,3 +396,48 @@
 - [x] Add suggestions dropdown with debounced search
 - [x] All 120 tests passing (4 test files including rasidAI.test.ts)
 - [x] Checkpoint saved
+
+## Phase 30: AI Rating System + Knowledge Base + Glassmorphism All Pages
+
+### A. AI Response Rating System (1-5 Stars)
+- [ ] Add ai_response_ratings table to schema (rating, messageId, userId, feedback text)
+- [ ] Push database migration
+- [ ] Add tRPC procedures for submitting and querying ratings
+- [ ] Add star rating component to each AI response in SmartRasid chat
+- [ ] Show average rating stats in knowledge base admin page
+- [ ] Integrate ratings into AI system prompt for quality improvement
+
+### B. Trainable Knowledge Base with Admin Page
+- [ ] Add knowledge_base table to schema (articles, FAQ, glossary, instructions)
+- [ ] Push database migration
+- [ ] Add tRPC procedures for CRUD operations on knowledge base entries
+- [ ] Create KnowledgeBase admin page with article/FAQ/glossary management
+- [ ] Add search and filter functionality in knowledge base page
+- [ ] Integrate knowledge base content into AI system prompt
+- [ ] Add knowledge base page to sidebar under متقدم group
+
+### C. Glassmorphism Effects Across All Platform Pages
+- [ ] Update Dashboard page cards and stats with glass effects
+- [ ] Update Leaks page table and filters with glass effects
+- [ ] Update Reports page with glass card effects
+- [ ] Update TelegramMonitor, DarkWebMonitor, PasteSites pages
+- [ ] Update SellerProfiles, EvidenceChain pages
+- [ ] Update ThreatMap, AlertChannels pages
+- [ ] Update MonitoringJobs, ScheduledReports pages
+- [ ] Update all modals and dialogs with glass effects
+- [ ] Update PIIClassifier, OsintTools, KnowledgeGraph pages
+- [ ] Update FeedbackAccuracy, ThreatRules pages
+- [ ] Update LiveScan, VerifyDocument, DocumentsRegistry pages
+- [ ] Ensure consistent glass effect across all components
+
+## Phase 31: Fix Smart Rasid AI Assistant
+- [x] Diagnose and fix the error preventing Smart Rasid from responding
+  - Root cause: LLM returns content=null with tool_calls, normalizeMessage crashed
+  - Fixed normalizeMessage in llm.ts to handle assistant messages with tool_calls
+  - Added tool_calls to Message type definition
+- [x] Remove incorrect terminology (امتثال/compliance) from quick commands
+- [x] Update all quick commands to match platform scope (data leak monitoring)
+- [x] Test Smart Rasid with multiple queries to verify it works
+  - Test 1: "كم عدد التسريبات الحرجة؟" → ✅ "57 تسريب"
+  - Test 2: "أعطني ملخص لوحة المعلومات" → ✅ Full dashboard summary with stats
+- [x] All 120 tests passing (4 test files)
