@@ -867,14 +867,14 @@ export default function SmartRasid() {
         {/* Top accent line */}
         <div className="h-[2px] bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
 
-        <div className="flex items-center justify-between px-5 py-3">
-          <div className="flex items-center gap-4">
+        <div className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-3">
+          <div className="flex items-center gap-3 sm:gap-4">
             {/* Rasid Character Avatar with glow */}
             <div className="relative group">
               <motion.div
                 animate={{ boxShadow: ["0 0 15px rgba(0,200,180,0.2)", "0 0 30px rgba(0,200,180,0.4)", "0 0 15px rgba(0,200,180,0.2)"] }}
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                className="w-12 h-12 rounded-2xl overflow-hidden border-2 border-cyan-500/30 relative"
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl overflow-hidden border-2 border-cyan-500/30 relative"
               >
                 <img
                   src={RASID_FACE_URL}
@@ -905,9 +905,9 @@ export default function SmartRasid() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Status indicators */}
-            <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[#060d1b]/60 border border-cyan-500/10 font-mono text-[10px]">
+            <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 rounded-lg bg-[#060d1b]/60 border border-cyan-500/10 font-mono text-[10px]">
               <span className="flex items-center gap-1 text-emerald-400">
                 <motion.span animate={{ opacity: [1, 0.3, 1] }} transition={{ duration: 1.5, repeat: Infinity }} className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
                 ONLINE
@@ -924,7 +924,7 @@ export default function SmartRasid() {
                 const newMuted = soundManager.toggleMute();
                 toast.info(newMuted ? "تم كتم الصوت" : "تم تفعيل الصوت");
               }}
-              className={`flex items-center gap-1 px-2.5 py-2 rounded-lg border text-xs transition-all font-mono ${
+              className={`flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg border text-xs transition-all font-mono ${
                 isMuted
                   ? "bg-red-500/10 border-red-500/20 text-red-400"
                   : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
@@ -944,7 +944,7 @@ export default function SmartRasid() {
               whileTap={{ scale: 0.95 }}
               onClick={saveConversation}
               disabled={isSaving || messages.length === 0}
-              className="flex items-center gap-1 px-2.5 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 text-xs transition-all font-mono disabled:opacity-30"
+              className="flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 hover:border-emerald-500/40 text-emerald-400 text-xs transition-all font-mono disabled:opacity-30"
               title="حفظ المحادثة"
             >
               {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
@@ -956,7 +956,7 @@ export default function SmartRasid() {
               whileTap={{ scale: 0.95 }}
               onClick={exportConversation}
               disabled={messages.length === 0}
-              className="flex items-center gap-1 px-2.5 py-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/40 text-violet-400 text-xs transition-all font-mono disabled:opacity-30"
+              className="hidden sm:flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 border border-violet-500/20 hover:border-violet-500/40 text-violet-400 text-xs transition-all font-mono disabled:opacity-30"
               title="تصدير المحادثة"
             >
               <Download className="w-3.5 h-3.5" />
@@ -967,7 +967,7 @@ export default function SmartRasid() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowHistory(!showHistory)}
-              className={`flex items-center gap-1 px-2.5 py-2 rounded-lg border text-xs transition-all font-mono ${
+              className={`flex items-center gap-1 px-2 py-1.5 sm:px-2.5 sm:py-2 rounded-lg border text-xs transition-all font-mono ${
                 showHistory
                   ? "bg-cyan-500/20 border-cyan-500/40 text-cyan-300"
                   : "bg-cyan-500/10 border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20"
@@ -981,16 +981,16 @@ export default function SmartRasid() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={startNewChat}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 text-xs transition-all font-mono"
+              className="flex items-center gap-1.5 px-2 py-1.5 sm:px-3 sm:py-2 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 text-xs transition-all font-mono"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline tracking-wide">NEW_SESSION</span>
+              <span className="hidden md:inline tracking-wide">NEW_SESSION</span>
             </motion.button>
           </div>
         </div>
 
         {/* Quick Commands — Console-style chips */}
-        <div className="flex items-center gap-2 px-5 pb-3 overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 pb-2 sm:pb-3 overflow-x-auto scrollbar-hide">
           <span className="text-[10px] text-cyan-500/40 whitespace-nowrap flex items-center gap-1 font-mono">
             <Terminal className="w-3 h-3" />
             CMD &gt;
@@ -1014,10 +1014,10 @@ export default function SmartRasid() {
       <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5 z-10 relative">
         {messages.length === 0 ? (
           /* ═══ WELCOME SCREEN — Console Style ═══ */
-          <div className="flex flex-col items-center justify-center h-full max-w-3xl mx-auto">
+          <div className="flex flex-col items-center justify-center h-full max-w-3xl mx-auto px-2">
             {/* Rasid Character with effects */}
             <div className="relative mb-8">
-              <PulseRings size={130} />
+              <PulseRings size={100} />
 
               {/* Rotating tech ring */}
               <motion.div
@@ -1042,7 +1042,7 @@ export default function SmartRasid() {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 className="relative"
               >
-                <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_40px_rgba(0,200,180,0.2)] bg-[#0a1628]">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_40px_rgba(0,200,180,0.2)] bg-[#0a1628]">
                   <img
                     src={RASID_FACE_URL}
                     alt="راصد الذكي"
@@ -1068,7 +1068,7 @@ export default function SmartRasid() {
               transition={{ delay: 0.2 }}
               className="text-center mb-2"
             >
-              <h2 className="text-3xl font-bold font-[Tajawal] mb-1">
+              <h2 className="text-2xl sm:text-3xl font-bold font-[Tajawal] mb-1">
                 <span className="bg-gradient-to-r from-cyan-300 via-teal-200 to-emerald-300 bg-clip-text text-transparent">
                   راصد الذكي
                 </span>
@@ -1106,7 +1106,7 @@ export default function SmartRasid() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.35 }}
-              className="flex items-center gap-2 mb-8 px-4 py-2.5 rounded-xl bg-[#060d1b]/80 border border-cyan-500/15 font-mono text-[10px]"
+              className="flex items-center gap-1.5 sm:gap-2 mb-6 sm:mb-8 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#060d1b]/80 border border-cyan-500/15 font-mono text-[9px] sm:text-[10px] flex-wrap justify-center"
             >
               <Radar className="w-3.5 h-3.5 text-cyan-400" />
               <span className="text-cyan-400 font-medium">RASID</span>
@@ -1141,7 +1141,7 @@ export default function SmartRasid() {
                   {Object.keys(toolLabels).length} TOOLS · 7 AGENTS
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 sm:gap-2">
                 {capabilities.map((cap, i) => (
                   <motion.div
                     key={i}
@@ -1493,11 +1493,11 @@ export default function SmartRasid() {
       <AnimatePresence>
         {showHistory && (
           <motion.div
-            initial={{ x: 300, opacity: 0 }}
+            initial={{ x: -300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
-            exit={{ x: 300, opacity: 0 }}
+            exit={{ x: -300, opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className="fixed top-0 left-0 bottom-0 w-80 bg-[#0a1628]/95 backdrop-blur-2xl border-l border-cyan-500/20 z-50 flex flex-col shadow-2xl shadow-cyan-500/5"
+            className="fixed top-0 right-0 bottom-0 w-72 sm:w-80 bg-[#0a1628]/95 backdrop-blur-2xl border-l border-cyan-500/20 z-50 flex flex-col shadow-2xl shadow-cyan-500/5"
             dir="rtl"
           >
             {/* History Header */}

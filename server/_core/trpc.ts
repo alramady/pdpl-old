@@ -3,6 +3,9 @@ import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import type { TrpcContext } from "./context";
 
+/** Root Admin userId — protected from any modifications */
+export const ROOT_ADMIN_USER_ID = "mruhaily";
+
 const t = initTRPC.context<TrpcContext>().create({
   transformer: superjson,
 });
@@ -52,5 +55,26 @@ export const adminProcedure = t.procedure.use(
     }
 
     throw new TRPCError({ code: "FORBIDDEN", message: NOT_ADMIN_ERR_MSG });
+  }),
+);
+
+/**
+ * Root Admin Procedure — Only accessible by mruhaily (root_admin)
+ * Used for AI control pages: Knowledge Base, Personality Scenarios, Training Center
+ */
+export const rootAdminProcedure = t.procedure.use(
+  t.middleware(async opts => {
+    const { ctx, next } = opts;
+
+    // Must be a platform user with root_admin role AND userId === mruhaily
+    if (ctx.platformUser && ctx.platformUser.platformRole === "root_admin" && ctx.platformUser.userId === ROOT_ADMIN_USER_ID) {
+      return next({ ctx });
+    }
+
+    if (!ctx.user && !ctx.platformUser) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
+    }
+
+    throw new TRPCError({ code: "FORBIDDEN", message: "هذه الصفحة متاحة فقط لمدير النظام الرئيسي" });
   }),
 );

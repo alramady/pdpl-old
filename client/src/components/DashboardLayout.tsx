@@ -2,8 +2,11 @@
  * DashboardLayout — SDAIA Ultra Premium Design System
  * RTL-first sidebar with SDAIA official colors (#273470, #6459A7, #3DB1AC)
  * Glassmorphism, scan-line effects, and premium animations
+ * - Mobile: auto-close sidebar on nav item click
+ * - Groups: collapsed by default, only active group expanded
+ * - Root Admin protection: AI control pages only visible to mruhaily
  */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -50,6 +53,7 @@ import {
   BookOpen,
   HeartHandshake,
   GraduationCap,
+  Activity,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -60,9 +64,12 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { Redirect } from "wouter";
 
 /* SDAIA Official FULL Logo URLs (with "منصة راصد" + "مكتب إدارة البيانات الوطنية") */
-const FULL_LOGO_DARK = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/vyIfeykxwXasuonx.png"; // Navy+Gold for light bg
-const FULL_LOGO_LIGHT = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/tSiomIdoNdNFAtOB.png"; // Cream+Gold for dark bg
+const FULL_LOGO_DARK = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/vyIfeykxwXasuonx.png";
+const FULL_LOGO_LIGHT = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/tSiomIdoNdNFAtOB.png";
 const RASID_LOGO = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/ziWPuMClYqvYmkJG.png";
+
+/** Root Admin userId — protected from any modifications */
+const ROOT_ADMIN_USER_ID = "mruhaily";
 
 interface NavItem {
   label: string;
@@ -71,6 +78,8 @@ interface NavItem {
   path: string;
   requiresAuth?: boolean;
   minRole?: string;
+  /** Only visible to root admin (mruhaily) */
+  rootAdminOnly?: boolean;
   badge?: number;
 }
 
@@ -96,17 +105,28 @@ const navGroups: NavGroup[] = [
     ],
   },
   {
+    id: "monitoring",
+    label: "أدوات الرصد",
+    labelEn: "Monitoring Tools",
+    icon: Activity,
+    items: [
+      { label: "الرصد المباشر", labelEn: "Live Scan", icon: Scan, path: "/live-scan" },
+      { label: "رصد تليجرام", labelEn: "Telegram", icon: Send, path: "/telegram" },
+      { label: "الدارك ويب", labelEn: "Dark Web", icon: Globe, path: "/darkweb" },
+      { label: "مواقع اللصق", labelEn: "Paste Sites", icon: FileText, path: "/paste-sites" },
+      { label: "مهام الرصد", labelEn: "Monitoring Jobs", icon: Radio, path: "/monitoring-jobs" },
+    ],
+  },
+  {
     id: "operational",
     label: "تنفيذي",
     labelEn: "Operational",
     icon: ShieldAlert,
     items: [
       { label: "التسريبات", labelEn: "Leaks", icon: ShieldAlert, path: "/leaks" },
-      { label: "رصد تليجرام", labelEn: "Telegram", icon: Send, path: "/telegram" },
-      { label: "الدارك ويب", labelEn: "Dark Web", icon: Globe, path: "/darkweb" },
-      { label: "مواقع اللصق", labelEn: "Paste Sites", icon: FileText, path: "/paste-sites" },
       { label: "ملفات البائعين", labelEn: "Seller Profiles", icon: UserX, path: "/seller-profiles" },
-      { label: "الرصد المباشر", labelEn: "Live Scan", icon: Scan, path: "/live-scan" },
+      { label: "قنوات التنبيه", labelEn: "Alert Channels", icon: Bell, path: "/alert-channels" },
+      { label: "التقارير المجدولة", labelEn: "Scheduled Reports", icon: CalendarClock, path: "/scheduled-reports" },
     ],
   },
   {
@@ -121,17 +141,6 @@ const navGroups: NavGroup[] = [
       { label: "أدوات OSINT", labelEn: "OSINT Tools", icon: Radar, path: "/osint-tools" },
       { label: "رسم المعرفة", labelEn: "Knowledge Graph", icon: Network, path: "/knowledge-graph" },
       { label: "مقاييس الدقة", labelEn: "Accuracy Metrics", icon: Brain, path: "/feedback-accuracy" },
-    ],
-  },
-  {
-    id: "management",
-    label: "إداري",
-    labelEn: "Management",
-    icon: Settings,
-    items: [
-      { label: "مهام الرصد", labelEn: "Monitoring Jobs", icon: Radio, path: "/monitoring-jobs" },
-      { label: "قنوات التنبيه", labelEn: "Alert Channels", icon: Bell, path: "/alert-channels" },
-      { label: "التقارير المجدولة", labelEn: "Scheduled Reports", icon: CalendarClock, path: "/scheduled-reports" },
       { label: "التحقق من التوثيق", labelEn: "Verify Document", icon: FileCheck, path: "/verify" },
     ],
   },
@@ -146,9 +155,17 @@ const navGroups: NavGroup[] = [
       { label: "سجل المراجعة", labelEn: "Audit Log", icon: ScrollText, path: "/audit-log", requiresAuth: true, minRole: "admin" },
       { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/user-management", requiresAuth: true, minRole: "admin" },
       { label: "سجل التوثيقات", labelEn: "Documents", icon: FileBarChart, path: "/documents-registry", requiresAuth: true, minRole: "admin" },
-      { label: "قاعدة المعرفة", labelEn: "Knowledge Base", icon: BookOpen, path: "/knowledge-base", requiresAuth: true, minRole: "admin" },
-      { label: "سيناريوهات الشخصية", labelEn: "Personality", icon: HeartHandshake, path: "/personality-scenarios", requiresAuth: true, minRole: "admin" },
-      { label: "مركز التدريب", labelEn: "Training Center", icon: GraduationCap, path: "/training-center", requiresAuth: true, minRole: "admin" },
+    ],
+  },
+  {
+    id: "ai_control",
+    label: "تحكم راصد الذكي",
+    labelEn: "AI Control",
+    icon: Sparkles,
+    items: [
+      { label: "قاعدة المعرفة", labelEn: "Knowledge Base", icon: BookOpen, path: "/knowledge-base", requiresAuth: true, rootAdminOnly: true },
+      { label: "سيناريوهات الشخصية", labelEn: "Personality", icon: HeartHandshake, path: "/personality-scenarios", requiresAuth: true, rootAdminOnly: true },
+      { label: "مركز التدريب", labelEn: "Training Center", icon: GraduationCap, path: "/training-center", requiresAuth: true, rootAdminOnly: true },
     ],
   },
 ];
@@ -169,13 +186,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, isAuthenticated, loading, logout, isAdmin, ndmoRole } = useNdmoAuth();
   const { theme, toggleTheme, switchable } = useTheme();
 
+  // Get the platform userId for root admin check
+  const platformUserId = (user as any)?.userId ?? "";
+  const isRootAdmin = platformUserId === ROOT_ADMIN_USER_ID;
+
+  // Determine which group is active based on current location
+  const activeGroupId = navGroups.find((g) =>
+    g.items.some((item) => item.path === location)
+  )?.id;
+
+  // Groups default to collapsed, only active group is expanded
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
     navGroups.forEach((g) => {
-      initial[g.id] = true;
+      initial[g.id] = false; // All collapsed by default
     });
+    if (activeGroupId) {
+      initial[activeGroupId] = true; // Expand active group
+    }
     return initial;
   });
+
+  // Update expanded groups when location changes
+  useEffect(() => {
+    if (activeGroupId) {
+      setExpandedGroups((prev) => {
+        // Only expand the active group if it's not already expanded
+        if (prev[activeGroupId]) return prev;
+        return { ...prev, [activeGroupId]: true };
+      });
+    }
+  }, [activeGroupId]);
 
   const currentPage = allNavItems.find((item) => item.path === location);
 
@@ -183,7 +224,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
   };
 
+  // Close mobile sidebar on navigation
+  const handleNavClick = useCallback(() => {
+    if (mobileOpen) {
+      setMobileOpen(false);
+    }
+  }, [mobileOpen]);
+
   const isItemVisible = (item: NavItem) => {
+    // Root admin only items
+    if (item.rootAdminOnly && !isRootAdmin) return false;
     if (!item.requiresAuth) return true;
     if (!isAuthenticated) return false;
     if (item.minRole === "admin" && !isAdmin) return false;
@@ -210,21 +260,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex h-screen overflow-hidden bg-background">
       {/* ═══ AURORA BACKGROUND — SDAIA Navy/Teal ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0 dark:block hidden">
-        {/* Top-right teal aurora */}
         <div
           className="absolute top-0 right-0 w-[60%] h-[50%] opacity-25"
           style={{
             background: "radial-gradient(ellipse at 70% 20%, rgba(61, 177, 172, 0.3), transparent 70%)",
           }}
         />
-        {/* Bottom-left navy aurora */}
         <div
           className="absolute bottom-0 left-0 w-[50%] h-[40%] opacity-20"
           style={{
             background: "radial-gradient(ellipse at 30% 80%, rgba(39, 52, 112, 0.25), transparent 60%)",
           }}
         />
-        {/* Center purple glow */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[60%] opacity-10"
           style={{
@@ -288,7 +335,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="absolute w-1.5 h-1.5 rounded-full bg-[#3DB1AC]" style={{ top: '50%', left: '3%', opacity: 0.3, animation: 'orbit 10s linear infinite' }} />
               <div className="absolute w-1 h-1 rounded-full bg-[#6459A7]" style={{ top: '20%', left: '50%', opacity: 0.25, animation: 'orbit 12s linear infinite reverse' }} />
             </div>
-            {/* Logo image — LARGE to match design.rasid.vip */}
+            {/* Logo image */}
             <img
               src={logoSrc}
               alt="منصة راصد - مكتب إدارة البيانات الوطنية"
@@ -361,7 +408,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           const isItemActive = location === item.path;
                           const Icon = item.icon;
                           return (
-                            <Link key={item.path} href={item.path}>
+                            <Link key={item.path} href={item.path} onClick={handleNavClick}>
                               <motion.div
                                 whileHover={{ x: -2 }}
                                 whileTap={{ scale: 0.98 }}
@@ -387,6 +434,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 </motion.div>
                                 {!collapsed && (
                                   <span className="text-[13px] font-medium whitespace-nowrap">{item.label}</span>
+                                )}
+                                {/* Root admin badge */}
+                                {!collapsed && item.rootAdminOnly && (
+                                  <span className="text-[8px] px-1 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/20 mr-auto">
+                                    ROOT
+                                  </span>
                                 )}
                                 {collapsed && (
                                   <div className="absolute right-14 bg-popover dark:bg-[rgba(26,37,80,0.9)] dark:backdrop-blur-xl text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 dark:border dark:border-[rgba(61,177,172,0.15)]">
@@ -423,8 +476,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-medium text-foreground truncate">{user.name || "مستخدم"}</p>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    {roleLabels[ndmoRole] || ndmoRole}
-                    {isAdmin && " (مشرف)"}
+                    {isRootAdmin ? "مدير النظام الرئيسي" : roleLabels[ndmoRole] || ndmoRole}
+                    {isAdmin && !isRootAdmin && " (مشرف)"}
+                    {isRootAdmin && " (Root)"}
                   </p>
                 </div>
               )}
@@ -548,3 +602,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
+
+/** Export ROOT_ADMIN_USER_ID for use in other components */
+export { ROOT_ADMIN_USER_ID };

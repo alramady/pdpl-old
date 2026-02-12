@@ -86,6 +86,8 @@ export default function TelegramMonitor() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [selectedChannel, setSelectedChannel] = useState<any>(null);
   const [selectedLeak, setSelectedLeak] = useState<any>(null);
+  const [riskFilter, setRiskFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data: channels, isLoading: channelsLoading } = trpc.channels.list.useQuery({ platform: "telegram" });
   const { data: leaksData, isLoading: leaksLoading } = trpc.leaks.list.useQuery({ source: "telegram" });
@@ -94,7 +96,12 @@ export default function TelegramMonitor() {
   const telegramLeaks = leaksData ?? [];
 
   const filteredChannels = telegramChannels.filter(
-    (ch) => ch.name.toLowerCase().includes(searchQuery.toLowerCase())
+    (ch) => {
+      const matchesSearch = ch.name.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesRisk = riskFilter === "all" || ch.riskLevel === riskFilter;
+      const matchesStatus = statusFilter === "all" || ch.status === statusFilter;
+      return matchesSearch && matchesRisk && matchesStatus;
+    }
   );
 
   const activeChannels = telegramChannels.filter(c => c.status === "active");
@@ -172,10 +179,26 @@ export default function TelegramMonitor() {
           <RefreshCw className="w-4 h-4" />
           تحديث
         </Button>
-        <Button variant="outline" className="gap-2" onClick={() => toast("الفلاتر قريباً", { description: "Filters coming soon" })}>
-          <Filter className="w-4 h-4" />
-          فلترة
-        </Button>
+        <select
+          value={riskFilter}
+          onChange={(e) => setRiskFilter(e.target.value)}
+          className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground"
+        >
+          <option value="all">التأثير: الكل</option>
+          <option value="high">عالي</option>
+          <option value="medium">متوسط</option>
+          <option value="low">منخفض</option>
+        </select>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground"
+        >
+          <option value="all">الحالة: الكل</option>
+          <option value="active">نشط</option>
+          <option value="paused">متوقف</option>
+          <option value="flagged">مُعلَّم</option>
+        </select>
       </div>
 
       {/* Channels grid — clickable */}

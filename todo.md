@@ -838,3 +838,21 @@
 - [x] Add motion animations and visual effects to pledge modal
 - [x] Improve visual design (smaller text, compact sections, better layout)
 - [x] Test on mobile and desktop viewports
+
+## Phase 69: Major Bug Fixes & Feature Activation
+- [x] Fix mobile sidebar: auto-close when clicking a menu item (currently stays open)
+- [x] Reorganize sidebar: create "أدوات الرصد" (Monitoring Tools) group for all monitoring-related pages
+- [x] Fix card glassmorphism: add visible glass borders to all cards across platform
+- [x] Fix notifications: show all platform notifications (global view)
+- [x] Fix report save button: not working (now downloads HTML file directly)
+- [ ] Complete PDF report: finish sections 11-12 (AI Recommendations + QR/verification/footer)
+- [x] Fix document verification: not working properly (fixed useEffect deps)
+- [ ] Activate Live Scan: make scan actually functional (not just UI)
+- [ ] Activate PII Classifier: make classification actually functional (not just UI)
+- [x] Activate alerts/notifications: show real data (already using real DB data)
+- [x] Improve Smart Rasid mobile visual design
+- [ ] Activate Smart Rasid to execute ALL platform functions (not just chat)
+- [x] Sidebar groups default to collapsed state (only active group open)
+- [x] Root Admin (mruhaily) protection - prevent role changes, deletion, or permission modifications
+- [x] Restrict AI control pages (Knowledge Base, Personality Scenarios, Training Center) to root admin only
+- [x] Smart Rasid control pages visible only to mruhaily root admin account

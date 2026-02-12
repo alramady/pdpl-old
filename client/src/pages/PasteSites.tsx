@@ -260,7 +260,13 @@ export default function PasteSites() {
                 <p className="text-xs text-muted-foreground">التسريبات المكتشفة</p>
                 <p className="font-bold text-2xl text-cyan-400">{channel.leaksDetected ?? 0}</p>
             </div>
-            <Button variant="outline" className="w-full" onClick={() => toast.info("زيارة الموقع", { description: "هذه الميزة قيد التطوير" })}>
+            <Button variant="outline" className="w-full" onClick={() => {
+              if (channel.url) {
+                window.open(channel.url, '_blank', 'noopener,noreferrer');
+              } else {
+                toast.info("لا يوجد رابط متاح لهذا الموقع");
+              }
+            }}>
               زيارة الموقع <ExternalLink className="w-3 h-3 mr-2" />
             </Button>
           </div>
@@ -305,7 +311,15 @@ export default function PasteSites() {
                     </div>
                 </div>
             )}
-            <Button variant="outline" className="w-full" onClick={() => toast.info("فتح المصدر", { description: "هذه الميزة قيد التطوير" })}>
+            <Button variant="outline" className="w-full" onClick={() => {
+              if (paste.sourceUrl) {
+                window.open(paste.sourceUrl, '_blank', 'noopener,noreferrer');
+              } else if (paste.sourceName) {
+                toast.info(`المصدر: ${paste.sourceName}`, { description: "لا يوجد رابط مباشر متاح" });
+              } else {
+                toast.info("لا يوجد رابط متاح لهذا المصدر");
+              }
+            }}>
               فتح المصدر الأصلي <ExternalLink className="w-3 h-3 mr-2" />
             </Button>
           </div>

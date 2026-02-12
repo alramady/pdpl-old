@@ -1,7 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
-import { publicProcedure, protectedProcedure, adminProcedure, router } from "./_core/trpc";
+import { publicProcedure, protectedProcedure, adminProcedure, rootAdminProcedure, router, ROOT_ADMIN_USER_ID } from "./_core/trpc";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { SignJWT } from "jose";
@@ -329,6 +329,21 @@ export const appRouter = router({
         password: z.string().min(6).optional(),
       }))
       .mutation(async ({ input, ctx }) => {
+        // ═══ ROOT ADMIN PROTECTION ═══
+        const targetUser = await getPlatformUserById(input.id);
+        if (targetUser && targetUser.userId === ROOT_ADMIN_USER_ID) {
+          // Only root admin can modify their own account
+          if (!ctx.platformUser || ctx.platformUser.userId !== ROOT_ADMIN_USER_ID) {
+            throw new Error("لا يمكن تعديل حساب مدير النظام الرئيسي");
+          }
+          // Root admin cannot change their own role or status
+          if (input.platformRole && input.platformRole !== "root_admin") {
+            throw new Error("لا يمكن تغيير صلاحية مدير النظام الرئيسي");
+          }
+          if (input.status && input.status !== "active") {
+            throw new Error("لا يمكن تعطيل حساب مدير النظام الرئيسي");
+          }
+        }
         const updates: Record<string, unknown> = {};
         if (input.name) updates.name = input.name;
         if (input.email !== undefined) updates.email = input.email;
@@ -345,6 +360,11 @@ export const appRouter = router({
     delete: adminProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ input, ctx }) => {
+        // ═══ ROOT ADMIN PROTECTION — Cannot delete root admin ═══
+        const targetUser = await getPlatformUserById(input.id);
+        if (targetUser && targetUser.userId === ROOT_ADMIN_USER_ID) {
+          throw new Error("لا يمكن حذف حساب مدير النظام الرئيسي — هذا الحساب محمي");
+        }
         await deletePlatformUser(input.id);
         const who = ctx.platformUser?.displayName ?? ctx.user?.name ?? "System";
         await logAudit(ctx.platformUser?.id ?? ctx.user?.id ?? 0, "user.delete", `Deleted platform user #${input.id}`, "user_management", who);
@@ -356,6 +376,13 @@ export const appRouter = router({
         newPassword: z.string().min(6),
       }))
       .mutation(async ({ input, ctx }) => {
+        // ═══ ROOT ADMIN PROTECTION — Only root admin can reset their own password ═══
+        const targetUser = await getPlatformUserById(input.id);
+        if (targetUser && targetUser.userId === ROOT_ADMIN_USER_ID) {
+          if (!ctx.platformUser || ctx.platformUser.userId !== ROOT_ADMIN_USER_ID) {
+            throw new Error("لا يمكن إعادة تعيين كلمة مرور مدير النظام الرئيسي");
+          }
+        }
         const hash = await bcrypt.hash(input.newPassword, 12);
         await updatePlatformUser(input.id, { passwordHash: hash });
         const who = ctx.platformUser?.displayName ?? ctx.user?.name ?? "System";
@@ -712,12 +739,13 @@ export const appRouter = router({
     list: publicProcedure
       .input(z.object({ limit: z.number().optional() }).optional())
       .query(async ({ ctx, input }) => {
-        const userId = ctx.user?.id ?? null;
+        // Use platformUser id if available, otherwise OAuth user id
+        const userId = ctx.platformUser?.id ?? ctx.user?.id ?? null;
         return getNotifications(userId, input?.limit ?? 50);
       }),
 
     unreadCount: publicProcedure.query(async ({ ctx }) => {
-      const userId = ctx.user?.id ?? null;
+      const userId = ctx.platformUser?.id ?? ctx.user?.id ?? null;
       return getUnreadNotificationCount(userId);
     }),
 

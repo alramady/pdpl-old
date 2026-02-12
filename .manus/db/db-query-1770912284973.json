@@ -1,0 +1,110 @@
+{
+  "query": "SELECT id, userId, notificationType, notifTitle, notifTitleAr, notifSeverity, isRead, createdAt FROM notifications ORDER BY createdAt DESC LIMIT 10;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute SELECT id, userId, notificationType, notifTitle, notifTitleAr, notifSeverity, isRead, createdAt FROM notifications ORDER BY createdAt DESC LIMIT 10;",
+  "rows": [
+    {
+      "id": "90057",
+      "userId": "NULL",
+      "notificationType": "job_complete",
+      "notifTitle": "Monitoring Job Complete: 1 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "createdAt": "2026-02-12 16:00:02"
+    },
+    {
+      "id": "90056",
+      "userId": "NULL",
+      "notificationType": "new_leak",
+      "notifTitle": "New Leak Detected: Insurance Policy Holder Data",
+      "notifTitleAr": "تسريب جديد: بيانات حاملي وثائق التأمين",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "createdAt": "2026-02-12 16:00:01"
+    },
+    {
+      "id": "90054",
+      "userId": "NULL",
+      "notificationType": "new_leak",
+      "notifTitle": "New Leak Detected: Government Employee Directory",
+      "notifTitleAr": "تسريب جديد: دليل موظفي القطاع الحكومي",
+      "notifSeverity": "critical",
+      "isRead": "0",
+      "createdAt": "2026-02-12 15:45:00"
+    },
+    {
+      "id": "90055",
+      "userId": "NULL",
+      "notificationType": "job_complete",
+      "notifTitle": "Monitoring Job Complete: 1 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "createdAt": "2026-02-12 15:45:00"
+    },
+    {
+      "id": "90053",
+      "userId": "NULL",
+      "notificationType": "job_complete",
+      "notifTitle": "Monitoring Job Complete: 1 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "1",
+      "createdAt": "2026-02-12 15:20:46"
+    },
+    {
+      "id": "90052",
+      "userId": "NULL",
+      "notificationType": "new_leak",
+      "notifTitle": "New Leak Detected: Government Employee Directory",
+      "notifTitleAr": "تسريب جديد: دليل موظفي القطاع الحكومي",
+      "notifSeverity": "critical",
+      "isRead": "1",
+      "createdAt": "2026-02-12 15:20:45"
+    },
+    {
+      "id": "90051",
+      "userId": "NULL",
+      "notificationType": "job_complete",
+      "notifTitle": "Monitoring Job Complete: 3 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 3 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "1",
+      "createdAt": "2026-02-12 15:00:02"
+    },
+    {
+      "id": "90050",
+      "userId": "NULL",
+      "notificationType": "new_leak",
+      "notifTitle": "New Leak Detected: Utility Customer Data",
+      "notifTitleAr": "تسريب جديد: بيانات عملاء المرافق",
+      "notifSeverity": "low",
+      "isRead": "1",
+      "createdAt": "2026-02-12 15:00:01"
+    },
+    {
+      "id": "90049",
+      "userId": "NULL",
+      "notificationType": "new_leak",
+      "notifTitle": "New Leak Detected: Saudi National ID Bulk Sale",
+      "notifTitleAr": "تسريب جديد: بيع جملة لأرقام هوية وطنية سعودية",
+      "notifSeverity": "critical",
+      "isRead": "1",
+      "createdAt": "2026-02-12 15:00:01"
+    },
+    {
+      "id": "90048",
+      "userId": "NULL",
+      "notificationType": "new_leak",
+      "notifTitle": "New Leak Detected: Government Employee Directory",
+      "notifTitleAr": "تسريب جديد: دليل موظفي القطاع الحكومي",
+      "notifSeverity": "critical",
+      "isRead": "1",
+      "createdAt": "2026-02-12 15:00:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tnotificationType\tnotifTitle\tnotifTitleAr\tnotifSeverity\tisRead\tcreatedAt\n90057\tNULL\tjob_complete\tMonitoring Job Complete: 1 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\t0\t2026-02-12 16:00:02\n90056\tNULL\tnew_leak\tNew Leak Detected: Insurance Policy Holder Data\tتسريب جديد: بيانات حاملي وثائق التأمين\thigh\t0\t2026-02-12 16:00:01\n90054\tNULL\tnew_leak\tNew Leak Detected: Government Employee Directory\tتسريب جديد: دليل موظفي القطاع الحكومي\tcritical\t0\t2026-02-12 15:45:00\n90055\tNULL\tjob_complete\tMonitoring Job Complete: 1 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\t0\t2026-02-12 15:45:00\n90053\tNULL\tjob_complete\tMonitoring Job Complete: 1 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\t1\t2026-02-12 15:20:46\n90052\tNULL\tnew_leak\tNew Leak Detected: Government Employee Directory\tتسريب جديد: دليل موظفي القطاع الحكومي\tcritical\t1\t2026-02-12 15:20:45\n90051\tNULL\tjob_complete\tMonitoring Job Complete: 3 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 3 تسريب(ات)\thigh\t1\t2026-02-12 15:00:02\n90050\tNULL\tnew_leak\tNew Leak Detected: Utility Customer Data\tتسريب جديد: بيانات عملاء المرافق\tlow\t1\t2026-02-12 15:00:01\n90049\tNULL\tnew_leak\tNew Leak Detected: Saudi National ID Bulk Sale\tتسريب جديد: بيع جملة لأرقام هوية وطنية سعودية\tcritical\t1\t2026-02-12 15:00:01\n90048\tNULL\tnew_leak\tNew Leak Detected: Government Employee Directory\tتسريب جديد: دليل موظفي القطاع الحكومي\tcritical\t1\t2026-02-12 15:00:00\n",
+  "stderr": "",
+  "execution_time_ms": 1647
+}

@@ -1,0 +1,45 @@
+{
+  "query": "SELECT id, notifTitleAr, notifSeverity, notificationType, createdAt FROM notifications ORDER BY createdAt DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute SELECT id, notifTitleAr, notifSeverity, notificationType, createdAt FROM notifications ORDER BY createdAt DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "90057",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "notificationType": "job_complete",
+      "createdAt": "2026-02-12 16:00:02"
+    },
+    {
+      "id": "90056",
+      "notifTitleAr": "تسريب جديد: بيانات حاملي وثائق التأمين",
+      "notifSeverity": "high",
+      "notificationType": "new_leak",
+      "createdAt": "2026-02-12 16:00:01"
+    },
+    {
+      "id": "90055",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "notificationType": "job_complete",
+      "createdAt": "2026-02-12 15:45:00"
+    },
+    {
+      "id": "90054",
+      "notifTitleAr": "تسريب جديد: دليل موظفي القطاع الحكومي",
+      "notifSeverity": "critical",
+      "notificationType": "new_leak",
+      "createdAt": "2026-02-12 15:45:00"
+    },
+    {
+      "id": "90053",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "notificationType": "job_complete",
+      "createdAt": "2026-02-12 15:20:46"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnotifTitleAr\tnotifSeverity\tnotificationType\tcreatedAt\n90057\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\tjob_complete\t2026-02-12 16:00:02\n90056\tتسريب جديد: بيانات حاملي وثائق التأمين\thigh\tnew_leak\t2026-02-12 16:00:01\n90055\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\tjob_complete\t2026-02-12 15:45:00\n90054\tتسريب جديد: دليل موظفي القطاع الحكومي\tcritical\tnew_leak\t2026-02-12 15:45:00\n90053\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\tjob_complete\t2026-02-12 15:20:46\n",
+  "stderr": "",
+  "execution_time_ms": 1570
+}

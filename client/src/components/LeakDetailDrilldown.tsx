@@ -159,43 +159,39 @@ export default function LeakDetailDrilldown({ leak, open, onClose, onBack, showB
   const handleDownloadDoc = useCallback(async () => {
     if (!generatedDoc || !leakId) return;
     try {
-      // Inject a print toolbar at the top of the HTML document
+      // Inject print toolbar into the HTML for easy PDF saving
       const printToolbar = `
-        <div id="print-toolbar" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#0a2540,#0c3054);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Tajawal',sans-serif;direction:rtl;">
+        <div id="print-toolbar" dir="rtl" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(135deg,#0a2540,#0c3054);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Tajawal',sans-serif;">
           <div style="display:flex;align-items:center;gap:12px;">
             <button onclick="document.getElementById('print-toolbar').style.display='none';window.print();setTimeout(()=>document.getElementById('print-toolbar').style.display='flex',500);" style="background:linear-gradient(135deg,#0d9488,#06b6d4);color:white;border:none;padding:10px 28px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:'Tajawal',sans-serif;display:flex;align-items:center;gap:8px;">
               ⬇ حفظ كـ PDF
             </button>
-            <span style="color:rgba(255,255,255,0.5);font-size:12px;">اختر "حفظ كـ PDF" من نافذة الطباعة</span>
+            <span style="color:rgba(255,255,255,0.5);font-size:12px;">اختر \"حفظ كـ PDF\" من نافذة الطباعة</span>
           </div>
           <span style="color:rgba(255,255,255,0.4);font-size:11px;">منصة راصد — توثيق حادثة تسريب</span>
         </div>
         <div style="height:56px;"></div>
       `;
-      // Insert toolbar after <body> tag
       const htmlWithToolbar = generatedDoc.htmlContent.replace(
         '<div class="page">',
         printToolbar + '<div class="page">'
       );
-      
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        // Fallback: download as HTML file
-        toast.info("تم حظر النافذة — جاري تحميل الملف مباشرة");
-        const blob = new Blob([generatedDoc.htmlContent], { type: "text/html;charset=utf-8" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `incident-${leakId}-${generatedDoc.verificationCode}.html`;
-        a.click();
-        URL.revokeObjectURL(url);
-        return;
-      }
-      printWindow.document.write(htmlWithToolbar);
-      printWindow.document.close();
+
+      // Always download as HTML file first (works on all devices including mobile)
+      toast.info("جاري تحميل الملف...");
+      const blob = new Blob([htmlWithToolbar], { type: "text/html;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `توثيق-حادثة-${leakId}-${generatedDoc.verificationCode}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast.success("تم تحميل الملف — افتحه في المتصفح واختر طباعة > حفظ كـ PDF");
     } catch (err) {
       console.error("PDF download error:", err);
-      toast.error("حدث خطأ أثناء فتح نافذة الطباعة");
+      toast.error("حدث خطأ أثناء تحميل الملف");
     }
   }, [generatedDoc, leakId]);
 

@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, alertContactName, deliveryChannel, alertSubject, alertLeakId, deliveryStatus, sentAt FROM alert_history ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute SELECT id, alertContactName, deliveryChannel, alertSubject, alertLeakId, deliveryStatus, sentAt FROM alert_history ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "28",
+      "alertContactName": "أ. فهد المالكي",
+      "deliveryChannel": "email",
+      "alertSubject": "تنبيه حرج: بيانات بنوك سعودية — 2.1 مليون سجل",
+      "alertLeakId": "LK-2026-075",
+      "deliveryStatus": "sent",
+      "sentAt": "2026-02-10 03:05:00"
+    },
+    {
+      "id": "27",
+      "alertContactName": "م. نورة الدوسري",
+      "deliveryChannel": "email",
+      "alertSubject": "تنبيه حرج: الأحوال المدنية — بيانات 50,000 مواطن",
+      "alertLeakId": "LK-2026-072",
+      "deliveryStatus": "sent",
+      "sentAt": "2026-01-31 08:35:00"
+    },
+    {
+      "id": "26",
+      "alertContactName": "د. عبدالله الشهري",
+      "deliveryChannel": "email",
+      "alertSubject": "تنبيه حرج: الأحوال المدنية — بيانات 50,000 مواطن",
+      "alertLeakId": "LK-2026-072",
+      "deliveryStatus": "sent",
+      "sentAt": "2026-01-31 08:35:00"
+    },
+    {
+      "id": "25",
+      "alertContactName": "أ. خالد العتيبي",
+      "deliveryChannel": "email",
+      "alertSubject": "تنبيه عالي: موبايلي — 980 ألف سجل",
+      "alertLeakId": "LK-2026-058",
+      "deliveryStatus": "sent",
+      "sentAt": "2026-02-07 11:05:00"
+    },
+    {
+      "id": "24",
+      "alertContactName": "م. سارة القحطاني",
+      "deliveryChannel": "email",
+      "alertSubject": "تقرير أسبوعي: ملخص تنفيذي — الأسبوع الأول فبراير",
+      "alertLeakId": "NULL",
+      "deliveryStatus": "sent",
+      "sentAt": "2026-02-07 06:05:00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\talertContactName\tdeliveryChannel\talertSubject\talertLeakId\tdeliveryStatus\tsentAt\n28\tأ. فهد المالكي\temail\tتنبيه حرج: بيانات بنوك سعودية — 2.1 مليون سجل\tLK-2026-075\tsent\t2026-02-10 03:05:00\n27\tم. نورة الدوسري\temail\tتنبيه حرج: الأحوال المدنية — بيانات 50,000 مواطن\tLK-2026-072\tsent\t2026-01-31 08:35:00\n26\tد. عبدالله الشهري\temail\tتنبيه حرج: الأحوال المدنية — بيانات 50,000 مواطن\tLK-2026-072\tsent\t2026-01-31 08:35:00\n25\tأ. خالد العتيبي\temail\tتنبيه عالي: موبايلي — 980 ألف سجل\tLK-2026-058\tsent\t2026-02-07 11:05:00\n24\tم. سارة القحطاني\temail\tتقرير أسبوعي: ملخص تنفيذي — الأسبوع الأول فبراير\tNULL\tsent\t2026-02-07 06:05:00\n",
+  "stderr": "",
+  "execution_time_ms": 1599
+}

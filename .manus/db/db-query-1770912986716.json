@@ -1,0 +1,55 @@
+{
+  "query": "SELECT id, notifTitle, notifTitleAr, notifSeverity, isRead, notificationType, createdAt FROM notifications ORDER BY id DESC LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 3yaEUUPpH7u5Dce.6de1e535cf2b --database huuT6g8hnnLTgdYvaqdH49 --execute SELECT id, notifTitle, notifTitleAr, notifSeverity, isRead, notificationType, createdAt FROM notifications ORDER BY id DESC LIMIT 5;",
+  "rows": [
+    {
+      "id": "90061",
+      "notifTitle": "Monitoring Job Complete: 1 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "notificationType": "job_complete",
+      "createdAt": "2026-02-12 16:15:05"
+    },
+    {
+      "id": "90060",
+      "notifTitle": "New Leak Detected: Telecom Subscriber Data",
+      "notifTitleAr": "تسريب جديد: بيانات مشتركي الاتصالات",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "notificationType": "new_leak",
+      "createdAt": "2026-02-12 16:15:04"
+    },
+    {
+      "id": "90059",
+      "notifTitle": "Monitoring Job Complete: 1 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "notificationType": "job_complete",
+      "createdAt": "2026-02-12 16:15:01"
+    },
+    {
+      "id": "90058",
+      "notifTitle": "New Leak Detected: Saudi Banking Credentials Dump",
+      "notifTitleAr": "تسريب جديد: تسريب بيانات اعتماد مصرفية سعودية",
+      "notifSeverity": "critical",
+      "isRead": "0",
+      "notificationType": "new_leak",
+      "createdAt": "2026-02-12 16:15:00"
+    },
+    {
+      "id": "90057",
+      "notifTitle": "Monitoring Job Complete: 1 leak(s) found",
+      "notifTitleAr": "اكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)",
+      "notifSeverity": "high",
+      "isRead": "0",
+      "notificationType": "job_complete",
+      "createdAt": "2026-02-12 16:00:02"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tnotifTitle\tnotifTitleAr\tnotifSeverity\tisRead\tnotificationType\tcreatedAt\n90061\tMonitoring Job Complete: 1 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\t0\tjob_complete\t2026-02-12 16:15:05\n90060\tNew Leak Detected: Telecom Subscriber Data\tتسريب جديد: بيانات مشتركي الاتصالات\thigh\t0\tnew_leak\t2026-02-12 16:15:04\n90059\tMonitoring Job Complete: 1 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\t0\tjob_complete\t2026-02-12 16:15:01\n90058\tNew Leak Detected: Saudi Banking Credentials Dump\tتسريب جديد: تسريب بيانات اعتماد مصرفية سعودية\tcritical\t0\tnew_leak\t2026-02-12 16:15:00\n90057\tMonitoring Job Complete: 1 leak(s) found\tاكتمال مهمة الرصد: تم العثور على 1 تسريب(ات)\thigh\t0\tjob_complete\t2026-02-12 16:00:02\n",
+  "stderr": "",
+  "execution_time_ms": 1549
+}

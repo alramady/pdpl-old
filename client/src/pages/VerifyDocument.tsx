@@ -211,12 +211,18 @@ export default function VerifyDocument() {
   const trpcUtils = trpc.useUtils();
 
   // Auto-verify if code comes from URL
+  const autoVerifyDone = useRef(false);
   useEffect(() => {
-    if (params?.code) {
+    if (params?.code && !autoVerifyDone.current) {
+      autoVerifyDone.current = true;
       setCode(params.code);
-      startVerification(params.code);
+      // Delay to ensure startVerification is ready
+      const timer = setTimeout(() => {
+        startVerification(params.code);
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [params?.code]);
+  }, [params?.code, startVerification]);
 
   // Cleanup camera on unmount
   useEffect(() => {
