@@ -4,7 +4,9 @@ import {
   prepareEmbeddingText,
   clearEmbeddingCache,
   getEmbeddingCacheStats,
+  rerankWithLLM,
   type KnowledgeEntry,
+  type SemanticSearchResult,
 } from "./semanticSearch";
 
 // ═══════════════════════════════════════════════════════════════
@@ -238,6 +240,56 @@ describe("Semantic Search Engine", () => {
       
       const similarity = cosineSimilarity(a, b);
       expect(similarity).toBeGreaterThan(0.99);
+    });
+  });
+
+  // ─── Re-ranking ─────────────────────────────────────────────
+  describe("rerankWithLLM", () => {
+    const mockEntry = (id: string, title: string): KnowledgeEntry => ({
+      entryId: id,
+      category: "article",
+      title,
+      titleAr: title,
+      content: "Test content",
+      contentAr: "محتوى اختبار",
+      tags: null,
+      embedding: [0.1, 0.2],
+      viewCount: 0,
+      helpfulCount: 0,
+    });
+
+    const mockResult = (entry: KnowledgeEntry, similarity: number, rank: number): SemanticSearchResult => ({
+      entry,
+      similarity,
+      rank,
+    });
+
+    it("should return single result unchanged", async () => {
+      const results = [mockResult(mockEntry("KB-001", "Test"), 0.9, 1)];
+      const reranked = await rerankWithLLM("test query", results);
+      expect(reranked).toHaveLength(1);
+      expect(reranked[0].entry.entryId).toBe("KB-001");
+    });
+
+    it("should return empty array unchanged", async () => {
+      const reranked = await rerankWithLLM("test query", []);
+      expect(reranked).toHaveLength(0);
+    });
+
+    it("should handle results with all required fields", async () => {
+      const results = [
+        mockResult(mockEntry("KB-001", "PDPL"), 0.85, 1),
+        mockResult(mockEntry("KB-002", "Privacy"), 0.80, 2),
+      ];
+
+      // rerankWithLLM calls the LLM API, so in tests it may fail
+      // but should gracefully return original results on error
+      const reranked = await rerankWithLLM("حماية البيانات", results);
+      expect(reranked).toHaveLength(2);
+      // Should have all entries regardless of LLM response
+      const ids = reranked.map(r => r.entry.entryId);
+      expect(ids).toContain("KB-001");
+      expect(ids).toContain("KB-002");
     });
   });
 });

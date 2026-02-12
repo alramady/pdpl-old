@@ -666,6 +666,28 @@ export const knowledgeBase = mysqlTable("knowledge_base", {
 export type KnowledgeBaseEntry = typeof knowledgeBase.$inferSelect;
 export type InsertKnowledgeBaseEntry = typeof knowledgeBase.$inferInsert;
 
+/**
+ * Search Query Log — tracks all knowledge base search queries
+ * Used for analytics, popular queries, content gap analysis
+ */
+export const searchQueryLog = mysqlTable("search_query_log", {
+  id: int("id").autoincrement().primaryKey(),
+  query: text("sqlQuery").notNull(),
+  source: mysqlEnum("sqlSource", ["rasid_ai", "knowledge_base_ui", "api"]).default("rasid_ai").notNull(),
+  searchMethod: mysqlEnum("sqlSearchMethod", ["semantic", "keyword", "hybrid"]).default("semantic").notNull(),
+  resultCount: int("sqlResultCount").default(0).notNull(),
+  topScore: varchar("sqlTopScore", { length: 10 }),
+  avgScore: varchar("sqlAvgScore", { length: 10 }),
+  reranked: boolean("sqlReranked").default(false).notNull(),
+  userId: int("sqlUserId"),
+  userName: varchar("sqlUserName", { length: 255 }),
+  category: varchar("sqlCategory", { length: 64 }),
+  responseTimeMs: int("sqlResponseTimeMs"),
+  createdAt: timestamp("sqlCreatedAt").defaultNow().notNull(),
+});
+export type SearchQueryLog = typeof searchQueryLog.$inferSelect;
+export type InsertSearchQueryLog = typeof searchQueryLog.$inferInsert;
+
 
 /**
  * Personality Scenarios — configurable greeting/respect templates

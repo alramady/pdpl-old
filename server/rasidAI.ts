@@ -14,6 +14,7 @@ import { invokeLLM } from "./_core/llm";
 import {
   semanticSearch,
   prepareEmbeddingText,
+  rerankWithLLM,
   type KnowledgeEntry,
 } from "./semanticSearch";
 import {
@@ -54,6 +55,7 @@ import {
   getCustomActions,
   getTrainingDocuments,
   getKnowledgeBaseEntriesWithEmbeddings,
+  logSearchQuery,
 } from "./db";
 
 // ═══════════════════════════════════════════════════════════════
@@ -1146,7 +1148,8 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
         }));
 
         // Perform semantic search
-        const results = await semanticSearch(
+        const startTime = Date.now();
+        let results = await semanticSearch(
           params.search_query,
           knowledgeEntries,
           {
@@ -1157,6 +1160,19 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
         );
 
         if (results.length === 0) {
+          // Log zero-result query
+          const responseTimeMs = Date.now() - startTime;
+          logSearchQuery({
+            query: params.search_query,
+            source: "rasid_ai",
+            searchMethod: "semantic",
+            resultCount: 0,
+            topScore: 0,
+            avgScore: 0,
+            reranked: false,
+            responseTimeMs,
+          }).catch(() => {});
+
           // Fall back to platform guide
           const guide = getPlatformGuide(params.search_query);
           return {
@@ -1167,9 +1183,38 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
           };
         }
 
+        // Re-rank results using LLM for better relevance
+        let reranked = false;
+        if (results.length > 1) {
+          try {
+            results = await rerankWithLLM(params.search_query, results);
+            reranked = true;
+          } catch (e) {
+            console.error("[RasidAI] Re-ranking failed, using original order", e);
+          }
+        }
+
+        const responseTimeMs = Date.now() - startTime;
+        const topScore = results.length > 0 ? results[0].similarity : 0;
+        const avgScore = results.length > 0
+          ? results.reduce((sum, r) => sum + r.similarity, 0) / results.length
+          : 0;
+
+        // Log the search query (non-blocking)
+        logSearchQuery({
+          query: params.search_query,
+          source: "rasid_ai",
+          searchMethod: "semantic",
+          resultCount: results.length,
+          topScore,
+          avgScore,
+          reranked,
+          responseTimeMs,
+        }).catch(() => {});
+
         return {
           source: "knowledge_base",
-          searchMethod: "semantic",
+          searchMethod: reranked ? "semantic_reranked" : "semantic",
           total: results.length,
           entries: results.map((r) => ({
             entryId: r.entry.entryId,
@@ -1181,6 +1226,7 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
             helpfulCount: r.entry.helpfulCount,
             similarityScore: Math.round(r.similarity * 100) / 100,
             rank: r.rank,
+            rerankedScore: r.rerankedScore ? Math.round(r.rerankedScore * 100) / 100 : undefined,
           })),
         };
       } catch (error) {

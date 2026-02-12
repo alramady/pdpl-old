@@ -1,6 +1,7 @@
 /**
- * DashboardLayout — Ultra Premium Glassmorphism
- * RTL-first sidebar with frosted glass effects and purple accents
+ * DashboardLayout — SDAIA Ultra Premium Glassmorphism
+ * RTL-first sidebar with frosted glass effects and SDAIA navy/teal accents
+ * Inspired by Vuexy admin template structure
  */
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
@@ -142,6 +143,7 @@ const navGroups: NavGroup[] = [
       { label: "إدارة المستخدمين", labelEn: "Users", icon: Users, path: "/user-management", requiresAuth: true, minRole: "admin" },
       { label: "سجل التوثيقات", labelEn: "Documents", icon: FileBarChart, path: "/documents-registry", requiresAuth: true, minRole: "admin" },
       { label: "قاعدة المعرفة", labelEn: "Knowledge Base", icon: BookOpen, path: "/knowledge-base", requiresAuth: true, minRole: "admin" },
+      { label: "تحليلات البحث الدلالي", labelEn: "Semantic Search", icon: Sparkles, path: "/semantic-search", requiresAuth: true, minRole: "admin" },
       { label: "سيناريوهات الشخصية", labelEn: "Personality", icon: HeartHandshake, path: "/personality-scenarios", requiresAuth: true, minRole: "admin" },
       { label: "مركز التدريب", labelEn: "Training Center", icon: GraduationCap, path: "/training-center", requiresAuth: true, minRole: "admin" },
     ],
@@ -195,27 +197,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* ═══ AURORA BACKGROUND (dark mode only) ═══ */}
+      {/* ═══ AURORA BACKGROUND — SDAIA (dark mode only) ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0 dark:block hidden">
-        {/* Top-right purple aurora */}
+        {/* Top-right SDAIA navy aurora */}
         <div
           className="absolute top-0 right-0 w-[60%] h-[50%] opacity-30"
           style={{
-            background: "radial-gradient(ellipse at 70% 20%, oklch(0.45 0.2 285 / 40%), transparent 70%)",
+            background: "radial-gradient(ellipse at 70% 20%, oklch(0.35 0.10 271 / 40%), transparent 70%)",
           }}
         />
-        {/* Bottom-left blue aurora */}
+        {/* Bottom-left SDAIA teal aurora */}
         <div
           className="absolute bottom-0 left-0 w-[50%] h-[40%] opacity-20"
           style={{
-            background: "radial-gradient(ellipse at 30% 80%, oklch(0.4 0.15 260 / 30%), transparent 60%)",
+            background: "radial-gradient(ellipse at 30% 80%, oklch(0.70 0.10 191 / 30%), transparent 60%)",
           }}
         />
-        {/* Center violet glow */}
+        {/* Center SDAIA purple glow */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[60%] opacity-10"
           style={{
-            background: "radial-gradient(ellipse at center, oklch(0.5 0.18 290 / 25%), transparent 50%)",
+            background: "radial-gradient(ellipse at center, oklch(0.51 0.12 288 / 25%), transparent 50%)",
           }}
         />
       </div>
@@ -242,21 +244,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ${collapsed ? "w-[72px]" : "w-[270px]"}
           ${mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
           right-0 lg:right-auto
-          bg-sidebar dark:bg-[oklch(0.11_0.04_278_/_80%)]
-          dark:backdrop-blur-2xl dark:border-l dark:border-[oklch(0.35_0.1_285_/_20%)]
+          bg-sidebar dark:bg-[oklch(0.13_0.06_270_/_80%)]
+          dark:backdrop-blur-2xl dark:border-l dark:border-[oklch(0.35_0.08_288_/_20%)]
           border-l border-sidebar-border
         `}
       >
         {/* Logo area */}
-        <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border dark:border-[oklch(0.3_0.08_285_/_25%)]">
-          <div className="relative w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden">
+        <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border dark:border-[oklch(0.30_0.06_270_/_25%)]">
+          <motion.div
+            className="relative w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+            animate={{
+              boxShadow: [
+                "0 0 12px oklch(0.51 0.12 288 / 20%), 0 0 24px oklch(0.70 0.10 191 / 10%)",
+                "0 0 20px oklch(0.51 0.12 288 / 35%), 0 0 40px oklch(0.70 0.10 191 / 18%)",
+                "0 0 12px oklch(0.51 0.12 288 / 20%), 0 0 24px oklch(0.70 0.10 191 / 10%)",
+              ],
+            }}
+            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+          >
             <div className="absolute inset-0 rounded-xl dark:animate-glow-pulse" />
             <img
               src={RASID_LOGO}
               alt="راصد"
-              className="w-9 h-9 object-contain relative z-10"
+              className="w-11 h-11 object-contain relative z-10 drop-shadow-lg"
             />
-          </div>
+          </motion.div>
           {!collapsed && (
             <motion.div
               initial={{ opacity: 0, width: 0 }}
@@ -289,8 +301,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       text-xs font-semibold uppercase tracking-wider
                       transition-all duration-200
                       ${isActive
-                        ? "text-primary dark:text-[oklch(0.75_0.2_285)] bg-primary/5 dark:bg-[oklch(0.55_0.25_285_/_8%)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30 dark:hover:bg-[oklch(0.3_0.08_285_/_15%)]"
+                        ? "text-primary dark:text-[oklch(0.62_0.10_289)] bg-primary/5 dark:bg-[oklch(0.51_0.12_288_/_8%)]"
+                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30 dark:hover:bg-[oklch(0.30_0.08_288_/_15%)]"
                       }
                     `}
                   >
@@ -304,7 +316,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     />
                   </button>
                 ) : (
-                  <div className="h-px bg-sidebar-border dark:bg-[oklch(0.3_0.08_285_/_20%)] mx-2 my-2" />
+                  <div className="h-px bg-sidebar-border dark:bg-[oklch(0.30_0.06_270_/_20%)] mx-2 my-2" />
                 )}
 
                 {/* Group items */}
@@ -330,23 +342,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                   flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
                                   transition-all duration-200 group relative
                                   ${isItemActive
-                                    ? "dark:bg-[oklch(0.55_0.25_285_/_12%)] dark:border dark:border-[oklch(0.55_0.2_285_/_25%)] bg-primary/15 text-primary dark:text-[oklch(0.8_0.15_285)]"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 dark:hover:bg-[oklch(0.25_0.06_285_/_30%)]"
+                                    ? "dark:bg-[oklch(0.51_0.12_288_/_12%)] dark:border dark:border-[oklch(0.51_0.12_288_/_25%)] bg-primary/15 text-primary dark:text-[oklch(0.70_0.10_191)]"
+                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 dark:hover:bg-[oklch(0.28_0.07_288_/_30%)]"
                                   }
                                 `}
                               >
                                 {isItemActive && (
                                   <motion.div
                                     layoutId="activeNav"
-                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary dark:bg-[oklch(0.65_0.22_285)] rounded-l-full dark:shadow-[0_0_8px_oklch(0.55_0.25_285_/_40%)]"
+                                    className="absolute right-0 top-1/2 -translate-y-1/2 w-[3px] h-5 bg-primary dark:bg-[oklch(0.70_0.10_191)] rounded-l-full dark:shadow-[0_0_8px_oklch(0.70_0.10_191_/_40%)]"
                                   />
                                 )}
-                                <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isItemActive ? "text-primary dark:text-[oklch(0.75_0.2_285)]" : ""}`} />
+                                <Icon className={`w-4.5 h-4.5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${isItemActive ? "text-primary dark:text-[oklch(0.70_0.10_191)]" : "group-hover:text-primary"}`} />
                                 {!collapsed && (
                                   <span className="text-[13px] font-medium whitespace-nowrap">{item.label}</span>
                                 )}
                                 {collapsed && (
-                                  <div className="absolute right-14 bg-popover dark:bg-[oklch(0.18_0.05_278_/_90%)] dark:backdrop-blur-xl text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 dark:border dark:border-[oklch(0.35_0.1_285_/_20%)]">
+                                  <div className="absolute right-14 bg-popover dark:bg-[oklch(0.20_0.06_270_/_90%)] dark:backdrop-blur-xl text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 dark:border dark:border-[oklch(0.35_0.08_288_/_20%)]">
                                     {item.label}
                                   </div>
                                 )}
@@ -364,14 +376,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User profile / login at bottom */}
-        <div className="p-3 border-t border-sidebar-border dark:border-[oklch(0.3_0.08_285_/_25%)]">
+        <div className="p-3 border-t border-sidebar-border dark:border-[oklch(0.30_0.06_270_/_25%)]">
           {loading ? (
             <div className="flex items-center justify-center py-2">
               <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
             </div>
           ) : isAuthenticated && user ? (
             <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
-              <div className="w-8 h-8 rounded-full bg-primary/20 dark:bg-[oklch(0.55_0.25_285_/_20%)] flex items-center justify-center flex-shrink-0 dark:border dark:border-[oklch(0.55_0.2_285_/_30%)]">
+              <div className="w-8 h-8 rounded-full bg-primary/20 dark:bg-[oklch(0.51_0.12_288_/_20%)] flex items-center justify-center flex-shrink-0 dark:border dark:border-[oklch(0.51_0.12_288_/_30%)]">
                 <span className="text-xs font-bold text-primary dark:text-[oklch(0.75_0.2_285)]">
                   {user.name?.charAt(0) || "U"}
                 </span>
@@ -404,7 +416,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 text-xs w-full dark:border-[oklch(0.4_0.1_285_/_30%)] dark:hover:bg-[oklch(0.55_0.25_285_/_15%)] ${collapsed ? "px-0 justify-center" : ""}`}
+                className={`gap-2 text-xs w-full dark:border-[oklch(0.40_0.10_288_/_30%)] dark:hover:bg-[oklch(0.51_0.12_288_/_15%)] ${collapsed ? "px-0 justify-center" : ""}`}
               >
                 <LogIn className="w-3.5 h-3.5" />
                 {!collapsed && "تسجيل الدخول"}
@@ -414,7 +426,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Collapse toggle */}
-        <div className="p-2 border-t border-sidebar-border dark:border-[oklch(0.3_0.08_285_/_25%)] hidden lg:block">
+        <div className="p-2 border-t border-sidebar-border dark:border-[oklch(0.30_0.06_270_/_25%)] hidden lg:block">
           <Button
             variant="ghost"
             size="sm"
@@ -437,7 +449,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ═══ MAIN CONTENT AREA ═══ */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         {/* Top header — frosted glass */}
-        <header className="h-16 border-b border-border dark:border-[oklch(0.28_0.06_280_/_35%)] flex items-center justify-between px-4 lg:px-6 bg-background/80 dark:bg-[oklch(0.13_0.04_275_/_70%)] backdrop-blur-xl sticky top-0 z-30">
+        <header className="h-16 border-b border-border dark:border-[oklch(0.30_0.06_270_/_35%)] flex items-center justify-between px-4 lg:px-6 bg-background/80 dark:bg-[oklch(0.16_0.06_270_/_70%)] backdrop-blur-xl sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden text-muted-foreground hover:text-foreground"
@@ -459,7 +471,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-foreground dark:hover:bg-[oklch(0.25_0.06_285_/_30%)]"
+                className="text-muted-foreground hover:text-foreground dark:hover:bg-[oklch(0.28_0.07_288_/_30%)]"
                 onClick={toggleTheme}
                 title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
               >
@@ -472,7 +484,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="ghost"
                 size="icon"
-                className="text-muted-foreground hover:text-foreground dark:hover:bg-[oklch(0.25_0.06_285_/_30%)]"
+                className="text-muted-foreground hover:text-foreground dark:hover:bg-[oklch(0.28_0.07_288_/_30%)]"
                 title="البحث الذكي"
               >
                 <Search className="w-4 h-4" />
@@ -483,9 +495,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <NotificationBell userId={user?.id} />
 
             {/* Status indicator — premium glow */}
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 dark:bg-[oklch(0.72_0.17_160_/_8%)] dark:border-[oklch(0.72_0.17_160_/_25%)]">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-[oklch(0.72_0.17_160)] animate-pulse-glow dark:shadow-[0_0_6px_oklch(0.72_0.17_160_/_50%)]" />
-              <span className="text-xs text-emerald-600 dark:text-[oklch(0.72_0.17_160)] font-medium">نشط</span>
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 dark:bg-[oklch(0.70_0.10_191_/_8%)] dark:border-[oklch(0.70_0.10_191_/_25%)]">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-[oklch(0.70_0.10_191)] animate-pulse-glow dark:shadow-[0_0_6px_oklch(0.70_0.10_191_/_50%)]" />
+              <span className="text-xs text-emerald-600 dark:text-[oklch(0.70_0.10_191)] font-medium">نشط</span>
             </div>
           </div>
         </header>

@@ -636,3 +636,36 @@
 - [x] Write tests for semantic search functionality (20 tests in semanticSearch.test.ts)
 - [x] All 193 tests passing (9 test files)
 - [x] Save checkpoint
+
+## Phase 40: Semantic Search Enhancements (Stats Dashboard, Re-ranking, Query Logs)
+- [x] Create search_query_log table in schema (query, source, resultCount, topScore, userId, timestamp)
+- [x] Push database migration for search_query_log
+- [x] Add database CRUD functions for search query logs
+- [x] Implement LLM re-ranking in semantic search engine (rerankWithLLM function)
+- [x] Integrate query logging into rasidAI search_knowledge_base tool
+- [x] Add tRPC endpoints: getSearchQueryLogs, getSearchAnalytics, getPopularQueries, testSemanticSearch
+- [x] Build semantic search stats dashboard UI (SemanticSearchDashboard.tsx)
+  - [x] Embedding coverage card (total entries, with/without embeddings, coverage %)
+  - [x] Search performance metrics (avg similarity score, avg result count)
+  - [x] Popular queries chart (top 10 most searched terms)
+  - [x] Search activity timeline (queries over time)
+  - [x] Low-coverage topics (queries with no/low results for content gap analysis)
+  - [x] Interactive semantic search test tool
+- [x] Write tests for new functionality (re-ranking tests added)
+- [x] All 196 tests passing (9 test files)
+- [x] Save checkpoint
+
+## Phase 41: SDAIA Ultra Premium Design Overhaul (Vuexy-Inspired)
+- [x] Analyze Vuexy template structure and extract design patterns
+- [x] Apply SDAIA color system (Primary #273470, Secondary #6459A7, Accent #3DB1AC)
+- [x] Switch font to Tajawal from Google Fonts (300, 400, 500, 700 weights)
+- [x] Implement glassmorphism effects on sidebar and top bar (SDAIA navy tones)
+- [x] Add deep shadows for cards, modals, and elevated elements (.deep-shadow utility)
+- [x] Add animated logo with Framer Motion boxShadow animation (SDAIA purple/teal glow)
+- [x] Add hover animations on all icons (sidebar group-hover:scale-110, .icon-hover-effect)
+- [x] Redesign sidebar with Vuexy-inspired categorized collapsible groups (already structured)
+- [x] Redesign dashboard with Ultra Premium cards and SDAIA chart colors
+- [x] Apply Ultra Premium styling to all key pages (CSS variables updated globally)
+- [x] Ensure RTL support and Arabic text rendering (Tajawal font)
+- [x] All 196 tests passing after design changes
+- [x] Save checkpoint

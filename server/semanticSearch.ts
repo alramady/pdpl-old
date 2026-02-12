@@ -14,6 +14,7 @@
  */
 
 import { ENV } from "./_core/env";
+import { invokeLLM } from "./_core/llm";
 
 // Use OpenAI API directly for embeddings (Forge API doesn't support embeddings endpoint)
 const OPENAI_EMBEDDINGS_URL = "https://api.openai.com/v1/embeddings";
@@ -207,6 +208,7 @@ export interface SemanticSearchResult {
   entry: KnowledgeEntry;
   similarity: number;
   rank: number;
+  rerankedScore?: number;
 }
 
 /**
@@ -340,6 +342,108 @@ function keywordFallbackSearch(
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, topK)
     .map((r, i) => ({ ...r, rank: i + 1 }));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LLM RE-RANKING
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Re-rank search results using LLM for improved relevance
+ * Takes the top semantic search results and asks the LLM to re-order them
+ * based on actual relevance to the query
+ */
+export async function rerankWithLLM(
+  query: string,
+  results: SemanticSearchResult[]
+): Promise<SemanticSearchResult[]> {
+  if (results.length <= 1) return results;
+
+  try {
+    // Prepare candidates for the LLM
+    const candidates = results.map((r, i) => ({
+      index: i,
+      title: r.entry.titleAr || r.entry.title,
+      content: (r.entry.contentAr || r.entry.content).substring(0, 300),
+      category: r.entry.category,
+    }));
+
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `أنت نظام إعادة ترتيب نتائج البحث. مهمتك هي ترتيب النتائج حسب مدى صلتها بالاستعلام المقدم.
+أعد ترتيب النتائج من الأكثر صلة إلى الأقل صلة.
+أرجع فقط JSON array يحتوي على أرقام الفهارس (indices) بالترتيب الجديد.
+مثال: [2, 0, 1, 3] يعني أن النتيجة رقم 2 هي الأكثر صلة.`,
+        },
+        {
+          role: "user",
+          content: `الاستعلام: "${query}"
+
+النتائج:
+${candidates.map((c) => `[${c.index}] ${c.title} (${c.category}): ${c.content}`).join("\n\n")}\n\nأعد ترتيب هذه النتائج حسب الصلة بالاستعلام. أرجع JSON array فقط.`,
+        },
+      ],
+      response_format: {
+        type: "json_schema",
+        json_schema: {
+          name: "rerank_result",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              ranked_indices: {
+                type: "array",
+                items: { type: "integer" },
+                description: "Indices of results ordered by relevance (most relevant first)",
+              },
+            },
+            required: ["ranked_indices"],
+            additionalProperties: false,
+          },
+        },
+      },
+    });
+
+    const content = response.choices?.[0]?.message?.content;
+    if (!content || typeof content !== "string") return results;
+
+    const parsed = JSON.parse(content as string) as { ranked_indices: number[] };
+    const rankedIndices = parsed.ranked_indices;
+
+    if (!Array.isArray(rankedIndices) || rankedIndices.length === 0) {
+      return results;
+    }
+
+    // Re-order results based on LLM ranking
+    const reranked: SemanticSearchResult[] = [];
+    const usedIndices = new Set<number>();
+
+    for (const idx of rankedIndices) {
+      if (idx >= 0 && idx < results.length && !usedIndices.has(idx)) {
+        const result = { ...results[idx] };
+        result.rerankedScore = 1.0 - (reranked.length * 0.1); // Assign decreasing scores
+        result.rank = reranked.length + 1;
+        reranked.push(result);
+        usedIndices.add(idx);
+      }
+    }
+
+    // Add any results that weren't included in the LLM response
+    for (let i = 0; i < results.length; i++) {
+      if (!usedIndices.has(i)) {
+        const result = { ...results[i] };
+        result.rank = reranked.length + 1;
+        reranked.push(result);
+      }
+    }
+
+    return reranked;
+  } catch (error) {
+    console.error("[SemanticSearch] LLM re-ranking failed, using original order:", error);
+    return results; // Fallback to original order on error
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════

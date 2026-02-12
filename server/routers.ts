@@ -139,12 +139,20 @@ import {
   getKnowledgeBaseEntriesWithEmbeddings,
   updateKnowledgeBaseEmbedding,
   getEntriesWithoutEmbeddings,
+  logSearchQuery,
+  getSearchQueryLogs,
+  getSearchAnalytics,
+  getPopularQueries,
+  getLowCoverageQueries,
+  getSearchActivityTimeline,
 } from "./db";
 import {
   generateEmbedding,
   prepareEmbeddingText,
   clearEmbeddingCache,
   getEmbeddingCacheStats,
+  rerankWithLLM,
+  semanticSearch,
 } from "./semanticSearch";
 
 // Helper to get current user info from either auth source
@@ -1709,9 +1717,120 @@ export const appRouter = router({
           dimensions: 1536,
         };
       }),
+
+    // Search Analytics & Query Logs
+    searchAnalytics: protectedProcedure
+      .query(async () => {
+        return getSearchAnalytics();
+      }),
+
+    searchQueryLogs: protectedProcedure
+      .input(z.object({
+        limit: z.number().min(1).max(200).optional(),
+        offset: z.number().min(0).optional(),
+        source: z.string().optional(),
+      }).optional())
+      .query(async ({ input }) => {
+        return getSearchQueryLogs(input ?? {});
+      }),
+
+    popularQueries: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).optional() }).optional())
+      .query(async ({ input }) => {
+        return getPopularQueries(input?.limit ?? 10);
+      }),
+
+    lowCoverageQueries: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(50).optional() }).optional())
+      .query(async ({ input }) => {
+        return getLowCoverageQueries(input?.limit ?? 10);
+      }),
+
+    searchActivityTimeline: protectedProcedure
+      .input(z.object({ days: z.number().min(1).max(365).optional() }).optional())
+      .query(async ({ input }) => {
+        return getSearchActivityTimeline(input?.days ?? 30);
+      }),
+
+    testSemanticSearch: protectedProcedure
+      .input(z.object({
+        query: z.string().min(1),
+        topK: z.number().min(1).max(20).optional(),
+        rerank: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const who = getAuthUser(ctx);
+        const startTime = Date.now();
+
+        // Get all entries with embeddings
+        const entries = await getKnowledgeBaseEntriesWithEmbeddings();
+        const mapped = entries.map(e => ({
+          entryId: e.entryId,
+          category: e.category,
+          title: e.title,
+          titleAr: e.titleAr ?? "",
+          content: e.content,
+          contentAr: e.contentAr ?? "",
+          tags: e.tags as string[] | null,
+          embedding: e.embedding as number[] | null,
+          viewCount: e.viewCount,
+          helpfulCount: e.helpfulCount,
+        }));
+
+        let results = await semanticSearch(input.query, mapped, {
+          topK: input.topK ?? 5,
+        });
+
+        let reranked = false;
+        if (input.rerank && results.length > 1) {
+          results = await rerankWithLLM(input.query, results);
+          reranked = true;
+        }
+
+        const responseTimeMs = Date.now() - startTime;
+        const topScore = results.length > 0 ? results[0].similarity : 0;
+        const avgScore = results.length > 0
+          ? results.reduce((sum, r) => sum + r.similarity, 0) / results.length
+          : 0;
+
+        // Log the search query
+        await logSearchQuery({
+          query: input.query,
+          source: "knowledge_base_ui",
+          searchMethod: "semantic",
+          resultCount: results.length,
+          topScore,
+          avgScore,
+          reranked,
+          userId: who.id,
+          userName: who.name,
+          responseTimeMs,
+        });
+
+        return {
+          query: input.query,
+          results: results.map(r => ({
+            entryId: r.entry.entryId,
+            title: r.entry.title,
+            titleAr: r.entry.titleAr,
+            category: r.entry.category,
+            similarity: Number(r.similarity.toFixed(4)),
+            rank: r.rank,
+            rerankedScore: r.rerankedScore ? Number(r.rerankedScore.toFixed(4)) : undefined,
+            contentPreview: (r.entry.contentAr || r.entry.content).substring(0, 200),
+          })),
+          stats: {
+            totalResults: results.length,
+            topScore: Number(topScore.toFixed(4)),
+            avgScore: Number(avgScore.toFixed(4)),
+            responseTimeMs,
+            reranked,
+          },
+        };
+      }),
   }),
 
-  // ─── Live Scan (Real Scanning Engine) ───────────────────────
+  // ─── Live Scan (Real Scanning Engine) ─────────────────────
   liveScan: router({
     execute: protectedProcedure
       .input(z.object({

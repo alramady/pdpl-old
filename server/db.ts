@@ -40,6 +40,9 @@ import {
   knowledgeBase,
   type InsertKnowledgeBaseEntry,
   type KnowledgeBaseEntry,
+  searchQueryLog,
+  type InsertSearchQueryLog,
+  type SearchQueryLog,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1487,4 +1490,189 @@ export async function getTrainingDocumentContent(): Promise<string> {
     content: trainingDocuments.extractedContent,
   }).from(trainingDocuments).where(eq(trainingDocuments.status, "completed"));
   return docs.map(d => `[مستند: ${d.fileName}]\n${d.content || ""}`).join("\n\n---\n\n");
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// SEARCH QUERY LOG — Track and analyze knowledge base searches
+// ═══════════════════════════════════════════════════════════════
+
+export async function logSearchQuery(data: {
+  query: string;
+  source?: "rasid_ai" | "knowledge_base_ui" | "api";
+  searchMethod?: "semantic" | "keyword" | "hybrid";
+  resultCount: number;
+  topScore?: number;
+  avgScore?: number;
+  reranked?: boolean;
+  userId?: number;
+  userName?: string;
+  category?: string;
+  responseTimeMs?: number;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(searchQueryLog).values({
+      query: data.query,
+      source: data.source ?? "rasid_ai",
+      searchMethod: data.searchMethod ?? "semantic",
+      resultCount: data.resultCount,
+      topScore: data.topScore !== undefined ? data.topScore.toFixed(4) : null,
+      avgScore: data.avgScore !== undefined ? data.avgScore.toFixed(4) : null,
+      reranked: data.reranked ?? false,
+      userId: data.userId ?? null,
+      userName: data.userName ?? null,
+      category: data.category ?? null,
+      responseTimeMs: data.responseTimeMs ?? null,
+    });
+  } catch (err) {
+    console.error("[SearchQueryLog] Failed to log query:", err);
+  }
+}
+
+export async function getSearchQueryLogs(opts?: {
+  limit?: number;
+  offset?: number;
+  source?: string;
+}): Promise<SearchQueryLog[]> {
+  const db = await getDb();
+  if (!db) return [];
+  const limit = opts?.limit ?? 50;
+  const offset = opts?.offset ?? 0;
+  
+  let query = db.select().from(searchQueryLog).orderBy(desc(searchQueryLog.createdAt)).limit(limit).offset(offset);
+  
+  return query;
+}
+
+export async function getSearchAnalytics(): Promise<{
+  totalQueries: number;
+  avgResultCount: number;
+  avgTopScore: number;
+  avgResponseTimeMs: number;
+  semanticQueries: number;
+  keywordQueries: number;
+  rerankedQueries: number;
+  zeroResultQueries: number;
+  queriesLast24h: number;
+  queriesLast7d: number;
+  queriesLast30d: number;
+}> {
+  const db = await getDb();
+  if (!db) return {
+    totalQueries: 0, avgResultCount: 0, avgTopScore: 0, avgResponseTimeMs: 0,
+    semanticQueries: 0, keywordQueries: 0, rerankedQueries: 0, zeroResultQueries: 0,
+    queriesLast24h: 0, queriesLast7d: 0, queriesLast30d: 0,
+  };
+
+  const [stats] = await db.select({
+    totalQueries: sql<number>`COUNT(*)`,
+    avgResultCount: sql<number>`COALESCE(AVG(sqlResultCount), 0)`,
+    avgTopScore: sql<number>`COALESCE(AVG(CAST(sqlTopScore AS DECIMAL(10,4))), 0)`,
+    avgResponseTimeMs: sql<number>`COALESCE(AVG(sqlResponseTimeMs), 0)`,
+    semanticQueries: sql<number>`SUM(CASE WHEN sqlSearchMethod = 'semantic' THEN 1 ELSE 0 END)`,
+    keywordQueries: sql<number>`SUM(CASE WHEN sqlSearchMethod = 'keyword' THEN 1 ELSE 0 END)`,
+    rerankedQueries: sql<number>`SUM(CASE WHEN sqlReranked = 1 THEN 1 ELSE 0 END)`,
+    zeroResultQueries: sql<number>`SUM(CASE WHEN sqlResultCount = 0 THEN 1 ELSE 0 END)`,
+    queriesLast24h: sql<number>`SUM(CASE WHEN sqlCreatedAt >= DATE_SUB(NOW(), INTERVAL 1 DAY) THEN 1 ELSE 0 END)`,
+    queriesLast7d: sql<number>`SUM(CASE WHEN sqlCreatedAt >= DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 1 ELSE 0 END)`,
+    queriesLast30d: sql<number>`SUM(CASE WHEN sqlCreatedAt >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1 ELSE 0 END)`,
+  }).from(searchQueryLog);
+
+  return {
+    totalQueries: Number(stats?.totalQueries ?? 0),
+    avgResultCount: Number(Number(stats?.avgResultCount ?? 0).toFixed(1)),
+    avgTopScore: Number(Number(stats?.avgTopScore ?? 0).toFixed(4)),
+    avgResponseTimeMs: Math.round(Number(stats?.avgResponseTimeMs ?? 0)),
+    semanticQueries: Number(stats?.semanticQueries ?? 0),
+    keywordQueries: Number(stats?.keywordQueries ?? 0),
+    rerankedQueries: Number(stats?.rerankedQueries ?? 0),
+    zeroResultQueries: Number(stats?.zeroResultQueries ?? 0),
+    queriesLast24h: Number(stats?.queriesLast24h ?? 0),
+    queriesLast7d: Number(stats?.queriesLast7d ?? 0),
+    queriesLast30d: Number(stats?.queriesLast30d ?? 0),
+  };
+}
+
+export async function getPopularQueries(limit = 10): Promise<{
+  query: string;
+  count: number;
+  avgScore: number;
+  avgResults: number;
+  lastSearched: Date | null;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const results = await db.select({
+    query: searchQueryLog.query,
+    count: sql<number>`COUNT(*)`,
+    avgScore: sql<number>`COALESCE(AVG(CAST(sqlTopScore AS DECIMAL(10,4))), 0)`,
+    avgResults: sql<number>`COALESCE(AVG(sqlResultCount), 0)`,
+    lastSearched: sql<Date>`MAX(sqlCreatedAt)`,
+  }).from(searchQueryLog)
+    .groupBy(searchQueryLog.query)
+    .orderBy(sql`COUNT(*) DESC`)
+    .limit(limit);
+
+  return results.map(r => ({
+    query: r.query,
+    count: Number(r.count),
+    avgScore: Number(Number(r.avgScore).toFixed(4)),
+    avgResults: Number(Number(r.avgResults).toFixed(1)),
+    lastSearched: r.lastSearched,
+  }));
+}
+
+export async function getLowCoverageQueries(limit = 10): Promise<{
+  query: string;
+  count: number;
+  avgScore: number;
+  avgResults: number;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const results = await db.select({
+    query: searchQueryLog.query,
+    count: sql<number>`COUNT(*)`,
+    avgScore: sql<number>`COALESCE(AVG(CAST(sqlTopScore AS DECIMAL(10,4))), 0)`,
+    avgResults: sql<number>`COALESCE(AVG(sqlResultCount), 0)`,
+  }).from(searchQueryLog)
+    .groupBy(searchQueryLog.query)
+    .having(sql`AVG(sqlResultCount) < 2 OR AVG(CAST(sqlTopScore AS DECIMAL(10,4))) < 0.7`)
+    .orderBy(sql`COUNT(*) DESC`)
+    .limit(limit);
+
+  return results.map(r => ({
+    query: r.query,
+    count: Number(r.count),
+    avgScore: Number(Number(r.avgScore).toFixed(4)),
+    avgResults: Number(Number(r.avgResults).toFixed(1)),
+  }));
+}
+
+export async function getSearchActivityTimeline(days = 30): Promise<{
+  date: string;
+  count: number;
+  avgScore: number;
+}[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const results = await db.select({
+    date: sql<string>`DATE(sqlCreatedAt)`,
+    count: sql<number>`COUNT(*)`,
+    avgScore: sql<number>`COALESCE(AVG(CAST(sqlTopScore AS DECIMAL(10,4))), 0)`,
+  }).from(searchQueryLog)
+    .where(sql`sqlCreatedAt >= DATE_SUB(NOW(), INTERVAL ${days} DAY)`)
+    .groupBy(sql`DATE(sqlCreatedAt)`)
+    .orderBy(sql`DATE(sqlCreatedAt) ASC`);
+
+  return results.map(r => ({
+    date: String(r.date),
+    count: Number(r.count),
+    avgScore: Number(Number(r.avgScore).toFixed(4)),
+  }));
 }

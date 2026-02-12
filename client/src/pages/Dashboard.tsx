@@ -51,8 +51,9 @@ import {
 import { trpc } from "@/lib/trpc";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
 
-const CHART_COLORS = ["#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
-const SOURCE_COLORS = ["#06B6D4", "#8B5CF6", "#F59E0B"];
+// SDAIA color palette for charts
+const CHART_COLORS = ["#273470", "#3DB1AC", "#6459A7", "#EF4444", "#837ABF", "#525E8C"];
+const SOURCE_COLORS = ["#3DB1AC", "#6459A7", "#273470"];
 
 const severityColor = (s: string) => {
   switch (s) {
@@ -309,12 +310,12 @@ export default function Dashboard() {
   );
 
   const statCards = [
-    { key: "totalLeaks", label: "إجمالي التسريبات", labelEn: "Total Leaks", value: stats?.totalLeaks ?? 0, icon: ShieldAlert, color: "text-red-400", bgColor: "bg-red-500/10", borderColor: "border-red-500/20", trend: "+12%", trendUp: true },
-    { key: "totalRecords", label: "السجلات المكشوفة", labelEn: "Exposed Records", value: stats?.totalRecords ? `${(stats.totalRecords / 1000000).toFixed(1)}M` : "0", icon: Database, color: "text-amber-400", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20", trend: "+8%", trendUp: true },
-    { key: "activeMonitors", label: "مصادر الرصد النشطة", labelEn: "Active Monitors", value: stats?.activeMonitors ?? 0, icon: Radio, color: "text-emerald-400", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20", trend: "+2", trendUp: true },
-    { key: "piiDetected", label: "بيانات شخصية مكتشفة", labelEn: "PII Detected", value: stats?.piiDetected ? stats.piiDetected >= 1000000 ? `${(stats.piiDetected / 1000000).toFixed(1)}M` : stats.piiDetected >= 1000 ? `${(stats.piiDetected / 1000).toFixed(1)}K` : stats.piiDetected : "0", icon: ScanSearch, color: "text-cyan-400", bgColor: "bg-cyan-500/10", borderColor: "border-cyan-500/20", trend: "+15%", trendUp: true },
-    { key: "criticalAlerts", label: "تنبيهات حرجة", labelEn: "Critical Alerts", value: stats?.criticalAlerts ?? 0, icon: AlertTriangle, color: "text-red-400", bgColor: "bg-red-500/10", borderColor: "border-red-500/20", trend: "-3", trendUp: false },
-    { key: "avgResponse", label: "متوسط وقت الاستجابة", labelEn: "Avg Response", value: "2.4h", icon: Clock, color: "text-violet-400", bgColor: "bg-violet-500/10", borderColor: "border-violet-500/20", trend: "-18%", trendUp: false },
+    { key: "totalLeaks", label: "إجمالي التسريبات", labelEn: "Total Leaks", value: stats?.totalLeaks ?? 0, icon: ShieldAlert, color: "text-red-400", bgColor: "bg-red-500/10", borderColor: "border-red-500/20 dark:border-[#273470]/40", trend: "+12%", trendUp: true },
+    { key: "totalRecords", label: "السجلات المكشوفة", labelEn: "Exposed Records", value: stats?.totalRecords ? `${(stats.totalRecords / 1000000).toFixed(1)}M` : "0", icon: Database, color: "text-amber-400", bgColor: "bg-amber-500/10", borderColor: "border-amber-500/20 dark:border-[#273470]/40", trend: "+8%", trendUp: true },
+    { key: "activeMonitors", label: "مصادر الرصد النشطة", labelEn: "Active Monitors", value: stats?.activeMonitors ?? 0, icon: Radio, color: "text-[#3DB1AC]", bgColor: "bg-[#3DB1AC]/10", borderColor: "border-[#3DB1AC]/20 dark:border-[#273470]/40", trend: "+2", trendUp: true },
+    { key: "piiDetected", label: "بيانات شخصية مكتشفة", labelEn: "PII Detected", value: stats?.piiDetected ? stats.piiDetected >= 1000000 ? `${(stats.piiDetected / 1000000).toFixed(1)}M` : stats.piiDetected >= 1000 ? `${(stats.piiDetected / 1000).toFixed(1)}K` : stats.piiDetected : "0", icon: ScanSearch, color: "text-[#6459A7]", bgColor: "bg-[#6459A7]/10", borderColor: "border-[#6459A7]/20 dark:border-[#273470]/40", trend: "+15%", trendUp: true },
+    { key: "criticalAlerts", label: "تنبيهات حرجة", labelEn: "Critical Alerts", value: stats?.criticalAlerts ?? 0, icon: AlertTriangle, color: "text-red-400", bgColor: "bg-red-500/10", borderColor: "border-red-500/20 dark:border-[#273470]/40", trend: "-3", trendUp: false },
+    { key: "avgResponse", label: "متوسط وقت الاستجابة", labelEn: "Avg Response", value: "2.4h", icon: Clock, color: "text-[#837ABF]", bgColor: "bg-[#837ABF]/10", borderColor: "border-[#837ABF]/20 dark:border-[#273470]/40", trend: "-18%", trendUp: false },
   ];
 
   if (isLoading) {
@@ -329,7 +330,9 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Hero banner */}
       <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.5 }} className="relative rounded-xl overflow-hidden h-48 lg:h-56">
-        <div className="absolute inset-0 bg-gradient-to-l from-primary/20 via-background to-background dot-grid" />
+        <div className="absolute inset-0 bg-gradient-to-l from-[#273470]/30 via-[#1A2550]/20 to-background dot-grid" />
+        {/* SDAIA teal accent line */}
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#3DB1AC] to-transparent opacity-40" />
         <div className="relative h-full flex flex-col justify-center px-6 lg:px-10">
           <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">منصة رصد تسريبات البيانات الشخصية</h1>
           <p className="text-sm lg:text-base text-muted-foreground max-w-xl">الرصد → التوثيق → تغذية السياسات → رفع التقارير</p>
@@ -350,13 +353,13 @@ export default function Dashboard() {
           return (
             <motion.div key={stat.labelEn} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05, duration: 0.3 }}>
               <Card
-                className={`border ${stat.borderColor} ${stat.bgColor} bg-opacity-50 hover:scale-[1.02] transition-all cursor-pointer`}
+                className={`border ${stat.borderColor} ${stat.bgColor} bg-opacity-50 hover:scale-[1.02] transition-all cursor-pointer group deep-shadow`}
                 onClick={() => setActiveModal(stat.key)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <div className={`w-9 h-9 rounded-lg ${stat.bgColor} flex items-center justify-center`}>
-                      <Icon className={`w-4.5 h-4.5 ${stat.color}`} />
+                    <div className={`w-9 h-9 rounded-lg ${stat.bgColor} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
+                      <Icon className={`w-4.5 h-4.5 ${stat.color} transition-transform duration-300 group-hover:rotate-6`} />
                     </div>
                     <div className={`flex items-center gap-1 text-xs ${stat.trendUp ? "text-red-400" : "text-emerald-400"}`}>
                       {stat.trendUp ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
