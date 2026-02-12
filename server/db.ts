@@ -28,6 +28,18 @@ import {
   chatMessages,
   type InsertChatConversation,
   type InsertChatMessage,
+  customActions,
+  type InsertCustomAction,
+  type CustomAction,
+  trainingDocuments,
+  type InsertTrainingDocument,
+  type TrainingDocument,
+  aiResponseRatings,
+  type InsertAiResponseRating,
+  type AiResponseRating,
+  knowledgeBase,
+  type InsertKnowledgeBaseEntry,
+  type KnowledgeBaseEntry,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -938,14 +950,6 @@ export async function getReportAuditEntries(limit = 100): Promise<ReportAudit[]>
 
 
 // ─── AI Response Ratings Helpers ────────────────────────────────
-import {
-  aiResponseRatings,
-  type InsertAiResponseRating,
-  type AiResponseRating,
-  knowledgeBase,
-  type InsertKnowledgeBaseEntry,
-  type KnowledgeBaseEntry,
-} from "../drizzle/schema";
 
 export async function createAiRating(rating: InsertAiResponseRating): Promise<number> {
   const db = await getDb();
@@ -1315,4 +1319,134 @@ export async function getConversationMessages(conversationId: string) {
     .from(chatMessages)
     .where(eq(chatMessages.conversationId, conversationId))
     .orderBy(chatMessages.createdAt);
+}
+
+
+// ─── Custom Actions Helpers ─────────────────────────────────────
+
+export async function getCustomActions(filters?: { isActive?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: SQL[] = [];
+  if (filters?.isActive !== undefined) conditions.push(eq(customActions.isActive, filters.isActive));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  return db.select().from(customActions).where(where).orderBy(desc(customActions.createdAt));
+}
+
+export async function getCustomActionById(actionId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(customActions).where(eq(customActions.actionId, actionId)).limit(1);
+  return result[0];
+}
+
+export async function createCustomAction(action: InsertCustomAction): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(customActions).values(action);
+  return result[0].insertId;
+}
+
+export async function updateCustomAction(actionId: string, data: Partial<InsertCustomAction>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(customActions).set(data).where(eq(customActions.actionId, actionId));
+}
+
+export async function deleteCustomAction(actionId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(customActions).where(eq(customActions.actionId, actionId));
+}
+
+export async function findMatchingAction(input: string): Promise<CustomAction | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const actions = await db.select().from(customActions).where(eq(customActions.isActive, true));
+  const inputLower = input.toLowerCase().trim();
+  // Check trigger phrase and aliases
+  for (const action of actions) {
+    if (inputLower.includes(action.triggerPhrase.toLowerCase())) return action;
+    const aliases = action.triggerAliases as string[] | null;
+    if (aliases) {
+      for (const alias of aliases) {
+        if (inputLower.includes(alias.toLowerCase())) return action;
+      }
+    }
+  }
+  return undefined;
+}
+
+// ─── Training Documents Helpers ─────────────────────────────────
+
+export async function getTrainingDocuments(filters?: { status?: string }) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions: SQL[] = [];
+  if (filters?.status) conditions.push(eq(trainingDocuments.status, filters.status as any));
+  const where = conditions.length > 0 ? and(...conditions) : undefined;
+  return db.select().from(trainingDocuments).where(where).orderBy(desc(trainingDocuments.createdAt));
+}
+
+export async function getTrainingDocumentById(docId: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(trainingDocuments).where(eq(trainingDocuments.docId, docId)).limit(1);
+  return result[0];
+}
+
+export async function createTrainingDocument(doc: InsertTrainingDocument): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  const result = await db.insert(trainingDocuments).values(doc);
+  return result[0].insertId;
+}
+
+export async function updateTrainingDocument(docId: string, data: Partial<InsertTrainingDocument>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(trainingDocuments).set(data).where(eq(trainingDocuments.docId, docId));
+}
+
+export async function deleteTrainingDocument(docId: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(trainingDocuments).where(eq(trainingDocuments.docId, docId));
+}
+
+// ─── AI Feedback Stats ─────────────────────────────────────────
+
+export async function getAiFeedbackStats() {
+  const db = await getDb();
+  if (!db) return { total: 0, avgRating: 0, distribution: {} as Record<string, number> };
+  const [stats] = await db.select({
+    total: sql<number>`COUNT(*)`,
+    avgRating: sql<number>`COALESCE(AVG(rating), 0)`,
+    stars1: sql<number>`SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END)`,
+    stars2: sql<number>`SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END)`,
+    stars3: sql<number>`SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END)`,
+    stars4: sql<number>`SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END)`,
+    stars5: sql<number>`SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END)`,
+  }).from(aiResponseRatings);
+  return {
+    total: Number(stats?.total ?? 0),
+    avgRating: Number(Number(stats?.avgRating ?? 0).toFixed(1)),
+    distribution: {
+      "1": Number(stats?.stars1 ?? 0),
+      "2": Number(stats?.stars2 ?? 0),
+      "3": Number(stats?.stars3 ?? 0),
+      "4": Number(stats?.stars4 ?? 0),
+      "5": Number(stats?.stars5 ?? 0),
+    },
+  };
+}
+
+export async function getTrainingDocumentContent(): Promise<string> {
+  const db = await getDb();
+  if (!db) return "";
+  const docs = await db.select({
+    fileName: trainingDocuments.fileName,
+    content: trainingDocuments.extractedContent,
+  }).from(trainingDocuments).where(eq(trainingDocuments.status, "completed"));
+  return docs.map(d => `[مستند: ${d.fileName}]\n${d.content || ""}`).join("\n\n---\n\n");
 }

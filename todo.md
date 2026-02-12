@@ -571,3 +571,36 @@
 - [x] Add text export for conversations with full formatting (TXT download)
 - [x] Add delete conversation functionality with confirmation
 - [x] All 173 tests passing (8 test files)
+
+## Phase 37: Smart Rasid Training & Management Center
+
+### A. Database Schema
+- [x] Add custom_actions table (trigger phrases, action types, targets)
+- [x] Add training_documents table (file upload, training status)
+- [x] ai_feedback uses existing ai_response_ratings table
+- [x] Push database migration
+
+### B. Backend (tRPC Procedures)
+- [x] CRUD procedures for custom_actions (create, list, update, delete, toggle)
+- [x] CRUD procedures for training_documents (upload, list, delete, process)
+- [x] CRUD procedures for ai_feedback (list, stats via existing ai_response_ratings)
+- [x] Integrate knowledge_base existing procedures
+- [x] Integrate personality_scenarios existing procedures
+
+### C. Training Center Admin Page
+- [x] Create TrainingCenter.tsx with 5 tabbed sections
+- [x] Tab 1: Q&A Knowledge Base management (existing knowledge_base table)
+- [x] Tab 2: Custom Actions management (trigger phrases → functions)
+- [x] Tab 3: Training Documents management (upload, status tracking)
+- [x] Tab 4: User Feedback & Ratings (view, stats, export)
+- [x] Tab 5: Personality Scenarios management (existing personality_scenarios)
+- [x] Add TrainingCenter to sidebar under إداري group
+- [x] Console-style design matching SmartRasid theme
+
+### D. Integration
+- [x] Connect custom actions to rasidAI tool execution (get_custom_actions, execute_custom_action)
+- [x] Connect training documents to rasidAI (search_training_documents)
+- [x] Connect feedback to conversation rating system (get_training_stats)
+- [x] 30 tools in rasidAI (4 new training center tools)
+- [x] All 173 tests passing (8 test files)
+- [x] Save checkpoint

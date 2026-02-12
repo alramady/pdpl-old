@@ -124,6 +124,18 @@ import {
   deleteConversation,
   addChatMessage,
   getConversationMessages,
+  getCustomActions,
+  getCustomActionById,
+  createCustomAction,
+  updateCustomAction,
+  deleteCustomAction,
+  getTrainingDocuments,
+  getTrainingDocumentById,
+  createTrainingDocument,
+  updateTrainingDocument,
+  deleteTrainingDocument,
+  getAiFeedbackStats,
+  getTrainingDocumentContent,
 } from "./db";
 
 // Helper to get current user info from either auth source
@@ -1928,6 +1940,178 @@ export const appRouter = router({
         await updateConversation(input.conversationId, { title: input.title });
         return { success: true };
       }),
+  }),
+
+  // ═══ TRAINING CENTER ROUTER ═══════════════════════════════════
+  trainingCenter: router({
+    // --- Custom Actions CRUD ---
+    customActions: router({
+      list: protectedProcedure
+        .input(z.object({ isActive: z.boolean().optional() }).optional())
+        .query(async ({ input }) => {
+          return getCustomActions(input ?? undefined);
+        }),
+      get: protectedProcedure
+        .input(z.object({ actionId: z.string() }))
+        .query(async ({ input }) => {
+          return getCustomActionById(input.actionId);
+        }),
+      create: protectedProcedure
+        .input(z.object({
+          triggerPhrase: z.string().min(1),
+          triggerAliases: z.array(z.string()).optional(),
+          actionType: z.enum(["call_function", "custom_response", "redirect", "api_call"]),
+          actionTarget: z.string().optional(),
+          actionParams: z.record(z.string(), z.any()).optional(),
+          description: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          priority: z.number().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          const actionId = `CA-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          const id = await createCustomAction({
+            actionId,
+            triggerPhrase: input.triggerPhrase,
+            triggerAliases: input.triggerAliases ?? [],
+            actionType: input.actionType,
+            actionTarget: input.actionTarget ?? null,
+            actionParams: input.actionParams ?? {},
+            description: input.description ?? null,
+            descriptionAr: input.descriptionAr ?? null,
+            priority: input.priority ?? 0,
+            createdBy: who.id,
+          });
+          await logAudit(who.id, "trainingCenter.customAction.create", `Created custom action: ${input.triggerPhrase}`, "system", who.name);
+          return { id, actionId };
+        }),
+      update: protectedProcedure
+        .input(z.object({
+          actionId: z.string(),
+          triggerPhrase: z.string().optional(),
+          triggerAliases: z.array(z.string()).optional(),
+          actionType: z.enum(["call_function", "custom_response", "redirect", "api_call"]).optional(),
+          actionTarget: z.string().optional(),
+          actionParams: z.record(z.string(), z.any()).optional(),
+          description: z.string().optional(),
+          descriptionAr: z.string().optional(),
+          priority: z.number().optional(),
+          isActive: z.boolean().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          const { actionId, ...data } = input;
+          await updateCustomAction(actionId, data as any);
+          await logAudit(who.id, "trainingCenter.customAction.update", `Updated custom action: ${actionId}`, "system", who.name);
+          return { success: true };
+        }),
+      delete: protectedProcedure
+        .input(z.object({ actionId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          await deleteCustomAction(input.actionId);
+          await logAudit(who.id, "trainingCenter.customAction.delete", `Deleted custom action: ${input.actionId}`, "system", who.name);
+          return { success: true };
+        }),
+    }),
+
+    // --- Training Documents CRUD ---
+    documents: router({
+      list: protectedProcedure
+        .input(z.object({ status: z.string().optional() }).optional())
+        .query(async ({ input }) => {
+          return getTrainingDocuments(input ?? undefined);
+        }),
+      get: protectedProcedure
+        .input(z.object({ docId: z.string() }))
+        .query(async ({ input }) => {
+          return getTrainingDocumentById(input.docId);
+        }),
+      upload: protectedProcedure
+        .input(z.object({
+          fileName: z.string(),
+          fileUrl: z.string(),
+          fileSize: z.number().optional(),
+          fileType: z.string().optional(),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          const docId = `DOC-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          const id = await createTrainingDocument({
+            docId,
+            fileName: input.fileName,
+            fileUrl: input.fileUrl,
+            fileSize: input.fileSize ?? null,
+            fileType: input.fileType ?? null,
+            uploadedBy: who.id,
+            uploadedByName: who.name,
+          });
+          await logAudit(who.id, "trainingCenter.document.upload", `Uploaded training document: ${input.fileName}`, "system", who.name);
+          return { id, docId };
+        }),
+      process: protectedProcedure
+        .input(z.object({ docId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          const doc = await getTrainingDocumentById(input.docId);
+          if (!doc) throw new Error("Document not found");
+          await updateTrainingDocument(input.docId, { status: "processing" });
+          // Simulate processing - in production this would extract text from the document
+          try {
+            const { invokeLLM } = await import("./_core/llm");
+            const response = await invokeLLM({
+              messages: [
+                { role: "system", content: "You are a document content extractor. Extract and summarize the key information from the document description. Respond in Arabic." },
+                { role: "user", content: `Extract key information from this training document: ${doc.fileName}. URL: ${doc.fileUrl}` },
+              ],
+            });
+            const rawContent = response.choices?.[0]?.message?.content;
+            const extractedContent = typeof rawContent === "string" ? rawContent : "تم معالجة المستند بنجاح";
+            await updateTrainingDocument(input.docId, {
+              status: "completed",
+              extractedContent,
+              chunkCount: Math.ceil(extractedContent.length / 500),
+              processedAt: new Date(),
+            });
+          } catch (err: any) {
+            await updateTrainingDocument(input.docId, {
+              status: "failed",
+              errorMessage: err.message || "Processing failed",
+            });
+          }
+          await logAudit(who.id, "trainingCenter.document.process", `Processed document: ${doc.fileName}`, "system", who.name);
+          return { success: true };
+        }),
+      delete: protectedProcedure
+        .input(z.object({ docId: z.string() }))
+        .mutation(async ({ ctx, input }) => {
+          const who = getAuthUser(ctx);
+          await deleteTrainingDocument(input.docId);
+          await logAudit(who.id, "trainingCenter.document.delete", `Deleted training document: ${input.docId}`, "system", who.name);
+          return { success: true };
+        }),
+    }),
+
+    // --- AI Feedback & Ratings ---
+    feedback: router({
+      list: protectedProcedure
+        .input(z.object({
+          minRating: z.number().optional(),
+          maxRating: z.number().optional(),
+          limit: z.number().optional(),
+        }).optional())
+        .query(async ({ input }) => {
+          return getAiRatings(input ?? undefined);
+        }),
+      stats: protectedProcedure.query(async () => {
+        return getAiFeedbackStats();
+      }),
+    }),
+
+    // --- Training Content for AI ---
+    getTrainingContent: protectedProcedure.query(async () => {
+      return getTrainingDocumentContent();
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

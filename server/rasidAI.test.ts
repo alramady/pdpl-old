@@ -56,6 +56,17 @@ vi.mock("./db", () => ({
   getAllIncidentDocuments: vi.fn().mockResolvedValue([]),
   getReportAuditEntries: vi.fn().mockResolvedValue([]),
   getApiKeys: vi.fn().mockResolvedValue([]),
+  getCustomActions: vi.fn().mockResolvedValue([
+    { id: 1, name: "explain_pdpl", nameAr: "شرح PDPL", description: "شرح نظام حماية البيانات", category: "knowledge", triggerPhrases: '["pdpl","حماية البيانات"]', responseTemplate: "PDPL هو نظام حماية البيانات الشخصية", isActive: true },
+  ]),
+  getTrainingDocuments: vi.fn().mockResolvedValue([
+    { id: 1, title: "دليل المنصة", docType: "pdf", status: "processed", extractedContent: "دليل استخدام منصة راصد", createdAt: Date.now() },
+  ]),
+  getPersonalityScenarios: vi.fn().mockResolvedValue([
+    { id: 1, scenarioType: "greeting_first", triggerKeyword: null, responseTemplate: "مرحباً {userName}!", isActive: true },
+  ]),
+  getGreetingForUser: vi.fn().mockResolvedValue({ greeting: "مرحباً!", isFirstVisit: true }),
+  checkLeaderMention: vi.fn().mockResolvedValue({ mentioned: false }),
   getPublishedKnowledgeForAI: vi.fn().mockResolvedValue([
     { id: 1, title: "PDPL Overview", titleAr: "نظرة عامة على PDPL", content: "PDPL is the Personal Data Protection Law", category: "policy" },
   ]),
@@ -80,9 +91,9 @@ describe("rasidAI — Smart Rasid AI v6.0", () => {
   });
 
   describe("RASID_TOOLS", () => {
-    it("should have 26 tool definitions (upgraded with personality tools)", () => {
+    it("should have 30 tool definitions (upgraded with training center tools)", () => {
       expect(RASID_TOOLS).toBeDefined();
-      expect(RASID_TOOLS.length).toBe(26);
+      expect(RASID_TOOLS.length).toBe(30);
     });
 
     it("each tool should have required properties", () => {

@@ -46,6 +46,8 @@ import {
   getGreetingForUser,
   checkLeaderMention,
   getPersonalityScenarios,
+  getCustomActions,
+  getTrainingDocuments,
 } from "./db";
 
 // ═══════════════════════════════════════════════════════════════
@@ -144,7 +146,7 @@ audit_log, notifications, monitoring_jobs, alert_contacts, alert_rules, alert_hi
 retention_policies, api_keys, scheduled_reports, threat_rules, evidence_chain,
 seller_profiles, osint_queries, feedback_entries, knowledge_graph_nodes, knowledge_graph_edges,
 platform_users, incident_documents, report_audit, knowledge_base, ai_response_ratings,
-personality_scenarios, user_sessions
+personality_scenarios, user_sessions, custom_actions, training_documents, chat_conversations, chat_messages
 
 # وظائف المنصة
 📊 لوحة القيادة — إحصائيات شاملة
@@ -166,6 +168,7 @@ personality_scenarios, user_sessions
 🗺️ خريطة التهديدات — خريطة جغرافية للتهديدات
 📋 سجل المراجعة — تتبع كل العمليات
 📚 قاعدة المعرفة — مقالات وأسئلة وأجوبة وسياسات
+🏫 مركز التدريب — إجراءات مخصصة + مستندات تدريبية + سيناريوهات شخصية
 
 # مستويات الخطورة
 - critical: تسريب يشمل بيانات حساسة جداً (هوية وطنية، بيانات مالية) لأكثر من 10,000 سجل
@@ -547,6 +550,64 @@ export const RASID_TOOLS = [
       },
     },
   },
+  // ── Training Center Tools ──
+  {
+    type: "function" as const,
+    function: {
+      name: "get_custom_actions",
+      description: "جلب الإجراءات المخصصة المعرّفة في مركز التدريب. هذه إجراءات جاهزة يمكن تنفيذها مباشرة عند طلب المستخدم.",
+      parameters: {
+        type: "object",
+        properties: {
+          category: { type: "string", description: "تصفية حسب الفئة (اختياري)" },
+          activeOnly: { type: "boolean", description: "جلب النشطة فقط (افتراضي: true)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "execute_custom_action",
+      description: "تنفيذ إجراء مخصص من مركز التدريب بناءً على اسمه أو معرفه. يُرجع قالب الرد المحدد مسبقاً.",
+      parameters: {
+        type: "object",
+        properties: {
+          actionName: { type: "string", description: "اسم الإجراء المخصص للتنفيذ" },
+          actionId: { type: "number", description: "معرف الإجراء (بديل عن الاسم)" },
+        },
+        required: [],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "search_training_documents",
+      description: "البحث في المستندات التدريبية المرفوعة في مركز التدريب. يبحث في العنوان والمحتوى المستخرج.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "نص البحث في المستندات التدريبية" },
+          docType: { type: "string", enum: ["pdf", "docx", "txt", "url"], description: "تصفية حسب نوع المستند (اختياري)" },
+        },
+        required: ["query"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "get_training_stats",
+      description: "جلب إحصائيات مركز التدريب: عدد المستندات، الإجراءات المخصصة، سيناريوهات الشخصية، وإدخالات قاعدة المعرفة.",
+      parameters: {
+        type: "object",
+        properties: {},
+        required: [],
+      },
+    },
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -584,6 +645,10 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     get_personality_greeting: "وكيل الشخصية",
     check_leader_mention: "وكيل الشخصية",
     manage_personality_scenarios: "وكيل الشخصية",
+    get_custom_actions: "وكيل التدريب",
+    execute_custom_action: "وكيل التدريب",
+    search_training_documents: "وكيل التدريب",
+    get_training_stats: "وكيل التدريب",
   };
 
   const toolDescriptions: Record<string, string> = {
@@ -613,6 +678,10 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     get_personality_greeting: "جلب ترحيب شخصي",
     check_leader_mention: "فحص إشارة لقائد",
     manage_personality_scenarios: "إدارة سيناريوهات الشخصية",
+    get_custom_actions: "جلب الإجراءات المخصصة",
+    execute_custom_action: "تنفيذ إجراء مخصص",
+    search_training_documents: "البحث في المستندات التدريبية",
+    get_training_stats: "جلب إحصائيات مركز التدريب",
   };
 
   const step: ThinkingStep = {
@@ -1293,6 +1362,110 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
         default:
           return { error: "إجراء غير معروف" };
       }
+    }
+
+    // ── Training Center Tools ──
+    case "get_custom_actions": {
+      const actions = await getCustomActions();
+      const filtered = params.category
+        ? actions.filter((a: any) => a.category === params.category)
+        : params.activeOnly !== false
+          ? actions.filter((a: any) => a.isActive)
+          : actions;
+      return {
+        actions: filtered.map((a: any) => ({
+          id: a.id,
+          name: a.name,
+          nameAr: a.nameAr,
+          description: a.description,
+          category: a.category,
+          triggerPhrases: a.triggerPhrases,
+          responseTemplate: a.responseTemplate,
+          isActive: a.isActive,
+        })),
+        total: filtered.length,
+      };
+    }
+
+    case "execute_custom_action": {
+      const allActions = await getCustomActions();
+      let action: any = null;
+      if (params.actionId) {
+        action = allActions.find((a: any) => a.id === params.actionId);
+      } else if (params.actionName) {
+        const searchName = params.actionName.toLowerCase();
+        action = allActions.find((a: any) =>
+          a.name.toLowerCase().includes(searchName) ||
+          (a.nameAr && a.nameAr.includes(params.actionName)) ||
+          (a.triggerPhrases && JSON.parse(a.triggerPhrases || "[]").some((p: string) => p.includes(searchName)))
+        );
+      }
+      if (!action) return { error: "لم يتم العثور على الإجراء المخصص" };
+      if (!action.isActive) return { error: "هذا الإجراء غير مفعل حالياً" };
+      return {
+        actionName: action.nameAr || action.name,
+        response: action.responseTemplate,
+        category: action.category,
+        executed: true,
+      };
+    }
+
+    case "search_training_documents": {
+      const docs = await getTrainingDocuments();
+      const query = (params.query || "").toLowerCase();
+      const filtered = docs.filter((d: any) => {
+        const matchesQuery = d.title.toLowerCase().includes(query) ||
+          (d.extractedContent && d.extractedContent.toLowerCase().includes(query));
+        const matchesType = params.docType ? d.docType === params.docType : true;
+        return matchesQuery && matchesType && d.status === "processed";
+      });
+      return {
+        documents: filtered.map((d: any) => ({
+          id: d.id,
+          title: d.title,
+          docType: d.docType,
+          excerpt: d.extractedContent
+            ? d.extractedContent.substring(0, 500) + (d.extractedContent.length > 500 ? "..." : "")
+            : "لا يوجد محتوى مستخرج",
+          uploadedAt: d.createdAt,
+        })),
+        total: filtered.length,
+        searchQuery: params.query,
+      };
+    }
+
+    case "get_training_stats": {
+      const [allDocs, allActions, allScenarios, allKB] = await Promise.all([
+        getTrainingDocuments(),
+        getCustomActions(),
+        getPersonalityScenarios(),
+        getKnowledgeBaseEntries(),
+      ]);
+      return {
+        trainingDocuments: {
+          total: allDocs.length,
+          processed: allDocs.filter((d: any) => d.status === "processed").length,
+          pending: allDocs.filter((d: any) => d.status === "pending").length,
+          byType: {
+            pdf: allDocs.filter((d: any) => d.docType === "pdf").length,
+            docx: allDocs.filter((d: any) => d.docType === "docx").length,
+            txt: allDocs.filter((d: any) => d.docType === "txt").length,
+            url: allDocs.filter((d: any) => d.docType === "url").length,
+          },
+        },
+        customActions: {
+          total: allActions.length,
+          active: allActions.filter((a: any) => a.isActive).length,
+        },
+        personalityScenarios: {
+          total: allScenarios.length,
+          active: allScenarios.filter((s: any) => s.isActive).length,
+        },
+        knowledgeBase: {
+          total: allKB.length,
+          published: allKB.filter((k: any) => k.status === "published").length,
+        },
+      };
     }
 
     default:

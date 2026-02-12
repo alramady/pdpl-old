@@ -38,6 +38,7 @@ const LiveScan = lazy(() => import("./pages/LiveScan"));
 const PublicVerify = lazy(() => import("./pages/PublicVerify"));
 const KnowledgeBaseAdmin = lazy(() => import("./pages/KnowledgeBaseAdmin"));
 const PersonalityScenarios = lazy(() => import("./pages/PersonalityScenarios"));
+const TrainingCenter = lazy(() => import("./pages/TrainingCenter"));
 
 function LazyFallback() {
   return (
@@ -109,6 +110,11 @@ function Router() {
             <Route path="/knowledge-base">
               <Suspense fallback={<LazyFallback />}>
                 <KnowledgeBaseAdmin />
+              </Suspense>
+            </Route>
+            <Route path="/training-center">
+              <Suspense fallback={<LazyFallback />}>
+                <TrainingCenter />
               </Suspense>
             </Route>
             <Route path="/personality-scenarios">

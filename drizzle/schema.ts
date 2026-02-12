@@ -738,3 +738,44 @@ export const chatMessages = mysqlTable("chat_messages", {
 });
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertChatMessage = typeof chatMessages.$inferInsert;
+
+
+// ═══ CUSTOM ACTIONS TABLE ═══
+export const customActions = mysqlTable("custom_actions", {
+  id: int("id").autoincrement().primaryKey(),
+  actionId: varchar("actionId", { length: 64 }).notNull().unique(),
+  triggerPhrase: varchar("triggerPhrase", { length: 500 }).notNull(),
+  triggerAliases: json("triggerAliases").$type<string[]>(),
+  actionType: mysqlEnum("actionType", ["call_function", "custom_response", "redirect", "api_call"]).notNull(),
+  actionTarget: text("actionTarget"),
+  actionParams: json("actionParams").$type<Record<string, any>>(),
+  description: text("caDescription"),
+  descriptionAr: text("caDescriptionAr"),
+  priority: int("caPriority").default(0),
+  isActive: boolean("caIsActive").default(true).notNull(),
+  createdBy: int("caCreatedBy"),
+  createdAt: timestamp("caCreatedAt").defaultNow().notNull(),
+  updatedAt: timestamp("caUpdatedAt").defaultNow().notNull(),
+});
+export type CustomAction = typeof customActions.$inferSelect;
+export type InsertCustomAction = typeof customActions.$inferInsert;
+
+// ═══ TRAINING DOCUMENTS TABLE ═══
+export const trainingDocuments = mysqlTable("training_documents", {
+  id: int("id").autoincrement().primaryKey(),
+  docId: varchar("docId", { length: 64 }).notNull().unique(),
+  fileName: varchar("tdFileName", { length: 500 }).notNull(),
+  fileUrl: text("tdFileUrl").notNull(),
+  fileSize: int("tdFileSize"),
+  fileType: varchar("tdFileType", { length: 50 }),
+  status: mysqlEnum("tdStatus", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  extractedContent: text("tdExtractedContent"),
+  chunkCount: int("tdChunkCount").default(0),
+  errorMessage: text("tdErrorMessage"),
+  uploadedBy: int("tdUploadedBy"),
+  uploadedByName: varchar("tdUploadedByName", { length: 255 }),
+  createdAt: timestamp("tdCreatedAt").defaultNow().notNull(),
+  processedAt: timestamp("tdProcessedAt"),
+});
+export type TrainingDocument = typeof trainingDocuments.$inferSelect;
+export type InsertTrainingDocument = typeof trainingDocuments.$inferInsert;
