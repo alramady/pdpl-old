@@ -174,40 +174,35 @@ export const appRouter = router({
 
   auth: router({
     me: publicProcedure.query((opts) => {
-      // Return platform user if available, otherwise OAuth user
-      if (opts.ctx.platformUser) {
-        return {
-          id: opts.ctx.platformUser.id,
-          openId: `platform_${opts.ctx.platformUser.userId}`,
-          name: opts.ctx.platformUser.name,
-          email: opts.ctx.platformUser.email,
-          loginMethod: "platform",
-          role: opts.ctx.platformUser.platformRole === "root_admin" ? "admin" as const : "admin" as const,
-          ndmoRole: opts.ctx.platformUser.platformRole === "root_admin" ? "executive" as const
-            : opts.ctx.platformUser.platformRole === "director" ? "executive" as const
-            : opts.ctx.platformUser.platformRole === "vice_president" ? "manager" as const
-            : opts.ctx.platformUser.platformRole === "manager" ? "manager" as const
-            : "analyst" as const,
-          createdAt: opts.ctx.platformUser.createdAt,
-          updatedAt: opts.ctx.platformUser.updatedAt,
-          lastSignedIn: opts.ctx.platformUser.lastLoginAt ?? opts.ctx.platformUser.createdAt,
-          displayName: opts.ctx.platformUser.displayName,
-          platformRole: opts.ctx.platformUser.platformRole,
-          userId: opts.ctx.platformUser.userId,
-          mobile: opts.ctx.platformUser.mobile,
-          status: opts.ctx.platformUser.status,
-        };
-      }
-      return opts.ctx.user;
+      // Local platform auth only
+      if (!opts.ctx.platformUser) return null;
+      return {
+        id: opts.ctx.platformUser.id,
+        openId: `platform_${opts.ctx.platformUser.userId}`,
+        name: opts.ctx.platformUser.name,
+        email: opts.ctx.platformUser.email,
+        loginMethod: "platform",
+        role: opts.ctx.platformUser.platformRole === "root_admin" ? "admin" as const : "admin" as const,
+        ndmoRole: opts.ctx.platformUser.platformRole === "root_admin" ? "executive" as const
+          : opts.ctx.platformUser.platformRole === "director" ? "executive" as const
+          : opts.ctx.platformUser.platformRole === "vice_president" ? "manager" as const
+          : opts.ctx.platformUser.platformRole === "manager" ? "manager" as const
+          : "analyst" as const,
+        createdAt: opts.ctx.platformUser.createdAt,
+        updatedAt: opts.ctx.platformUser.updatedAt,
+        lastSignedIn: opts.ctx.platformUser.lastLoginAt ?? opts.ctx.platformUser.createdAt,
+        displayName: opts.ctx.platformUser.displayName,
+        platformRole: opts.ctx.platformUser.platformRole,
+        userId: opts.ctx.platformUser.userId,
+        mobile: opts.ctx.platformUser.mobile,
+        status: opts.ctx.platformUser.status,
+      };
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       ctx.res.clearCookie("platform_session", { ...cookieOptions, maxAge: -1 });
       if (ctx.platformUser) {
         logAudit(ctx.platformUser.id, "auth.logout", `Platform user ${ctx.platformUser.displayName} logged out`, "auth", ctx.platformUser.displayName);
-      } else if (ctx.user) {
-        logAudit(getAuthUser(ctx).id, "auth.logout", `User ${ctx.user.name} logged out`, "auth", getAuthUser(ctx).name);
       }
       return { success: true } as const;
     }),

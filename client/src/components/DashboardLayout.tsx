@@ -54,7 +54,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNdmoAuth } from "@/hooks/useNdmoAuth";
-import { getLoginUrl } from "@/const";
+// Local auth only - login redirects to /login
 import NotificationBell from "./NotificationBell";
 import { useTheme } from "@/contexts/ThemeContext";
 

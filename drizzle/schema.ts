@@ -11,19 +11,26 @@ import {
 } from "drizzle-orm/mysql-core";
 
 /**
- * Core user table — extended with NDMO roles
+ * Core user table — extended with NDMO roles and local authentication
  * Roles: admin (full access), manager (reports + leaks), analyst (read + classify), viewer (dashboard only)
+ * Auth: Local username/password authentication (no OAuth)
  */
 export const users = mysqlTable("users", {
   id: int("id").autoincrement().primaryKey(),
   openId: varchar("openId", { length: 64 }).notNull().unique(),
+  userId: varchar("userId", { length: 64 }).unique(), // Local login username (e.g., MRUHAILY)
+  passwordHash: varchar("passwordHash", { length: 255 }), // bcrypt hashed password
   name: text("name"),
+  displayName: varchar("displayName", { length: 255 }), // Display name (e.g., Admin Rasid System)
+  displayNameAr: varchar("displayNameAr", { length: 255 }), // Arabic display name
   email: varchar("email", { length: 320 }),
+  mobile: varchar("mobile", { length: 20 }), // Mobile number (e.g., +966553445533)
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   ndmoRole: mysqlEnum("ndmoRole", ["executive", "manager", "analyst", "viewer"])
     .default("viewer")
     .notNull(),
+  isActive: boolean("isActive").default(true).notNull(), // Account active status
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

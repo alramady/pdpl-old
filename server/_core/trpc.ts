@@ -13,15 +13,14 @@ export const publicProcedure = t.procedure;
 const requireUser = t.middleware(async opts => {
   const { ctx, next } = opts;
 
-  // Accept either OAuth user or platform user
-  if (!ctx.user && !ctx.platformUser) {
+  // Require local platform user authentication
+  if (!ctx.platformUser) {
     throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
   }
 
   return next({
     ctx: {
       ...ctx,
-      user: ctx.user,
       platformUser: ctx.platformUser,
     },
   });
@@ -41,13 +40,8 @@ export const adminProcedure = t.procedure.use(
       }
     }
 
-    // Check OAuth user admin role
-    if (ctx.user && ctx.user.role === 'admin') {
-      return next({ ctx });
-    }
-
-    // Neither is admin
-    if (!ctx.user && !ctx.platformUser) {
+    // Not authenticated
+    if (!ctx.platformUser) {
       throw new TRPCError({ code: "UNAUTHORIZED", message: UNAUTHED_ERR_MSG });
     }
 

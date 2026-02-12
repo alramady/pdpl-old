@@ -365,10 +365,14 @@ export default function PlatformLogin() {
 
   const utils = trpc.useUtils();
 
+  // Get redirect URL from query params
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectTo = searchParams.get("redirect") || "/";
+
   const loginMutation = trpc.platformAuth.login.useMutation({
     onSuccess: async () => {
       await utils.auth.me.invalidate();
-      window.location.href = "/";
+      window.location.href = redirectTo;
     },
     onError: (err) => {
       setError(err.message || "فشل تسجيل الدخول");

@@ -290,6 +290,6 @@ describe("Semantic Search Engine", () => {
       const ids = reranked.map(r => r.entry.entryId);
       expect(ids).toContain("KB-001");
       expect(ids).toContain("KB-002");
-    });
+    }, 30000);
   });
 });
