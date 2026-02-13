@@ -450,7 +450,7 @@ function ApiKeyCard({ apiKey, onUpdate, onDelete, onViewDetails }: {
       {/* Key Value */}
       <div className="flex items-center gap-2 bg-background/80 rounded-lg p-3 font-mono text-xs text-muted-foreground" onClick={e => e.stopPropagation()}>
         <code className="flex-1">
-          {revealed ? apiKey.id : `${apiKey.id.substring(0, 4)}****************${apiKey.id.substring(apiKey.id.length - 4)}`}
+          {revealed ? `${apiKey.keyPrefix}...` : `${apiKey.keyPrefix}****************`}
         </code>
         <Button
           variant="ghost"
@@ -465,7 +465,7 @@ function ApiKeyCard({ apiKey, onUpdate, onDelete, onViewDetails }: {
           size="sm"
           className="h-7 w-7 p-0"
           onClick={() => {
-            navigator.clipboard.writeText(apiKey.id);
+            navigator.clipboard.writeText(apiKey.keyPrefix);
             toast.success("تم نسخ المعرف");
           }}
         >

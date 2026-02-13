@@ -48,7 +48,13 @@ import {
   getPersonalityScenarios,
   getCustomActions,
   getTrainingDocuments,
+  createLeak,
+  updateLeakStatus,
+  createReport,
+  createAlertContact,
+  createAlertRule,
 } from "./db";
+import { executeScan } from "./scanEngine";
 
 // ═══════════════════════════════════════════════════════════════
 // THINKING STEPS — Track the agent's reasoning process
@@ -623,6 +629,120 @@ export const RASID_TOOLS = [
       },
     },
   },
+  // ═══ EXECUTION TOOLS ═══
+  {
+    type: "function" as const,
+    function: {
+      name: "execute_live_scan",
+      description: "تنفيذ فحص مباشر للبحث عن تسريبات بيانات لهدف محدد (بريد إلكتروني، نطاق، رقم هوية)",
+      parameters: {
+        type: "object",
+        properties: {
+          targets: { type: "array", items: { type: "string" }, description: "قائمة الأهداف للفحص" },
+          sources: { type: "array", items: { type: "string" }, description: "مصادر الفحص (اختياري)" },
+        },
+        required: ["targets"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "execute_pii_scan",
+      description: "تنفيذ فحص PII لتصنيف البيانات الشخصية في نص معين",
+      parameters: {
+        type: "object",
+        properties: {
+          text: { type: "string", description: "النص المراد فحصه" },
+        },
+        required: ["text"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_leak_record",
+      description: "إنشاء سجل تسريب جديد في قاعدة البيانات",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "عنوان التسريب بالإنجليزية" },
+          titleAr: { type: "string", description: "عنوان التسريب بالعربية" },
+          source: { type: "string", description: "مصدر التسريب" },
+          severity: { type: "string", enum: ["critical", "high", "medium", "low"], description: "مستوى الخطورة" },
+          recordCount: { type: "number", description: "عدد السجلات المسربة" },
+          sector: { type: "string", description: "القطاع المتأثر" },
+          description: { type: "string", description: "وصف التسريب" },
+        },
+        required: ["title", "titleAr", "source", "severity"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "update_leak_status",
+      description: "تحديث حالة تسريب موجود",
+      parameters: {
+        type: "object",
+        properties: {
+          leakId: { type: "number", description: "معرف التسريب" },
+          status: { type: "string", enum: ["new", "analyzing", "documented", "resolved", "closed"], description: "الحالة الجديدة" },
+        },
+        required: ["leakId", "status"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "generate_report",
+      description: "إنشاء تقرير جديد في المنصة",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "عنوان التقرير" },
+          titleAr: { type: "string", description: "عنوان التقرير بالعربية" },
+          type: { type: "string", enum: ["monthly", "quarterly", "special"], description: "نوع التقرير" },
+        },
+        required: ["title", "type"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_alert_channel",
+      description: "إنشاء قناة تنبيه جديدة (بريد إلكتروني، SMS، واتساب، تلغرام)",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "اسم القناة" },
+          type: { type: "string", enum: ["email", "sms", "whatsapp", "telegram", "slack", "webhook"], description: "نوع القناة" },
+          config: { type: "string", description: "إعدادات القناة (بريد أو رقم أو رابط)" },
+        },
+        required: ["name", "type", "config"],
+      },
+    },
+  },
+  {
+    type: "function" as const,
+    function: {
+      name: "create_alert_rule",
+      description: "إنشاء قاعدة تنبيه جديدة",
+      parameters: {
+        type: "object",
+        properties: {
+          name: { type: "string", description: "اسم القاعدة" },
+          nameAr: { type: "string", description: "اسم القاعدة بالعربية" },
+          severity: { type: "string", enum: ["critical", "high", "medium", "low"], description: "مستوى الخطورة" },
+          condition: { type: "string", description: "شرط التنبيه" },
+        },
+        required: ["name", "severity"],
+      },
+    },
+  },
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -660,6 +780,13 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     get_personality_greeting: "وكيل الشخصية",
     check_leader_mention: "وكيل الشخصية",
     manage_personality_scenarios: "وكيل الشخصية",
+    execute_live_scan: "وكيل الفحص المباشر",
+    execute_pii_scan: "وكيل تصنيف البيانات",
+    create_leak_record: "وكيل إدارة التسريبات",
+    update_leak_status: "وكيل إدارة التسريبات",
+    generate_report: "وكيل التقارير",
+    create_alert_channel: "وكيل التنبيهات",
+    create_alert_rule: "وكيل التنبيهات",
   };
 
   const toolDescriptions: Record<string, string> = {
@@ -689,6 +816,13 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     get_personality_greeting: "جلب ترحيب شخصي",
     check_leader_mention: "فحص إشارة لقائد",
     manage_personality_scenarios: "إدارة سيناريوهات الشخصية",
+    execute_live_scan: "تنفيذ فحص مباشر",
+    execute_pii_scan: "تنفيذ فحص PII",
+    create_leak_record: "إنشاء سجل تسريب",
+    update_leak_status: "تحديث حالة تسريب",
+    generate_report: "إنشاء تقرير",
+    create_alert_channel: "إنشاء قناة تنبيه",
+    create_alert_rule: "إنشاء قاعدة تنبيه",
   };
 
   const step: ThinkingStep = {
@@ -1462,6 +1596,133 @@ async function executeToolInternal(toolName: string, params: any): Promise<any> 
         }
         default:
           return { error: "إجراء غير معروف" };
+      }
+    }
+
+    // ═══ EXECUTION TOOLS ═══
+    case "execute_live_scan": {
+      const targets = params.targets || [];
+      const sources = params.sources || ["xposedornot", "crtsh", "psbdmp", "googledork", "breachdirectory", "github", "dehashed", "intelx"];
+      try {
+        const session = await executeScan(targets, sources);
+        await logAudit(0, "rasid.live_scan", `راصد الذكي نفذ فحص مباشر لـ: ${targets.join(", ")}`, "monitoring", "راصد الذكي");
+        return {
+          success: true,
+          scanId: session.id,
+          status: session.status,
+          totalFindings: session.totalFindings,
+          findings: session.results.slice(0, 10),
+          message: `تم الفحص بنجاح. تم العثور على ${session.totalFindings} نتيجة.`,
+        };
+      } catch (e: any) {
+        return { success: false, error: e.message || "فشل الفحص" };
+      }
+    }
+
+    case "execute_pii_scan": {
+      const text = params.text || "";
+      const patterns = [
+        { type: "National ID", typeAr: "رقم الهوية الوطنية", regex: /\b1\d{9}\b/g },
+        { type: "Iqama Number", typeAr: "رقم الإقامة", regex: /\b2\d{9}\b/g },
+        { type: "Saudi Phone", typeAr: "رقم جوال سعودي", regex: /\b05\d{8}\b/g },
+        { type: "IBAN", typeAr: "رقم الحساب البنكي", regex: /\bSA\d{22}\b/g },
+        { type: "Credit Card", typeAr: "بطاقة ائتمان", regex: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g },
+        { type: "Email", typeAr: "بريد إلكتروني", regex: /\b[\w.-]+@[\w.-]+\.\w+\b/gi },
+        { type: "Credentials", typeAr: "بيانات تسجيل الدخول", regex: /(?:password|passwd|pass|كلمة.?(?:المرور|السر))[:\s]+\S+/gi },
+        { type: "IP Address", typeAr: "عنوان IP", regex: /\b(?:(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)\b/g },
+      ];
+      const results: Array<{ type: string; typeAr: string; value: string; line: number }> = [];
+      const lines = text.split("\n");
+      lines.forEach((line: string, lineIdx: number) => {
+        for (const pattern of patterns) {
+          const regex = new RegExp(pattern.regex.source, pattern.regex.flags);
+          let match;
+          while ((match = regex.exec(line)) !== null) {
+            results.push({ type: pattern.type, typeAr: pattern.typeAr, value: match[0], line: lineIdx + 1 });
+          }
+        }
+      });
+      await logAudit(0, "rasid.pii_scan", `راصد الذكي نفذ فحص PII: ${results.length} تطابق`, "pii", "راصد الذكي");
+      return { success: true, totalMatches: results.length, results: results.slice(0, 20), message: `تم العثور على ${results.length} بيانات شخصية` };
+    }
+
+    case "create_leak_record": {
+      try {
+        const leakId = await createLeak({
+          leakId: `RASID-${Date.now()}`,
+          title: params.title || "Leak from Rasid AI",
+          titleAr: params.titleAr || "تسريب من راصد الذكي",
+          source: (params.source === "telegram" || params.source === "darkweb" || params.source === "paste") ? params.source : "darkweb",
+          severity: params.severity || "medium",
+          status: "new",
+          recordCount: params.recordCount || 0,
+          sector: params.sector || "غير محدد",
+          sectorAr: params.sector || "غير محدد",
+          piiTypes: [],
+          description: params.description || null,
+          descriptionAr: params.descriptionAr || params.description || null,
+          detectedAt: new Date(),
+        });
+        await logAudit(0, "rasid.create_leak", `راصد الذكي أنشأ تسريب: ${params.titleAr || params.title}`, "leak", "راصد الذكي");
+        return { success: true, leakId, message: `تم إنشاء التسريب بنجاح (رقم: ${leakId})` };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    case "update_leak_status": {
+      try {
+        await updateLeakStatus(params.leakId, params.status);
+        await logAudit(0, "rasid.update_leak", `راصد الذكي حدث حالة التسريب #${params.leakId} إلى ${params.status}`, "leak", "راصد الذكي");
+        return { success: true, message: `تم تحديث حالة التسريب #${params.leakId} إلى ${params.status}` };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    case "generate_report": {
+      try {
+        const reportId = await createReport({
+          title: params.title || "AI Generated Report",
+          titleAr: params.titleAr || "تقرير من راصد الذكي",
+          type: params.type || "special",
+          generatedBy: 0,
+        });
+        await logAudit(0, "rasid.create_report", `راصد الذكي أنشأ تقرير: ${params.titleAr || params.title}`, "report", "راصد الذكي");
+        return { success: true, reportId, message: `تم إنشاء التقرير بنجاح (رقم: ${reportId})` };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    case "create_alert_channel": {
+      try {
+        const channelId = await createAlertContact({
+          name: params.name || "قناة جديدة",
+          email: params.config || null,
+          channels: [params.type || "email"],
+          isActive: true,
+        });
+        await logAudit(0, "rasid.create_channel", `راصد الذكي أنشأ قناة تنبيه: ${params.name}`, "monitoring", "راصد الذكي");
+        return { success: true, channelId, message: `تم إنشاء قناة التنبيه بنجاح` };
+      } catch (e: any) {
+        return { success: false, error: e.message };
+      }
+    }
+
+    case "create_alert_rule": {
+      try {
+        const ruleId = await createAlertRule({
+          name: params.name || "New Rule",
+          nameAr: params.nameAr || "قاعدة جديدة",
+          severityThreshold: params.severity || "medium",
+          channel: "email",
+          isEnabled: true,
+        });
+        await logAudit(0, "rasid.create_rule", `راصد الذكي أنشأ قاعدة تنبيه: ${params.nameAr || params.name}`, "monitoring", "راصد الذكي");
+        return { success: true, ruleId, message: `تم إنشاء قاعدة التنبيه بنجاح` };
+      } catch (e: any) {
+        return { success: false, error: e.message };
       }
     }
 

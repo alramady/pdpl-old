@@ -2,6 +2,26 @@ import { describe, expect, it, vi } from "vitest";
 import { appRouter } from "./routers";
 import type { TrpcContext } from "./_core/context";
 
+// Mock the LLM module to prevent timeout on PII scan tests
+vi.mock("./_core/llm", () => ({
+  invokeLLM: vi.fn().mockResolvedValue({
+    choices: [{
+      message: {
+        content: JSON.stringify({
+          riskLevel: "high",
+          riskScore: 85,
+          pdplArticles: ["المادة 10", "المادة 12"],
+          recommendations: ["تشفير البيانات", "تقييد الوصول"],
+          summary: "تم اكتشاف بيانات شخصية حساسة"
+        }),
+        role: "assistant"
+      },
+      index: 0,
+      finish_reason: "stop"
+    }]
+  }),
+}));
+
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
 type CookieCall = {

@@ -639,7 +639,32 @@ export const appRouter = router({
           }
         }
 
-        return { results, totalMatches: results.length };
+        // LLM-based intelligent analysis
+        let aiAnalysis = null;
+        if (results.length > 0) {
+          try {
+            const uniqueTypes = Array.from(new Set(results.map(r => r.type)));
+            const llmResponse = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: `أنت محلل حماية بيانات شخصية متخصص في نظام حماية البيانات الشخصية السعودي (PDPL). حلل نتائج فحص PII التالية وقدم تقييماً شاملاً. أجب بصيغة JSON فقط:\n{\n  "riskLevel\": \"critical|high|medium|low\",\n  \"riskScore\": 0-100,\n  \"pdplViolations\": [\"...\"],\n  \"recommendations\": [\"...\"],\n  \"dataClassification\": {\"sensitive\": [...], \"personal\": [...], \"public\": [...]},\n  \"summary\": \"...\"\n}`
+                },
+                {
+                  role: "user",
+                  content: `تم العثور على ${results.length} تطابق في ${uniqueTypes.length} فئة:\n${uniqueTypes.map(t => `- ${t}: ${results.filter(r => r.type === t).length} تطابق`).join("\n")}\n\nعينة من البيانات المكتشفة (أول 5):\n${results.slice(0, 5).map(r => `${r.typeAr}: ${r.value.substring(0, 20)}...`).join("\n")}`
+                },
+              ],
+            });
+            try {
+              const content = String(llmResponse.choices?.[0]?.message?.content || "");
+              const jsonMatch = content.match(/\{[\s\S]*\}/);
+              if (jsonMatch) aiAnalysis = JSON.parse(jsonMatch[0]);
+            } catch { /* ignore parse errors */ }
+          } catch { /* ignore LLM errors */ }
+        }
+
+        return { results, totalMatches: results.length, aiAnalysis };
       }),
 
     history: protectedProcedure.query(async ({ ctx }) => {
@@ -1654,7 +1679,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const who = getAuthUser(ctx);
-        const sources = input.sources ?? ["xposedornot", "crtsh", "psbdmp", "googledork", "breachdirectory"];
+        const sources = input.sources ?? ["xposedornot", "crtsh", "psbdmp", "googledork", "breachdirectory", "github", "dehashed", "intelx"];
         const session = await executeScan(input.targets, sources);
         await logAudit(
           who.id,

@@ -344,13 +344,13 @@ export default function UserManagement() {
                   <div className="flex items-center gap-6">
                     <div className="text-center">
                       <p className={`font-semibold text-sm flex items-center gap-2 px-3 py-1 rounded-full ${ROLE_LABELS[u.platformRole]?.color || ROLE_LABELS.viewer.color}`}>
-                        {ROLE_LABELS[u.platformRole]?.icon}
+                        {(() => { const Icon = ROLE_LABELS[u.platformRole]?.icon || Eye; return <Icon className="w-4 h-4" />; })()}
                         {ROLE_LABELS[u.platformRole]?.ar || u.platformRole}
                       </p>
                     </div>
                     <div className="text-center">
                       <p className={`font-semibold text-sm flex items-center gap-2 ${STATUS_LABELS[u.status]?.color || "text-muted-foreground"}`}>
-                        {STATUS_LABELS[u.status]?.icon}
+                        {(() => { const Icon = STATUS_LABELS[u.status]?.icon || Clock; return <Icon className="w-4 h-4" />; })()}
                         {STATUS_LABELS[u.status]?.ar || u.status}
                       </p>
                     </div>

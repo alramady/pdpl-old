@@ -66,6 +66,30 @@ vi.mock("./db", () => ({
     { id: 1, name: "Admin User", role: "admin", lastLoginAt: Date.now() },
     { id: 2, name: "Analyst User", role: "user", lastLoginAt: Date.now() - 3600000 },
   ]),
+  createLeak: vi.fn().mockResolvedValue(1),
+  updateLeakStatus: vi.fn().mockResolvedValue(undefined),
+  createReport: vi.fn().mockResolvedValue(1),
+  createAlertContact: vi.fn().mockResolvedValue(1),
+  createAlertRule: vi.fn().mockResolvedValue(1),
+  getGreetingForUser: vi.fn().mockResolvedValue(null),
+  checkLeaderMention: vi.fn().mockResolvedValue(null),
+  getPersonalityScenarios: vi.fn().mockResolvedValue([]),
+  getCustomActions: vi.fn().mockResolvedValue([]),
+  getTrainingDocuments: vi.fn().mockResolvedValue([]),
+}));
+
+// Mock the scanEngine module
+vi.mock("./scanEngine", () => ({
+  executeScan: vi.fn().mockResolvedValue({
+    id: "scan-test-001",
+    targets: [],
+    sources: [],
+    results: [],
+    progress: [],
+    startedAt: new Date(),
+    status: "completed",
+    totalFindings: 0,
+  }),
 }));
 
 import { invokeLLM } from "./_core/llm";
@@ -80,9 +104,9 @@ describe("rasidAI — Smart Rasid AI v6.0", () => {
   });
 
   describe("RASID_TOOLS", () => {
-    it("should have 26 tool definitions (upgraded with personality tools)", () => {
+    it("should have 33 tool definitions (upgraded with personality + execution tools)", () => {
       expect(RASID_TOOLS).toBeDefined();
-      expect(RASID_TOOLS.length).toBe(26);
+      expect(RASID_TOOLS.length).toBe(33);
     });
 
     it("each tool should have required properties", () => {

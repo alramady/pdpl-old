@@ -36,6 +36,7 @@ import {
   Save,
   Download,
   CheckCheck,
+  Code,
 } from "lucide-react";
 import { toast } from "sonner";
 import AnimatedCounter from "@/components/AnimatedCounter";
@@ -90,6 +91,9 @@ const SCAN_SOURCES = [
   { id: "psbdmp", name: "PSBDMP", desc: "البحث في تفريغات مواقع اللصق", icon: FileText, color: "text-yellow-400" },
   { id: "googledork", name: "Google Dorking", desc: "استعلامات بحث ذكية", icon: Search, color: "text-green-400" },
   { id: "breachdirectory", name: "BreachDirectory", desc: "قاعدة بيانات التسريبات العامة", icon: Database, color: "text-purple-400" },
+  { id: "github", name: "GitHub Code", desc: "فحص مستودعات الكود العامة", icon: Code, color: "text-gray-400" },
+  { id: "dehashed", name: "Dehashed", desc: "قواعد بيانات الاختراقات المجمعة", icon: Eye, color: "text-orange-400" },
+  { id: "intelx", name: "IntelX", desc: "استخبارات التهديدات", icon: Radar, color: "text-cyan-400" },
 ];
 
 const SEVERITY_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
@@ -108,6 +112,8 @@ const SOURCE_ICON_MAP: Record<string, any> = {
   database: Database,
   brain: Brain,
   search: Search,
+  code: Code,
+  radar: Radar,
 };
 
 // ============================================================

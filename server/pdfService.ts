@@ -137,6 +137,34 @@ export async function generateIncidentDocumentation(
   const verifyUrl = `${verifyBaseUrl}/public/verify/${verificationCode}`;
   const qrDataUrl = await generateQRCode(verifyUrl);
 
+  // Dynamic LLM-powered AI recommendations if not already present
+  if (!leak.aiRecommendationsAr || leak.aiRecommendationsAr.length === 0) {
+    try {
+      const { invokeLLM } = await import("./_core/llm");
+      const llmRes = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `أنت محلل أمن معلومات متخصص في نظام حماية البيانات الشخصية السعودي (PDPL). قدم 5-7 توصيات عملية ومحددة للتعامل مع هذا التسريب. أجب بصيغة JSON فقط: {"recommendations": ["..."], "summary": "..."}`
+          },
+          {
+            role: "user",
+            content: `تسريب: ${leak.titleAr}\nالخطورة: ${leak.severity}\nالمصدر: ${leak.source}\nالسجلات: ${leak.recordCount}\nالقطاع: ${leak.sector}\nالوصف: ${leak.descriptionAr || leak.description}`
+          },
+        ],
+      });
+      try {
+        const content = String(llmRes.choices?.[0]?.message?.content || "");
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          if (parsed.recommendations) leak.aiRecommendationsAr = parsed.recommendations;
+          if (parsed.summary && !leak.aiSummaryAr) leak.aiSummaryAr = parsed.summary;
+        }
+      } catch { /* ignore parse errors */ }
+    } catch { /* ignore LLM errors */ }
+  }
+
   // Build content string for hashing
   const contentForHash = JSON.stringify({
     documentId,

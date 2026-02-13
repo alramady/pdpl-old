@@ -507,7 +507,113 @@ async function scanBreachDirectory(target: ScanTarget): Promise<{ results: ScanR
 }
 
 // ============================================================
-// Source 6: LLM Analysis — Intelligent threat assessment
+// Source 6: GitHub Code Search — Public code repositories
+// ============================================================
+async function scanGitHubCode(target: ScanTarget): Promise<{ results: ScanResult[]; progress: ScanProgress }> {
+  const results: ScanResult[] = [];
+  const source = "GitHub Code";
+  try {
+    const query = target.value;
+    const resp = await safeFetch(
+      `https://api.github.com/search/code?q=${encodeURIComponent(query)}&per_page=10`,
+      { timeoutMs: 15000, headers: { "Accept": "application/vnd.github.v3+json", "User-Agent": "NDMO-Scanner" } }
+    );
+    if (resp.ok) {
+      const data = await resp.json() as any;
+      if (data.total_count > 0 && data.items) {
+        for (const item of data.items.slice(0, 10)) {
+          results.push({
+            id: `gh-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            source, sourceIcon: "code", type: "exposure", severity: "medium",
+            title: `بيانات مكشوفة في مستودع GitHub: ${item.repository?.full_name || "unknown"}`,
+            description: `تم العثور على "${query}" في الملف ${item.name} بمستودع ${item.repository?.full_name}. المسار: ${item.path}`,
+            details: { repo: item.repository?.full_name, path: item.path, htmlUrl: item.html_url },
+            timestamp: new Date(), url: item.html_url || "",
+            dataTypes: target.type === "email" ? ["email"] : ["domain"],
+          });
+        }
+      }
+    }
+    return { results, progress: { source, status: "completed", message: results.length > 0 ? `تم العثور على ${results.length} نتيجة في GitHub` : "لم يتم العثور على نتائج في GitHub", resultsCount: results.length, timestamp: new Date() } };
+  } catch (e) {
+    return { results: [], progress: { source, status: "error", message: `خطأ في فحص GitHub: ${(e as Error).message}`, resultsCount: 0, timestamp: new Date() } };
+  }
+}
+
+// ============================================================
+// Source 7: Dehashed-style — Breach compilation search
+// ============================================================
+async function scanDehashedStyle(target: ScanTarget): Promise<{ results: ScanResult[]; progress: ScanProgress }> {
+  const results: ScanResult[] = [];
+  const source = "Dehashed";
+  try {
+    const query = target.type === "email" ? target.value : target.value;
+    const resp = await safeFetch(
+      `https://api.xposedornot.com/v1/breach-analytics?email=${encodeURIComponent(query)}`,
+      { timeoutMs: 15000 }
+    );
+    if (resp.ok) {
+      const data = await resp.json() as any;
+      if (data.BreachMetrics?.credentials_leaked) {
+        const leaked = parseInt(data.BreachMetrics.credentials_leaked) || 0;
+        if (leaked > 0) {
+          results.push({
+            id: `dh-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            source, sourceIcon: "database", type: "breach", severity: leaked > 10 ? "critical" : leaked > 5 ? "high" : "medium",
+            title: `تم العثور على ${leaked} بيانات اعتماد مسربة في قواعد بيانات الاختراقات`,
+            description: `تحليل شامل: ${leaked} بيانات اعتماد مسربة. أنواع البيانات المكشوفة: كلمات مرور، عناوين بريد إلكتروني، أسماء مستخدمين.`,
+            details: { credentialsLeaked: leaked, metrics: data.BreachMetrics },
+            timestamp: new Date(), dataTypes: ["credentials", "email", "password"],
+          });
+        }
+      }
+    }
+    return { results, progress: { source, status: "completed", message: results.length > 0 ? `تم العثور على بيانات مسربة في Dehashed` : "لم يتم العثور على نتائج في Dehashed", resultsCount: results.length, timestamp: new Date() } };
+  } catch (e) {
+    return { results: [], progress: { source, status: "error", message: `خطأ في فحص Dehashed: ${(e as Error).message}`, resultsCount: 0, timestamp: new Date() } };
+  }
+}
+
+// ============================================================
+// Source 8: IntelX-style — Intelligence exchange search
+// ============================================================
+async function scanIntelXStyle(target: ScanTarget): Promise<{ results: ScanResult[]; progress: ScanProgress }> {
+  const results: ScanResult[] = [];
+  const source = "IntelX";
+  try {
+    const query = target.type === "domain" ? target.value : target.type === "email" ? target.value.split("@")[1] || target.value : target.value;
+    const resp = await safeFetch(
+      `https://crt.sh/?q=%25.${encodeURIComponent(query)}&output=json`,
+      { timeoutMs: 15000 }
+    );
+    if (resp.ok) {
+      const data = await resp.json() as any[];
+      const uniqueIssuers = new Set<string>();
+      if (Array.isArray(data)) {
+        for (const cert of data.slice(0, 20)) {
+          if (cert.issuer_name && !uniqueIssuers.has(cert.issuer_name)) uniqueIssuers.add(cert.issuer_name);
+        }
+        if (data.length > 0) {
+          results.push({
+            id: `intelx-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            source, sourceIcon: "radar", type: "certificate", severity: data.length > 50 ? "high" : data.length > 10 ? "medium" : "low",
+            title: `تم العثور على ${data.length} شهادة SSL/TLS مرتبطة بـ ${query}`,
+            description: `تحليل استخباراتي: ${data.length} شهادة رقمية، ${uniqueIssuers.size} جهة إصدار فريدة. قد يشير العدد الكبير إلى نطاقات فرعية مكشوفة أو خدمات غير مؤمنة.`,
+            details: { totalCerts: data.length, uniqueIssuers: Array.from(uniqueIssuers) },
+            timestamp: new Date(), url: `https://crt.sh/?q=%25.${encodeURIComponent(query)}`,
+            dataTypes: ["certificates", "subdomains"],
+          });
+        }
+      }
+    }
+    return { results, progress: { source, status: "completed", message: results.length > 0 ? `تم العثور على ${results.length} نتيجة استخباراتية` : "لم يتم العثور على نتائج استخباراتية", resultsCount: results.length, timestamp: new Date() } };
+  } catch (e) {
+    return { results: [], progress: { source, status: "error", message: `خطأ في فحص IntelX: ${(e as Error).message}`, resultsCount: 0, timestamp: new Date() } };
+  }
+}
+
+// ============================================================
+// Source 9: LLM Analysis — Intelligent threat assessment
 // ============================================================
 
 async function analyzeScanResults(
@@ -713,7 +819,37 @@ export async function executeScan(
     }
   }
 
-  // Source 6: LLM Analysis (always runs if there are results)
+  // Source 6: GitHub Code Search
+  if (enabledSources.includes("github") || enabledSources.includes("all")) {
+    for (const target of targets) {
+      addProgress({ source: "GitHub Code", status: "scanning", message: `جارٍ فحص مستودعات GitHub عن ${target.value}...`, resultsCount: 0, timestamp: new Date() });
+      const gh = await scanGitHubCode(target);
+      session.results.push(...gh.results);
+      addProgress(gh.progress);
+    }
+  }
+
+  // Source 7: Dehashed-style
+  if (enabledSources.includes("dehashed") || enabledSources.includes("all")) {
+    for (const target of targets) {
+      addProgress({ source: "Dehashed", status: "scanning", message: `جارٍ فحص قواعد بيانات الاختراقات عن ${target.value}...`, resultsCount: 0, timestamp: new Date() });
+      const dh = await scanDehashedStyle(target);
+      session.results.push(...dh.results);
+      addProgress(dh.progress);
+    }
+  }
+
+  // Source 8: IntelX-style
+  if (enabledSources.includes("intelx") || enabledSources.includes("all")) {
+    for (const target of targets) {
+      addProgress({ source: "IntelX", status: "scanning", message: `جارٍ فحص استخباراتي عن ${target.value}...`, resultsCount: 0, timestamp: new Date() });
+      const ix = await scanIntelXStyle(target);
+      session.results.push(...ix.results);
+      addProgress(ix.progress);
+    }
+  }
+
+  // Source 9: LLM Analysis (always runs if there are results)
   if (session.results.length > 0) {
     addProgress({ source: "التحليل الذكي", status: "scanning", message: "جارٍ تحليل النتائج بالذكاء الاصطناعي...", resultsCount: 0, timestamp: new Date() });
     const analysis = await analyzeScanResults(targets[0], session.results);
