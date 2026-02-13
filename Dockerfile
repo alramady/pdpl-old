@@ -6,8 +6,9 @@ WORKDIR /app
 # Install pnpm via npm (avoids corepack issues)
 RUN npm install -g pnpm@9
 
-# Copy package files
+# Copy package files and patches
 COPY package.json pnpm-lock.yaml ./
+COPY patches ./patches/
 
 # Install all dependencies
 RUN pnpm install --frozen-lockfile
