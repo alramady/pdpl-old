@@ -27,6 +27,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const severityColor = (s: string) => {
   switch (s) {
@@ -106,7 +107,7 @@ export default function DarkWebMonitor() {
               onClick={() => setActiveModal(stat.key)}
             >
               <CardContent className="p-4 text-center">
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold ${stat.color}`}>{typeof stat.value === "number" ? <AnimatedCounter value={stat.value} /> : stat.value}</p>
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                 <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
               </CardContent>

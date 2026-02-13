@@ -619,10 +619,22 @@
   border-color: rgba(61, 177, 172, 0.12);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+.dark [data-slot="card"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(transparent, rgba(61, 177, 172, 0.03), transparent);
+  height: 30%;
+  animation: scan-line 5s ease-in-out infinite;
 }
 .dark [data-slot="card"]:hover {
-  border-color: rgba(61, 177, 172, 0.2);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-color: rgba(61, 177, 172, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35), 0 0 20px rgba(61, 177, 172, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
 }
 
 /* ─── Dialog/Modal: frosted glass overlay ─── */
@@ -676,9 +688,15 @@
   box-shadow: 0 0 0 2px rgba(61, 177, 172, 0.15), 0 0 20px rgba(61, 177, 172, 0.08);
 }
 
-/* ─── Buttons: subtle glass effect ─── */
+/* ─── Buttons: subtle glass effect with hover glow ─── */
 .dark button[data-slot="button"] {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dark button[data-slot="button"]:hover:not(:disabled) {
+  box-shadow: 0 0 12px rgba(61, 177, 172, 0.15);
+}
+button[data-slot="button"]:hover:not(:disabled) {
+  box-shadow: 0 2px 8px rgba(39, 52, 112, 0.08);
 }
 
 /* ─── Badges/Tags: glass effect ─── */
@@ -771,11 +789,22 @@
   border-color: rgba(39, 52, 112, 0.08);
   box-shadow: 0 1px 3px rgba(39, 52, 112, 0.04), 0 4px 16px rgba(39, 52, 112, 0.04);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+[data-slot="card"]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(transparent, rgba(39, 52, 112, 0.015), transparent);
+  height: 30%;
+  animation: scan-line 6s ease-in-out infinite;
 }
 [data-slot="card"]:hover {
-  border-color: rgba(39, 52, 112, 0.12);
+  border-color: rgba(39, 52, 112, 0.15);
   box-shadow: 0 4px 24px rgba(39, 52, 112, 0.08), 0 1px 3px rgba(39, 52, 112, 0.04);
-  transform: translateY(-1px);
+  transform: translateY(-2px);
 }
 
 /* ─── Light Dialog/Modal ─── */

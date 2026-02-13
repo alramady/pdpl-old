@@ -41,6 +41,7 @@ import {
   Info,
 } from "lucide-react";
 import { toast } from "sonner";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const ROLE_LABELS: Record<string, { ar: string; en: string; icon: typeof Shield; color: string }> = {
   root_admin: { ar: "مدير النظام الرئيسي", en: "Root Admin", icon: Crown, color: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
@@ -266,7 +267,7 @@ export default function UserManagement() {
         <div className="group cursor-pointer hover:scale-[1.02] transition-all" onClick={() => setActiveModal('total_users')}>
           <Card className="bg-secondary/50 border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-foreground">{users.length}</p>
+              <p className="text-2xl font-bold text-foreground"><AnimatedCounter value={users.length} /></p>
               <p className="text-sm text-muted-foreground">إجمالي المستخدمين</p>
               <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
             </CardContent>
@@ -275,7 +276,7 @@ export default function UserManagement() {
         <div className="group cursor-pointer hover:scale-[1.02] transition-all" onClick={() => setActiveModal('active_users')}>
           <Card className="bg-secondary/50 border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-emerald-400">{activeUsers}</p>
+              <p className="text-2xl font-bold text-emerald-400"><AnimatedCounter value={activeUsers} /></p>
               <p className="text-sm text-muted-foreground">المستخدمون النشطون</p>
               <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
             </CardContent>
@@ -284,7 +285,7 @@ export default function UserManagement() {
         <div className="group cursor-pointer hover:scale-[1.02] transition-all" onClick={() => setActiveModal('root_admins')}>
           <Card className="bg-secondary/50 border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-amber-400">{rootAdmins}</p>
+              <p className="text-2xl font-bold text-amber-400"><AnimatedCounter value={rootAdmins} /></p>
               <p className="text-sm text-muted-foreground">مدراء النظام</p>
               <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
             </CardContent>
@@ -293,7 +294,7 @@ export default function UserManagement() {
         <div className="group cursor-pointer hover:scale-[1.02] transition-all" onClick={() => setActiveModal('mfa_users')}>
           <Card className="bg-secondary/50 border-border">
             <CardContent className="p-4 text-center">
-              <p className="text-2xl font-bold text-blue-400">{mfaUsers}</p>
+              <p className="text-2xl font-bold text-blue-400"><AnimatedCounter value={mfaUsers} /></p>
               <p className="text-sm text-muted-foreground">مستخدمو MFA</p>
               <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
             </CardContent>

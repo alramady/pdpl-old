@@ -28,6 +28,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { DetailModal } from "@/components/DetailModal";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const typeConfig: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   text: { label: "نص", icon: FileText, color: "text-cyan-400" },
@@ -247,7 +248,7 @@ export default function EvidenceChain() {
       <DetailModal open={activeModal === "total"} onClose={() => setActiveModal(null)} title="إجمالي الأدلة الرقمية" icon={<Database className="w-5 h-5 text-primary" />}>
         <div className="space-y-4">
           <div className="bg-primary/5 rounded-xl p-4 border border-primary/20 text-center">
-            <p className="text-3xl font-bold text-primary">{stats?.total || 0}</p>
+            <p className="text-3xl font-bold text-primary"><AnimatedCounter value={stats?.total || 0} /></p>
             <p className="text-xs text-muted-foreground">دليل رقمي مسجل</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -276,7 +277,7 @@ export default function EvidenceChain() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20 text-center">
-              <p className="text-2xl font-bold text-emerald-400">{stats?.verified || 0}</p>
+              <p className="text-2xl font-bold text-emerald-400"><AnimatedCounter value={stats?.verified || 0} /></p>
               <p className="text-[10px] text-muted-foreground">موثقة</p>
             </div>
             <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20 text-center">
@@ -355,7 +356,7 @@ export default function EvidenceChain() {
           >
             <div className="space-y-3">
               <div className="bg-secondary/50 rounded-xl p-3 border border-border/50 text-center">
-                <p className="text-2xl font-bold text-foreground">{filteredEvidence.length}</p>
+                <p className="text-2xl font-bold text-foreground"><AnimatedCounter value={filteredEvidence.length} /></p>
                 <p className="text-xs text-muted-foreground">دليل من نوع {config.label}</p>
               </div>
               {filteredEvidence.slice(0, 15).map(entry => (

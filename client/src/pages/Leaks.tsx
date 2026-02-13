@@ -55,6 +55,7 @@ import {
 import { trpc } from "@/lib/trpc";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
 import { toast } from "sonner";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const severityColor = (s: string) => {
   switch (s) {
@@ -345,7 +346,7 @@ export default function Leaks() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground">{stat.label}</p>
-                      <p className={`text-2xl font-bold mt-1 ${stat.color}`}>{stat.value}</p>
+                      <p className={`text-2xl font-bold mt-1 ${stat.color}`}><AnimatedCounter value={typeof stat.value === "number" ? stat.value : 0} /></p>
                     </div>
                     <motion.div whileHover={{ rotate: -10, scale: 1.1 }} transition={{ type: 'spring', stiffness: 300 }}>
                       <Icon className={`w-8 h-8 ${stat.color} opacity-40 group-hover:opacity-70 transition-opacity`} />

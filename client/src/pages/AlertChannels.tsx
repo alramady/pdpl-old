@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const severityColors: Record<string, string> = {
   critical: "text-red-400 bg-red-500/10 border-red-500/30",
@@ -101,7 +102,7 @@ export default function AlertChannels() {
               <stat.icon className={`w-4 h-4 ${stat.color}`} />
               <span className="text-xs text-muted-foreground">{stat.label}</span>
             </div>
-            <div className="text-2xl font-bold text-foreground">{stat.value.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-foreground"><AnimatedCounter value={stat.value} /></div>
             <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
           </motion.div>
         ))}
@@ -329,7 +330,7 @@ export default function AlertChannels() {
       <DetailModal open={activeModal === "sent"} onClose={() => setActiveModal(null)} title="التنبيهات المرسلة بنجاح" icon={<CheckCircle className="w-5 h-5 text-emerald-400" />}>
         <div className="space-y-3">
           <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{stats?.totalSent ?? 0}</p>
+            <p className="text-2xl font-bold text-emerald-400"><AnimatedCounter value={stats?.totalSent ?? 0} /></p>
             <p className="text-xs text-muted-foreground">تنبيه مرسل بنجاح</p>
           </div>
           {history.filter(h => h.status === "sent").slice(0, 10).map(entry => (
@@ -348,7 +349,7 @@ export default function AlertChannels() {
       <DetailModal open={activeModal === "failed"} onClose={() => setActiveModal(null)} title="التنبيهات الفاشلة" icon={<XCircle className="w-5 h-5 text-red-400" />}>
         <div className="space-y-3">
           <div className="bg-red-500/10 rounded-xl p-3 border border-red-500/20 text-center">
-            <p className="text-2xl font-bold text-red-400">{stats?.totalFailed ?? 0}</p>
+            <p className="text-2xl font-bold text-red-400"><AnimatedCounter value={stats?.totalFailed ?? 0} /></p>
             <p className="text-xs text-muted-foreground">تنبيه فاشل</p>
           </div>
           {history.filter(h => h.status === "failed").slice(0, 10).map(entry => (

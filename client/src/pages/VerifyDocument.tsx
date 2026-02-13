@@ -212,17 +212,17 @@ export default function VerifyDocument() {
 
   // Auto-verify if code comes from URL
   const autoVerifyDone = useRef(false);
+  const startVerificationRef = useRef<((code?: string) => void) | null>(null);
   useEffect(() => {
-    if (params?.code && !autoVerifyDone.current) {
+    if (params?.code && !autoVerifyDone.current && startVerificationRef.current) {
       autoVerifyDone.current = true;
       setCode(params.code);
-      // Delay to ensure startVerification is ready
       const timer = setTimeout(() => {
-        startVerification(params.code);
+        startVerificationRef.current?.(params.code);
       }, 100);
       return () => clearTimeout(timer);
     }
-  }, [params?.code, startVerification]);
+  }, [params?.code]);
 
   // Cleanup camera on unmount
   useEffect(() => {
@@ -533,7 +533,7 @@ export default function VerifyDocument() {
     },
     [code, addConsoleLine, stopCamera]
   );
-
+  startVerificationRef.current = startVerification;
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startVerification();

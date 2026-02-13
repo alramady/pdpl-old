@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const categoryConfig: Record<string, { label: string; labelEn: string; icon: React.ElementType; color: string }> = {
   auth: { label: "المصادقة", labelEn: "Auth", icon: LogIn, color: "text-blue-400 bg-blue-500/10" },

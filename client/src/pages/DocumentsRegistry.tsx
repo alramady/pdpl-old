@@ -16,6 +16,7 @@ import {
   BarChart3, FileBarChart, AlertTriangle, CheckCircle2, XCircle
 } from "lucide-react";
 import { toast } from "sonner";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 type DocumentItem = {
   id: number;

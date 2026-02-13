@@ -47,6 +47,7 @@ import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const sampleData = `=== عينة بيانات شخصية سعودية شاملة ===
 
@@ -310,7 +311,7 @@ export default function PIIClassifier() {
             className={`p-3 rounded-lg ${stat.bgColor} border ${stat.borderColor} text-center cursor-pointer hover:scale-[1.02] transition-all group`}
             onClick={() => setActiveModal(stat.key)}
           >
-            <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+            <p className={`text-2xl font-bold ${stat.color}`}><AnimatedCounter value={typeof stat.value === "number" ? stat.value : 0} /></p>
             <p className="text-[10px] text-muted-foreground">{stat.label}</p>
             <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
           </div>

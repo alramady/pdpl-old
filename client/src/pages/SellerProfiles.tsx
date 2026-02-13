@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import { trpc } from "@/lib/trpc";
 import { DetailModal } from "@/components/DetailModal";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const riskColors: Record<string, string> = {
   critical: "bg-red-500/10 text-red-400 border-red-500/30",
@@ -248,7 +249,7 @@ export default function SellerProfiles() {
       <DetailModal open={activeModal === "total"} onClose={() => setActiveModal(null)} title="إجمالي البائعين" icon={<UserX className="w-5 h-5 text-primary" />}>
         <div className="space-y-3">
           <div className="bg-primary/5 rounded-xl p-3 border border-primary/20 text-center">
-            <p className="text-2xl font-bold text-primary">{stats.total}</p>
+            <p className="text-2xl font-bold text-primary"><AnimatedCounter value={stats.total} /></p>
             <p className="text-xs text-muted-foreground">بائع مرصود</p>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -285,7 +286,7 @@ export default function SellerProfiles() {
       <DetailModal open={activeModal === "active"} onClose={() => setActiveModal(null)} title="البائعون النشطون" icon={<Activity className="w-5 h-5 text-emerald-400" />}>
         <div className="space-y-3">
           <div className="bg-emerald-500/10 rounded-xl p-3 border border-emerald-500/20 text-center">
-            <p className="text-2xl font-bold text-emerald-400">{stats.active}</p>
+            <p className="text-2xl font-bold text-emerald-400"><AnimatedCounter value={stats.active} /></p>
             <p className="text-xs text-muted-foreground">بائع نشط حالياً</p>
           </div>
           {sellers?.filter(s => s.isActive).map(seller => (
@@ -310,7 +311,7 @@ export default function SellerProfiles() {
       <DetailModal open={activeModal === "totalLeaks"} onClose={() => setActiveModal(null)} title="التسريبات المرتبطة بالبائعين" icon={<TrendingUp className="w-5 h-5 text-amber-400" />}>
         <div className="space-y-3">
           <div className="bg-amber-500/10 rounded-xl p-3 border border-amber-500/20 text-center">
-            <p className="text-2xl font-bold text-amber-400">{stats.totalLeaks}</p>
+            <p className="text-2xl font-bold text-amber-400"><AnimatedCounter value={stats.totalLeaks} /></p>
             <p className="text-xs text-muted-foreground">تسريب مرتبط</p>
           </div>
           {sellers?.sort((a, b) => (b.totalLeaks || 0) - (a.totalLeaks || 0)).slice(0, 10).map(seller => (

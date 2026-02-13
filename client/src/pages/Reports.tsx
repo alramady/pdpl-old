@@ -47,6 +47,7 @@ import { DetailModal } from "@/components/DetailModal";
 import ComplianceWarningDialog from "@/components/ComplianceWarningDialog";
 import ReportCustomizer from "@/components/ReportCustomizer";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const CHART_COLORS = ["#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899"];
 
@@ -266,7 +267,7 @@ export default function Reports() {
                       <Icon className={`w-4.5 h-4.5 ${stat.color}`} />
                     </div>
                     <div>
-                      <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                      <p className="text-xl font-bold text-foreground"><AnimatedCounter value={typeof stat.value === "number" ? stat.value : 0} /></p>
                       <p className="text-xs text-muted-foreground">{stat.label}</p>
                     </div>
                   </div>

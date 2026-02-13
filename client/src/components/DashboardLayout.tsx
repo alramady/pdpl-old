@@ -62,6 +62,8 @@ import { getLoginUrl } from "@/const";
 import NotificationBell from "./NotificationBell";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Redirect } from "wouter";
+import ParticleField from "@/components/ParticleField";
+import { useSoundEffects } from "@/hooks/useSoundEffects";
 
 /* SDAIA Official FULL Logo URLs (with "منصة راصد" + "مكتب إدارة البيانات الوطنية") */
 const FULL_LOGO_DARK = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/vyIfeykxwXasuonx.png";
@@ -222,6 +224,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const toggleGroup = (groupId: string) => {
     setExpandedGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+    playClick();
   };
 
   // Close mobile sidebar on navigation
@@ -250,6 +253,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const isDark = theme === "dark";
   const logoSrc = isDark ? FULL_LOGO_LIGHT : FULL_LOGO_DARK;
+  const { playClick, playHover } = useSoundEffects();
 
   // Redirect unauthenticated users to login page
   if (!loading && !isAuthenticated) {
@@ -408,7 +412,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           const isItemActive = location === item.path;
                           const Icon = item.icon;
                           return (
-                            <Link key={item.path} href={item.path} onClick={handleNavClick}>
+                            <Link key={item.path} href={item.path} onClick={() => { handleNavClick(); playClick(); }}>
                               <motion.div
                                 whileHover={{ x: -2 }}
                                 whileTap={{ scale: 0.98 }}
@@ -557,7 +561,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 variant="ghost"
                 size="icon"
                 className="text-muted-foreground hover:text-foreground dark:hover:bg-[rgba(61,177,172,0.08)]"
-                onClick={toggleTheme}
+                onClick={() => { toggleTheme(); playClick(); }}
                 title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
               >
                 {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -587,13 +591,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        {/* Page content with particle background */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6 relative">
+          <ParticleField count={30} className="z-0" />
           <motion.div
             key={location}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
+            className="relative z-10"
           >
             {children}
           </motion.div>

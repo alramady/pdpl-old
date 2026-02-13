@@ -30,6 +30,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const riskColor = (r: string) => {
   switch (r) {
@@ -155,7 +156,7 @@ export default function TelegramMonitor() {
               onClick={() => setActiveModal(stat.key)}
             >
               <CardContent className="p-4 text-center">
-                <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold ${stat.color}`}><AnimatedCounter value={typeof stat.value === "number" ? stat.value : 0} /></p>
                 <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                 <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
               </CardContent>

@@ -261,8 +261,8 @@ export default function PasteSites() {
                 <p className="font-bold text-2xl text-cyan-400">{channel.leaksDetected ?? 0}</p>
             </div>
             <Button variant="outline" className="w-full" onClick={() => {
-              if (channel.url) {
-                window.open(channel.url, '_blank', 'noopener,noreferrer');
+              if ((channel as any).url) {
+                window.open((channel as any).url, '_blank', 'noopener,noreferrer');
               } else {
                 toast.info("لا يوجد رابط متاح لهذا الموقع");
               }
@@ -312,8 +312,8 @@ export default function PasteSites() {
                 </div>
             )}
             <Button variant="outline" className="w-full" onClick={() => {
-              if (paste.sourceUrl) {
-                window.open(paste.sourceUrl, '_blank', 'noopener,noreferrer');
+              if ((paste as any).sourceUrl) {
+                window.open((paste as any).sourceUrl, '_blank', 'noopener,noreferrer');
               } else if (paste.sourceName) {
                 toast.info(`المصدر: ${paste.sourceName}`, { description: "لا يوجد رابط مباشر متاح" });
               } else {

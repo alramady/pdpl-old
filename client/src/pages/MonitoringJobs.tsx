@@ -26,6 +26,7 @@ import { trpc } from "@/lib/trpc";
 import { useWebSocket } from "@/hooks/useWebSocket";
 import { toast } from "sonner";
 import { DetailModal } from "@/components/DetailModal";
+import AnimatedCounter from "@/components/AnimatedCounter";
 
 const platformIcons: Record<string, React.ElementType> = {
   telegram: Send,
