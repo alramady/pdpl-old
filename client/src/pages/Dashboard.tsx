@@ -410,7 +410,7 @@ export default function Dashboard() {
             className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[rgba(61,177,172,0.15)] to-[rgba(39,52,112,0.1)] flex items-center justify-center border border-[rgba(61,177,172,0.15)]"
             whileHover={{ rotate: -5, scale: 1.08 }}
             transition={{ type: "spring", stiffness: 300 }}
-            style={{ boxShadow: isDark ? "0 0 20px rgba(61, 177, 172, 0.15)" : "0 4px 12px rgba(39, 52, 112, 0.06)" }}
+            style={{ boxShadow: isDark ? "0 0 20px rgba(61, 177, 172, 0.15)" : "0 4px 16px rgba(22, 42, 84, 0.08)" }}
           >
             <BarChart3 className="w-6 h-6 text-primary" />
           </motion.div>

@@ -252,7 +252,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   const isDark = theme === "dark";
-  const logoSrc = isDark ? FULL_LOGO_LIGHT : FULL_LOGO_DARK;
+  // Sidebar is ALWAYS dark royal blue, so always use the light-on-dark logo
+  const logoSrc = FULL_LOGO_LIGHT;
   const { playClick, playHover } = useSoundEffects();
 
   // Redirect unauthenticated users to login page
@@ -307,14 +308,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           ${mobileOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
           right-0 lg:right-auto
           bg-sidebar
-          dark:bg-[rgba(13,21,41,0.95)]
-          dark:backdrop-blur-2xl
-          dark:border-l dark:border-[rgba(61,177,172,0.08)]
-          border-l border-sidebar-border
+          backdrop-blur-2xl
+          border-l border-[rgba(61,177,172,0.08)]
         `}
       >
         {/* Logo area — Full Brand Logo with Creative Effects */}
-        <div className="flex items-center justify-center px-2 py-8 border-b border-sidebar-border dark:border-[rgba(61,177,172,0.1)]" style={{ minHeight: collapsed ? '72px' : '200px' }}>
+        <div className="flex items-center justify-center px-2 py-8 border-b border-[rgba(61,177,172,0.1)]" style={{ minHeight: collapsed ? '72px' : '200px' }}>
           <motion.div
             className="relative flex items-center justify-center flex-shrink-0"
             whileHover={{ scale: 1.04 }}
@@ -348,9 +347,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 width: collapsed ? '44px' : '100%',
                 height: collapsed ? '44px' : '170px',
                 maxWidth: '260px',
-                filter: isDark
-                  ? 'drop-shadow(0 0 15px rgba(61, 177, 172, 0.25)) drop-shadow(0 0 40px rgba(100, 89, 167, 0.12))'
-                  : 'drop-shadow(0 2px 10px rgba(39, 52, 112, 0.18))',
+                filter: 'drop-shadow(0 0 15px rgba(61, 177, 172, 0.25)) drop-shadow(0 0 40px rgba(100, 89, 167, 0.12))',
                 animation: 'logo-float 5s ease-in-out infinite',
               }}
             />
@@ -379,8 +376,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       text-xs font-semibold uppercase tracking-wider
                       transition-all duration-200
                       ${isActive
-                        ? "text-[#3DB1AC] dark:text-[#3DB1AC] bg-[rgba(61,177,172,0.08)] dark:bg-[rgba(61,177,172,0.08)]"
-                        : "text-muted-foreground hover:text-foreground hover:bg-accent/30 dark:hover:bg-[rgba(61,177,172,0.06)]"
+                        ? "text-[#3DB1AC] bg-[rgba(61,177,172,0.08)]"
+                        : "text-[#D4DDEF]/60 hover:text-[#D4DDEF] hover:bg-[rgba(61,177,172,0.06)]"
                       }
                     `}
                   >
@@ -394,7 +391,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     />
                   </button>
                 ) : (
-                  <div className="h-px bg-sidebar-border dark:bg-[rgba(61,177,172,0.08)] mx-2 my-2" />
+                  <div className="h-px bg-[rgba(61,177,172,0.08)] mx-2 my-2" />
                 )}
 
                 {/* Group items */}
@@ -420,8 +417,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                   flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer
                                   transition-all duration-200 group relative
                                   ${isItemActive
-                                    ? "dark:bg-[rgba(61,177,172,0.12)] dark:border dark:border-[rgba(61,177,172,0.25)] bg-[rgba(39,52,112,0.08)] text-[#273470] dark:text-[#3DB1AC]"
-                                    : "text-muted-foreground hover:text-foreground hover:bg-accent/50 dark:hover:bg-[rgba(61,177,172,0.06)]"
+                                    ? "bg-[rgba(61,177,172,0.12)] border border-[rgba(61,177,172,0.25)] text-[#3DB1AC]"
+                                    : "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-[rgba(61,177,172,0.06)]"
                                   }
                                 `}
                               >
@@ -434,7 +431,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                   />
                                 )}
                                 <motion.div whileHover={{ rotate: -8 }} transition={{ type: "spring", stiffness: 300 }}>
-                                  <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isItemActive ? "text-[#273470] dark:text-[#3DB1AC]" : ""}`} />
+                                  <Icon className={`w-4.5 h-4.5 flex-shrink-0 ${isItemActive ? "text-[#3DB1AC]" : ""}`} />
                                 </motion.div>
                                 {!collapsed && (
                                   <span className="text-[13px] font-medium whitespace-nowrap">{item.label}</span>
@@ -446,7 +443,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                   </span>
                                 )}
                                 {collapsed && (
-                                  <div className="absolute right-14 bg-popover dark:bg-[rgba(26,37,80,0.9)] dark:backdrop-blur-xl text-popover-foreground text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 dark:border dark:border-[rgba(61,177,172,0.15)]">
+                                  <div className="absolute right-14 bg-[rgba(26,37,80,0.9)] backdrop-blur-xl text-[#E1DEF5] text-xs py-1 px-2 rounded-md shadow-lg opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 border border-[rgba(61,177,172,0.15)]">
                                     {item.label}
                                   </div>
                                 )}
@@ -464,10 +461,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </nav>
 
         {/* User profile / login at bottom */}
-        <div className="p-3 border-t border-sidebar-border dark:border-[rgba(61,177,172,0.1)]">
+        <div className="p-3 border-t border-[rgba(61,177,172,0.1)]">
           {loading ? (
             <div className="flex items-center justify-center py-2">
-              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#3DB1AC]/50" />
             </div>
           ) : isAuthenticated && user ? (
             <div className={`flex items-center gap-3 ${collapsed ? "justify-center" : ""}`}>
@@ -478,8 +475,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </div>
               {!collapsed && (
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">{user.name || "مستخدم"}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">
+                  <p className="text-xs font-medium text-[#D4DDEF] truncate">{user.name || "مستخدم"}</p>
+                  <p className="text-[10px] text-[#D4DDEF]/50 truncate">
                     {isRootAdmin ? "مدير النظام الرئيسي" : roleLabels[ndmoRole] || ndmoRole}
                     {isAdmin && !isRootAdmin && " (مشرف)"}
                     {isRootAdmin && " (Root)"}
@@ -490,7 +487,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                  className="h-7 w-7 p-0 text-[#D4DDEF]/50 hover:text-[#D4DDEF]"
                   onClick={() => {
                     logout();
                     toast("تم تسجيل الخروج");
@@ -505,7 +502,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 text-xs w-full dark:border-[rgba(61,177,172,0.2)] dark:hover:bg-[rgba(61,177,172,0.1)] ${collapsed ? "px-0 justify-center" : ""}`}
+                className={`gap-2 text-xs w-full border-[rgba(61,177,172,0.2)] hover:bg-[rgba(61,177,172,0.1)] text-[#D4DDEF] ${collapsed ? "px-0 justify-center" : ""}`}
               >
                 <LogIn className="w-3.5 h-3.5" />
                 {!collapsed && "تسجيل الدخول"}
@@ -515,11 +512,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
 
         {/* Collapse toggle */}
-        <div className="p-2 border-t border-sidebar-border dark:border-[rgba(61,177,172,0.1)] hidden lg:block">
+        <div className="p-2 border-t border-[rgba(61,177,172,0.1)] hidden lg:block">
           <Button
             variant="ghost"
             size="sm"
-            className="w-full justify-center text-muted-foreground hover:text-foreground"
+            className="w-full justify-center text-[#D4DDEF]/40 hover:text-[#D4DDEF]"
             onClick={() => setCollapsed(!collapsed)}
           >
             {collapsed ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -528,7 +525,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Mobile close */}
         <button
-          className="absolute top-4 left-4 lg:hidden text-muted-foreground hover:text-foreground"
+          className="absolute top-4 left-4 lg:hidden text-[#D4DDEF]/50 hover:text-[#D4DDEF]"
           onClick={() => setMobileOpen(false)}
         >
           <X className="w-5 h-5" />
@@ -538,7 +535,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* ═══ MAIN CONTENT AREA ═══ */}
       <div className="flex-1 flex flex-col overflow-hidden relative z-10">
         {/* Top header — SDAIA frosted glass */}
-        <header className="h-16 border-b border-border dark:border-[rgba(61,177,172,0.08)] flex items-center justify-between px-4 lg:px-6 bg-background/80 dark:bg-[rgba(13,21,41,0.7)] backdrop-blur-xl sticky top-0 z-30">
+        <header className="h-16 border-b border-[rgba(22,42,84,0.08)] dark:border-[rgba(61,177,172,0.08)] flex items-center justify-between px-4 lg:px-6 bg-white/80 dark:bg-[rgba(13,21,41,0.7)] backdrop-blur-xl sticky top-0 z-30">
           <div className="flex items-center gap-4">
             <button
               className="lg:hidden text-muted-foreground hover:text-foreground"

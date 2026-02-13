@@ -417,7 +417,7 @@ export default function PlatformLogin() {
         style={{
           background: isDark
             ? `linear-gradient(135deg, ${SDAIA.bgDark} 0%, #0a1230 20%, #101e45 50%, ${SDAIA.cardDark} 80%, #132040 100%)`
-            : "linear-gradient(135deg, #F7F9F9 0%, #EEF2F7 30%, #F0F4F9 60%, #E8EEF5 100%)",
+            : "linear-gradient(135deg, #E8EDF5 0%, #DDE5F0 30%, #E2E9F3 60%, #D8E1EE 100%)",
         }}
       >
         {/* 3D Particle Canvas */}
@@ -445,8 +445,8 @@ export default function PlatformLogin() {
             onClick={toggleTheme}
             className="absolute top-5 left-5 z-20 p-2.5 rounded-xl transition-all duration-300 hover:scale-110"
             style={{
-              background: isDark ? "rgba(61,177,172,0.08)" : "rgba(39,52,112,0.06)",
-              border: isDark ? "1px solid rgba(61,177,172,0.15)" : "1px solid rgba(39,52,112,0.08)",
+              background: isDark ? "rgba(61,177,172,0.08)" : "rgba(22,42,84,0.08)",
+              border: isDark ? "1px solid rgba(61,177,172,0.15)" : "1px solid rgba(22,42,84,0.12)",
               backdropFilter: "blur(10px)",
             }}
             title={isDark ? "الوضع الفاتح" : "الوضع الداكن"}
@@ -518,10 +518,10 @@ export default function PlatformLogin() {
                 backdropFilter: "blur(24px)",
                 border: isDark
                   ? "1px solid rgba(61, 177, 172, 0.15)"
-                  : "1px solid rgba(39, 52, 112, 0.08)",
+                  : "1px solid rgba(22, 42, 84, 0.12)",
                 boxShadow: isDark
                   ? "0 8px 40px rgba(0, 0, 0, 0.4), 0 0 80px rgba(61, 177, 172, 0.06), inset 0 1px 0 rgba(255,255,255,0.03)"
-                  : "0 8px 40px rgba(39, 52, 112, 0.08), inset 0 1px 0 rgba(255,255,255,0.5)",
+                  : "0 8px 40px rgba(22, 42, 84, 0.1), inset 0 1px 0 rgba(255,255,255,0.6)",
               }}
             >
               {/* Subtle gradient border glow */}
