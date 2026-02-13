@@ -3,7 +3,7 @@
  * تصميم Ultra Premium مطابق لـ design.rasid.vip/dashboard
  * جميع البطاقات والمؤشرات قابلة للنقر مع تفاصيل كاملة
  */
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShieldAlert, Database, Radio, ScanSearch, TrendingUp, TrendingDown,
@@ -13,6 +13,7 @@ import {
   Phone, Mail, MapPin, Hash, Calendar, BarChart3, Send, Lock, Briefcase,
   GraduationCap, Heart, Plane, ShoppingCart, Landmark, Factory, CircleDot,
   Sparkles, FileCheck, ArrowUpRight, Clock, AlertTriangle, Cpu,
+  Maximize2, Minimize2, Play, Pause, SkipForward, Monitor, Presentation,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
@@ -261,20 +262,425 @@ function SectionHeader({ icon: Icon, title, subtitle, action, onAction }: { icon
   );
 }
 
+/* ═══ PRESENTATION MODE OVERLAY ═══ */
+const RASID_LOGO_LIGHT = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/DnIAzRZfiCrhzgYz.svg";
+const RASID_CHARACTER_PRES = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/rCKQyRDoubhdjHel.png";
+
+function PresentationOverlay({
+  slides, currentSlide, autoRotate, onExit, onNext, onPrev, onToggleAutoRotate, onGoToSlide,
+  isDark, kpiCards, statusCards, sourceCards, systemStats, sectorDistribution, piiDistribution, monthlyTrend, recentLeaks, stats,
+}: {
+  slides: { id: string; title: string; titleEn: string; icon: React.ElementType }[];
+  currentSlide: number; autoRotate: boolean;
+  onExit: () => void; onNext: () => void; onPrev: () => void;
+  onToggleAutoRotate: () => void; onGoToSlide: (idx: number) => void;
+  isDark: boolean;
+  kpiCards: any[]; statusCards: any[]; sourceCards: any[]; systemStats: any[];
+  sectorDistribution: any[]; piiDistribution: any[]; monthlyTrend: any[]; recentLeaks: any[]; stats: any;
+}) {
+  const slide = slides[currentSlide];
+  const SlideIcon = slide.icon;
+
+  const renderSlideContent = () => {
+    switch (slide.id) {
+      case "kpi":
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 w-full max-w-7xl">
+            {kpiCards.map((card, idx) => {
+              const Icon = card.icon;
+              return (
+                <motion.div
+                  key={card.key}
+                  initial={{ opacity: 0, y: 40, scale: 0.9 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ delay: idx * 0.15, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+                  className="rounded-3xl p-8 relative overflow-hidden"
+                  style={{
+                    background: "rgba(26, 37, 80, 0.8)",
+                    backdropFilter: "blur(24px)",
+                    border: "1px solid rgba(61, 177, 172, 0.15)",
+                    boxShadow: "0 8px 40px rgba(0,0,0,0.3), 0 0 60px " + card.glowColor,
+                  }}
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-40 pointer-events-none`} />
+                  <div className="relative">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-lg font-bold ${card.trendUp ? "text-emerald-400" : "text-red-400"}`}>{card.trend}</span>
+                        {card.trendUp ? <TrendingUp className="w-5 h-5 text-emerald-400" /> : <TrendingDown className="w-5 h-5 text-red-400" />}
+                      </div>
+                      <div className={`w-16 h-16 rounded-2xl ${card.iconBg} flex items-center justify-center`} style={{ boxShadow: `0 0 24px ${card.glowColor}` }}>
+                        <Icon className={`w-8 h-8 ${card.iconColor}`} />
+                      </div>
+                    </div>
+                    <div className="text-5xl font-black text-white mb-2 tabular-nums">
+                      {card.displayValue || (card.value as number).toLocaleString()}
+                    </div>
+                    <p className="text-base text-slate-300 font-medium">{card.label}</p>
+                    <p className="text-xs text-slate-500 mt-1">{card.labelEn}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        );
+
+      case "status":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
+            <motion.div initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <Activity className="w-6 h-6 text-cyan-400" /> \u062d\u0627\u0644\u0629 \u0627\u0644\u062d\u0648\u0627\u062f\u062b
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {statusCards.map((sc, i) => {
+                  const SIcon = sc.icon;
+                  return (
+                    <motion.div key={sc.label} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 + i * 0.1 }}
+                      className={`p-6 rounded-2xl ${sc.bg}`} style={{ boxShadow: `0 0 20px ${sc.glow}` }}>
+                      <SIcon className={`w-7 h-7 ${sc.color} mb-3`} />
+                      <p className="text-3xl font-bold text-white">{sc.value.toLocaleString()}</p>
+                      <p className="text-sm text-slate-400 mt-1">{sc.label}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <Radio className="w-6 h-6 text-cyan-400" /> \u0645\u0635\u0627\u062f\u0631 \u0627\u0644\u0631\u0635\u062f
+              </h3>
+              <div className="space-y-4">
+                {sourceCards.map((sc, i) => {
+                  const SIcon = sc.icon;
+                  const total = sourceCards.reduce((s: number, c: any) => s + c.value, 0) || 1;
+                  const pct = Math.round((sc.value / total) * 100);
+                  return (
+                    <motion.div key={sc.key} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.1 }}
+                      className={`p-5 rounded-2xl ${sc.bg} border ${sc.border}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <SIcon className={`w-6 h-6 ${sc.color}`} />
+                          <span className="text-base text-white font-medium">{sc.label}</span>
+                        </div>
+                        <span className="text-2xl font-bold text-white">{sc.value}</span>
+                      </div>
+                      <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                        <motion.div className={`h-full rounded-full`} style={{ background: sc.color.includes("sky") ? "#0ea5e9" : sc.color.includes("violet") ? "#8b5cf6" : "#f59e0b" }}
+                          initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 1, delay: 0.5 + i * 0.1 }} />
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        );
+
+      case "sectors":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <Building2 className="w-6 h-6 text-cyan-400" /> \u0627\u0644\u0642\u0637\u0627\u0639\u0627\u062a \u0627\u0644\u0645\u062a\u0623\u062b\u0631\u0629
+              </h3>
+              <div className="space-y-3">
+                {sectorDistribution.slice(0, 6).map((s: any, i: number) => {
+                  const SIcon = getSectorIcon(s.sectorAr || s.sector);
+                  const maxCount = Math.max(...sectorDistribution.map((x: any) => x.count), 1);
+                  const pct = Math.round((s.count / maxCount) * 100);
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 + i * 0.08 }}
+                      className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <SIcon className="w-5 h-5 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-sm text-white">{s.sectorAr || s.sector}</span>
+                          <span className="text-sm font-bold text-white">{s.count}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-white/5 overflow-hidden">
+                          <motion.div className="h-full rounded-full bg-gradient-to-l from-cyan-400 to-cyan-600"
+                            initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.3 + i * 0.08 }} />
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+              className="rounded-3xl p-8 flex items-center justify-center" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <RadarAnimation />
+            </motion.div>
+          </div>
+        );
+
+      case "pii":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
+            <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <Fingerprint className="w-6 h-6 text-cyan-400" /> \u0623\u0646\u0648\u0627\u0639 \u0627\u0644\u0628\u064a\u0627\u0646\u0627\u062a \u0627\u0644\u0634\u062e\u0635\u064a\u0629
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {piiDistribution.slice(0, 8).map((p: any, i: number) => {
+                  const PIcon = getPiiIcon(p.piiType);
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 + i * 0.06 }}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                      <PIcon className="w-5 h-5 text-cyan-400 shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-sm text-white truncate">{getPiiLabel(p.piiType)}</p>
+                        <p className="text-xs text-slate-500">{p.count} \u0633\u062c\u0644</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <Bell className="w-6 h-6 text-cyan-400" /> \u0622\u062e\u0631 \u0627\u0644\u062d\u0648\u0627\u062f\u062b
+              </h3>
+              <div className="space-y-3">
+                {recentLeaks.slice(0, 5).map((leak: any, i: number) => {
+                  const sc = sourceColor(leak.source);
+                  const SIcon = sourceIcon(leak.source);
+                  return (
+                    <motion.div key={i} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.08 }}
+                      className="flex items-center gap-4 p-3 rounded-xl bg-white/5">
+                      <div className={`w-10 h-10 rounded-xl ${sc.bg} flex items-center justify-center shrink-0`}>
+                        <SIcon className={`w-5 h-5 ${sc.text}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-white truncate">{leak.titleAr}</p>
+                        <p className="text-xs text-slate-500">{leak.sectorAr} \u00b7 {sourceLabel(leak.source)}</p>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        );
+
+      case "trends":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full max-w-6xl">
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <TrendingUp className="w-6 h-6 text-cyan-400" /> \u0627\u0644\u0627\u062a\u062c\u0627\u0647 \u0627\u0644\u0634\u0647\u0631\u064a
+              </h3>
+              <div className="space-y-3">
+                {monthlyTrend.slice(-8).map((m: any, i: number) => {
+                  const maxCount = Math.max(...monthlyTrend.map((t: any) => t.count), 1);
+                  const pct = Math.round((m.count / maxCount) * 100);
+                  return (
+                    <motion.div key={m.yearMonth} initial={{ opacity: 0, x: -15 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 + i * 0.06 }}
+                      className="flex items-center gap-4">
+                      <span className="text-sm text-slate-400 w-20 shrink-0 font-mono">{m.yearMonth}</span>
+                      <div className="flex-1 h-3 bg-white/5 rounded-full overflow-hidden">
+                        <motion.div className="h-full rounded-full bg-gradient-to-l from-cyan-400 to-blue-500"
+                          initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: 0.2 + i * 0.06 }} />
+                      </div>
+                      <span className="text-base font-bold text-white w-12 text-left">{m.count}</span>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+              className="rounded-3xl p-8" style={{ background: "rgba(26, 37, 80, 0.8)", backdropFilter: "blur(24px)", border: "1px solid rgba(61, 177, 172, 0.12)" }}>
+              <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+                <Server className="w-6 h-6 text-cyan-400" /> \u0625\u062d\u0635\u0627\u0626\u064a\u0627\u062a \u0627\u0644\u0646\u0638\u0627\u0645
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                {systemStats.map((st, i) => {
+                  const SIcon = st.icon;
+                  return (
+                    <motion.div key={st.label} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.3 + i * 0.1 }}
+                      className="p-5 rounded-2xl bg-white/5 border border-white/5 text-center">
+                      <SIcon className="w-7 h-7 text-cyan-400 mx-auto mb-3" />
+                      <p className="text-3xl font-bold text-white">{st.value.toLocaleString()}</p>
+                      <p className="text-sm text-slate-400 mt-1">{st.label}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9999] flex flex-col"
+      dir="rtl"
+      style={{
+        background: "linear-gradient(135deg, #0D1529 0%, #0a1230 30%, #101e45 60%, #1A2550 100%)",
+      }}
+    >
+      {/* Aurora background */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse 80% 50% at 50% 0%, rgba(61, 177, 172, 0.06), transparent 60%), " +
+            "radial-gradient(ellipse 60% 40% at 80% 20%, rgba(100, 89, 167, 0.04), transparent 50%)",
+        }}
+      />
+
+      {/* Dot grid */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: "radial-gradient(circle, rgba(61, 177, 172, 0.03) 1px, transparent 1px)",
+          backgroundSize: "40px 40px",
+        }}
+      />
+
+      {/* Top Bar */}
+      <div className="relative z-10 flex items-center justify-between px-8 py-4" style={{ borderBottom: "1px solid rgba(61, 177, 172, 0.1)" }}>
+        <div className="flex items-center gap-4">
+          <img src={RASID_LOGO_LIGHT} alt="\u0631\u0627\u0635\u062f" className="h-8 object-contain" style={{ filter: "drop-shadow(0 2px 8px rgba(61, 177, 172, 0.15))" }} />
+          <div className="h-6 w-px bg-white/10" />
+          <div>
+            <h1 className="text-lg font-bold text-white">\u0648\u0636\u0639 \u0627\u0644\u0639\u0631\u0636 \u0627\u0644\u062a\u0642\u062f\u064a\u0645\u064a</h1>
+            <p className="text-xs text-slate-400">Presentation Mode</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {/* Auto-rotate toggle */}
+          <button onClick={onToggleAutoRotate}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              autoRotate ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/30" : "bg-white/5 text-slate-400 border border-white/10"
+            }`}>
+            {autoRotate ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+            {autoRotate ? "\u062a\u062f\u0648\u064a\u0631 \u062a\u0644\u0642\u0627\u0626\u064a" : "\u0645\u062a\u0648\u0642\u0641"}
+          </button>
+          {/* Slide counter */}
+          <span className="text-xs text-slate-500 font-mono">{currentSlide + 1} / {slides.length}</span>
+          {/* Exit button */}
+          <button onClick={onExit}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-400 border border-red-500/20 text-xs font-medium hover:bg-red-500/20 transition-all">
+            <Minimize2 className="w-3.5 h-3.5" />
+            \u062e\u0631\u0648\u062c
+          </button>
+        </div>
+      </div>
+
+      {/* Slide Title */}
+      <div className="relative z-10 text-center py-6">
+        <motion.div key={currentSlide} initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+          className="flex items-center justify-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 flex items-center justify-center border border-cyan-500/20"
+            style={{ boxShadow: "0 0 20px rgba(61, 177, 172, 0.15)" }}>
+            <SlideIcon className="w-6 h-6 text-cyan-400" />
+          </div>
+          <div className="text-right">
+            <h2 className="text-2xl font-bold text-white">{slide.title}</h2>
+            <p className="text-sm text-slate-400">{slide.titleEn}</p>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Slide Content */}
+      <div className="flex-1 flex items-center justify-center px-8 pb-4 relative z-10 overflow-auto">
+        <AnimatePresence mode="wait">
+          <motion.div key={currentSlide} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }}
+            transition={{ duration: 0.4 }} className="w-full flex justify-center">
+            {renderSlideContent()}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      {/* Bottom Navigation */}
+      <div className="relative z-10 flex items-center justify-between px-8 py-4" style={{ borderTop: "1px solid rgba(61, 177, 172, 0.1)" }}>
+        {/* Prev button */}
+        <button onClick={onPrev}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 text-slate-300 text-sm font-medium hover:bg-white/10 transition-all border border-white/10">
+          <ChevronRight className="w-4 h-4" />
+          \u0627\u0644\u0633\u0627\u0628\u0642
+        </button>
+
+        {/* Slide dots */}
+        <div className="flex items-center gap-2">
+          {slides.map((s, idx) => (
+            <button key={s.id} onClick={() => onGoToSlide(idx)}
+              className={`transition-all duration-300 rounded-full ${
+                idx === currentSlide
+                  ? "w-8 h-2.5 bg-gradient-to-r from-cyan-400 to-teal-400"
+                  : "w-2.5 h-2.5 bg-white/20 hover:bg-white/40"
+              }`}
+              style={idx === currentSlide ? { boxShadow: "0 0 12px rgba(61, 177, 172, 0.4)" } : {}}
+            />
+          ))}
+        </div>
+
+        {/* Next button */}
+        <button onClick={onNext}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-cyan-500/15 text-cyan-400 text-sm font-medium hover:bg-cyan-500/25 transition-all border border-cyan-500/20">
+          \u0627\u0644\u062a\u0627\u0644\u064a
+          <ChevronLeft className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Progress bar */}
+      {autoRotate && (
+        <div className="absolute bottom-0 left-0 right-0 h-1 z-20">
+          <motion.div
+            className="h-full bg-gradient-to-r from-cyan-400 to-teal-400"
+            initial={{ width: "0%" }}
+            animate={{ width: "100%" }}
+            transition={{ duration: 8, ease: "linear" }}
+            key={`progress-${currentSlide}`}
+            style={{ boxShadow: "0 0 8px rgba(61, 177, 172, 0.4)" }}
+          />
+        </div>
+      )}
+
+      {/* Keyboard hints */}
+      <div className="absolute bottom-6 left-8 z-10 flex items-center gap-3 text-[10px] text-slate-600">
+        <span>\u2190\u2192 \u0627\u0644\u062a\u0646\u0642\u0644</span>
+        <span>\u00b7</span>
+        <span>P \u062a\u062f\u0648\u064a\u0631</span>
+        <span>\u00b7</span>
+        <span>ESC \u062e\u0631\u0648\u062c</span>
+      </div>
+
+      {/* Rasid character watermark */}
+      <img src={RASID_CHARACTER_PRES} alt="" className="absolute bottom-4 right-8 w-16 h-16 object-contain opacity-20 pointer-events-none z-10" />
+    </motion.div>
+  );
+}
+
 /* ═══ Premium Card Wrapper ═══ */
 function PremiumCard({ children, className = "", onClick, delay = 0, glow }: { children: React.ReactNode; className?: string; onClick?: () => void; delay?: number; glow?: string }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      initial={{ opacity: 0, y: 24, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay, duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+      transition={{ delay, duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+      whileHover={onClick ? { y: -4, scale: 1.02, transition: { duration: 0.3, ease: "easeOut" } } : undefined}
       onClick={onClick}
       className={`
         relative rounded-2xl border border-border/50 overflow-hidden
         bg-card/80 dark:bg-[rgba(26,37,80,0.7)]
-        dark:backdrop-blur-xl dark:border-[rgba(61,177,172,0.1)]
-        transition-all duration-400
-        ${onClick ? "cursor-pointer hover:shadow-xl hover:scale-[1.015] hover:border-[rgba(61,177,172,0.25)] dark:hover:border-[rgba(61,177,172,0.3)] dark:hover:shadow-[0_8px_40px_rgba(61,177,172,0.08)]" : ""}
+        backdrop-blur-xl dark:border-[rgba(61,177,172,0.1)]
+        transition-all duration-400 hover-shine card-3d-lift
+        ${onClick ? "cursor-pointer hover:shadow-[0_16px_48px_rgba(22,42,84,0.12),0_0_0_1px_rgba(61,177,172,0.08)] dark:hover:shadow-[0_16px_48px_rgba(0,0,0,0.4),0_0_20px_rgba(61,177,172,0.1)] hover:border-[rgba(61,177,172,0.2)] dark:hover:border-[rgba(61,177,172,0.3)]" : ""}
         ${className}
       `}
       style={glow ? { boxShadow: `0 0 0 1px ${glow}` } : undefined}
@@ -297,6 +703,85 @@ export default function Dashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // ═══ PRESENTATION MODE STATE ═══
+  const [presentationMode, setPresentationMode] = useState(false);
+  const [autoRotate, setAutoRotate] = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const presentationRef = useRef<HTMLDivElement>(null);
+  const autoRotateRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const SLIDE_INTERVAL = 8000; // 8 seconds per slide
+  const presentationSlides = [
+    { id: "kpi", title: "مؤشرات الأداء الرئيسية", titleEn: "Key Performance Indicators", icon: BarChart3 },
+    { id: "status", title: "حالة الحوادث ومصادر الرصد", titleEn: "Incident Status & Sources", icon: Activity },
+    { id: "sectors", title: "القطاعات والرادار", titleEn: "Sectors & Radar", icon: Building2 },
+    { id: "pii", title: "أنواع البيانات والحوادث الأخيرة", titleEn: "PII Types & Recent Incidents", icon: Fingerprint },
+    { id: "trends", title: "الاتجاهات والنشاط", titleEn: "Trends & Activity", icon: TrendingUp },
+  ];
+
+  const enterPresentationMode = useCallback(() => {
+    setPresentationMode(true);
+    setCurrentSlide(0);
+    setAutoRotate(true);
+    // Request fullscreen
+    if (presentationRef.current?.requestFullscreen) {
+      presentationRef.current.requestFullscreen().catch(() => {});
+    } else if ((presentationRef.current as any)?.webkitRequestFullscreen) {
+      (presentationRef.current as any).webkitRequestFullscreen();
+    }
+  }, []);
+
+  const exitPresentationMode = useCallback(() => {
+    setPresentationMode(false);
+    setAutoRotate(false);
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  const nextSlide = useCallback(() => {
+    setCurrentSlide(prev => (prev + 1) % presentationSlides.length);
+  }, [presentationSlides.length]);
+
+  const prevSlide = useCallback(() => {
+    setCurrentSlide(prev => (prev - 1 + presentationSlides.length) % presentationSlides.length);
+  }, [presentationSlides.length]);
+
+  // Auto-rotate slides
+  useEffect(() => {
+    if (presentationMode && autoRotate) {
+      autoRotateRef.current = setInterval(nextSlide, SLIDE_INTERVAL);
+    }
+    return () => {
+      if (autoRotateRef.current) clearInterval(autoRotateRef.current);
+    };
+  }, [presentationMode, autoRotate, nextSlide]);
+
+  // Keyboard navigation for presentation mode
+  useEffect(() => {
+    if (!presentationMode) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") exitPresentationMode();
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") prevSlide();
+      if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === " ") nextSlide();
+      if (e.key === "p" || e.key === "P") setAutoRotate(prev => !prev);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [presentationMode, exitPresentationMode, nextSlide, prevSlide]);
+
+  // Listen for fullscreen exit
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && presentationMode) {
+        setPresentationMode(false);
+        setAutoRotate(false);
+      }
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => document.removeEventListener("fullscreenchange", handleFullscreenChange);
+  }, [presentationMode]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -397,7 +882,33 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="space-y-6 p-1 relative">
+    <div ref={presentationRef} className="space-y-6 p-1 relative light-particles page-transition-enter">
+
+      {/* ═══ PRESENTATION MODE OVERLAY ═══ */}
+      <AnimatePresence>
+        {presentationMode && (
+          <PresentationOverlay
+            slides={presentationSlides}
+            currentSlide={currentSlide}
+            autoRotate={autoRotate}
+            onExit={exitPresentationMode}
+            onNext={nextSlide}
+            onPrev={prevSlide}
+            onToggleAutoRotate={() => setAutoRotate(prev => !prev)}
+            onGoToSlide={setCurrentSlide}
+            isDark={isDark}
+            kpiCards={kpiCards}
+            statusCards={statusCards}
+            sourceCards={sourceCards}
+            systemStats={systemStats}
+            sectorDistribution={sectorDistribution}
+            piiDistribution={piiDistribution}
+            monthlyTrend={monthlyTrend}
+            recentLeaks={recentLeaks}
+            stats={stats}
+          />
+        )}
+      </AnimatePresence>
 
       {/* ═══ HEADER ═══ */}
       <motion.div
@@ -420,6 +931,17 @@ export default function Dashboard() {
           </div>
         </div>
         <div className="flex items-center gap-3">
+          {/* Presentation Mode Button */}
+          <motion.button
+            onClick={enterPresentationMode}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-[rgba(100,89,167,0.15)] to-[rgba(61,177,172,0.1)] text-primary text-xs font-semibold border border-[rgba(100,89,167,0.2)] hover:from-[rgba(100,89,167,0.25)] hover:to-[rgba(61,177,172,0.15)] transition-all"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            title="وضع العرض التقديمي - مثالي للشاشات الكبيرة والاجتماعات"
+          >
+            <Monitor className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">عرض تقديمي</span>
+          </motion.button>
           <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[rgba(61,177,172,0.08)] border border-[rgba(61,177,172,0.15)]">
             <motion.div
               className="w-2 h-2 rounded-full bg-[#3DB1AC]"

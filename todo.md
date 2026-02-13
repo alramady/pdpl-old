@@ -930,3 +930,35 @@
 - [x] Verify dark theme remains unchanged and excellent
 - [x] Run all 190 tests - all passing
 - [x] Checkpoint and deliver
+
+## Phase 74: Advanced Motion Effects, Rasid Character Integration, Presentation Mode
+
+### A. Advanced Motion Effects (Light Theme)
+- [x] Add staggered entrance animations for dashboard stat cards (bounce spring easing)
+- [x] Add hover lift + glow effects for glass cards in light mode (card-3d-lift, hover-shine)
+- [x] Add icon pulse/rotate/bounce micro-interactions on hover (icon-hover-pulse/rotate/glow)
+- [x] Add parallax background effects on scroll (parallax-slow class)
+- [x] Add smooth page transition animations (page-transition-enter)
+- [x] Add shimmer/shine effect on card borders in light mode (border-shimmer, gradient-border-glow)
+- [x] Add floating particle effects in light theme background (light-particles)
+
+### B. Rasid Character Integration
+- [x] Add Rasid character to 404 page (with floating animation, glitch 404 text, speech bubble)
+- [x] Add Rasid character to loading/skeleton screen (breathing animation, orbiting dots, loading bar)
+- [x] Add Rasid character as Smart Rasid AI assistant avatar (transparent bg, character-breathe)
+- [x] Character must use transparent background (all URLs updated to transparent versions)
+- [x] Add subtle floating/breathing animation to character (character-float, character-breathe CSS)
+
+### C. Presentation Mode for Dashboard
+- [x] Add presentation mode toggle button in dashboard header (Monitor icon + "عرض تقديمي")
+- [x] Fullscreen mode with hidden sidebar and header (fixed overlay z-9999)
+- [x] Auto-rotate between 5 dashboard sections (KPI, Status, Sectors, PII, Trends) every 8s
+- [x] Large typography optimized for projector/TV screens (5xl font, 3xl values)
+- [x] Auto-rotate toggle (Play/Pause button + P key)
+- [x] Keyboard controls (←→ navigate, Space next, P toggle, ESC exit)
+- [x] Rasid branding watermark + logo in presentation mode
+- [x] Slide progress bar with gradient animation
+- [x] Slide dot navigation for direct access
+- [x] Aurora background + dot grid in presentation mode
+- [x] Run all 213 tests - all passing (11 test files)
+- [x] Checkpoint and deliver

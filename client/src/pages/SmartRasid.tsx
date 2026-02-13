@@ -64,8 +64,9 @@ import { soundManager } from "@/lib/soundManager";
 import { Save, Trash2, FolderOpen, Download, X, MessageCircle, Archive, Timer, Table2, FileDown, Lightbulb } from "lucide-react";
 
 // ═══ CONSTANTS ═══
-const RASID_CHARACTER_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/trhmUCDmIUgvRfyf.png"; // Waving character
-const RASID_FACE_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/JzZklqOoMNmtrCuP.png"; // Standing shmagh for face/avatar
+const RASID_CHARACTER_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/rCKQyRDoubhdjHel.png"; // Transparent background character
+const RASID_FACE_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/nceygigNBuUkNsBp.png"; // Professional 3D character (small)
+const RASID_CHARACTER_ELEGANT = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/PFaAwpCdMWpRxWDd.png"; // Elegant composition character
 
 interface ThinkingStep {
   id: string;
@@ -940,7 +941,8 @@ export default function SmartRasid() {
                 <img
                   src={RASID_FACE_URL}
                   alt="راصد الذكي"
-                  className="w-full h-full object-cover object-top"
+                  className="w-full h-full object-contain character-breathe"
+                  style={{ filter: "drop-shadow(0 2px 8px rgba(61, 177, 172, 0.2))" }}
                 />
               </motion.div>
               {/* Online indicator */}
@@ -1103,11 +1105,12 @@ export default function SmartRasid() {
                 transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 className="relative"
               >
-                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden border-2 border-cyan-500/30 shadow-[0_0_40px_rgba(0,200,180,0.2)] bg-[#0a1628]">
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-2xl overflow-visible flex items-center justify-center">
                   <img
-                    src={RASID_FACE_URL}
+                    src={RASID_CHARACTER_URL}
                     alt="راصد الذكي"
-                    className="w-full h-full object-cover object-top"
+                    className="w-full h-full object-contain character-float drop-shadow-2xl"
+                    style={{ filter: "drop-shadow(0 8px 24px rgba(61, 177, 172, 0.2))" }}
                   />
                 </div>
 
@@ -1267,7 +1270,7 @@ export default function SmartRasid() {
                       transition={{ duration: 3, repeat: Infinity }}
                       className="w-9 h-9 rounded-xl overflow-hidden border border-cyan-500/30"
                     >
-                      <img src={RASID_FACE_URL} alt="راصد" className="w-full h-full object-cover object-top" />
+                      <img src={RASID_FACE_URL} alt="راصد" className="w-full h-full object-contain character-breathe" style={{ filter: "drop-shadow(0 1px 4px rgba(61, 177, 172, 0.15))" }} />
                     </motion.div>
                   ) : (
                     <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-slate-700 to-slate-800 flex items-center justify-center border border-slate-600/30">
@@ -1487,7 +1490,7 @@ export default function SmartRasid() {
                     transition={{ duration: 1.5, repeat: Infinity }}
                     className="w-9 h-9 rounded-xl overflow-hidden border border-cyan-500/40"
                   >
-                    <img src={RASID_FACE_URL} alt="راصد" className="w-full h-full object-cover object-top animate-pulse" />
+                    <img src={RASID_FACE_URL} alt="راصد" className="w-full h-full object-contain character-breathe" style={{ filter: "drop-shadow(0 2px 6px rgba(61, 177, 172, 0.2))" }} />
                   </motion.div>
                   <div className="bg-[#0a1628]/80 border border-cyan-500/15 rounded-xl px-4 py-3 max-w-md">
                     <div className="flex items-center gap-3 mb-2">
