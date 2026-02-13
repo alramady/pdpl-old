@@ -182,16 +182,13 @@ export const appRouter = router({
           status: opts.ctx.platformUser.status,
         };
       }
-      return opts.ctx.user;
+      return null;
     }),
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
-      ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       ctx.res.clearCookie("platform_session", { ...cookieOptions, maxAge: -1 });
       if (ctx.platformUser) {
         logAudit(ctx.platformUser.id, "auth.logout", `Platform user ${ctx.platformUser.displayName} logged out`, "auth", ctx.platformUser.displayName);
-      } else if (ctx.user) {
-        logAudit(getAuthUser(ctx).id, "auth.logout", `User ${ctx.user.name} logged out`, "auth", getAuthUser(ctx).name);
       }
       return { success: true } as const;
     }),

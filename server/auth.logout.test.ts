@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { appRouter } from "./routers";
-import { COOKIE_NAME } from "../shared/const";
 import type { TrpcContext } from "./_core/context";
 
 type CookieCall = {
@@ -8,26 +7,25 @@ type CookieCall = {
   options: Record<string, unknown>;
 };
 
-type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
-
 function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] } {
   const clearedCookies: CookieCall[] = [];
 
-  const user: AuthenticatedUser = {
-    id: 1,
-    openId: "sample-user",
-    email: "sample@example.com",
-    name: "Sample User",
-    loginMethod: "manus",
-    role: "user",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    lastSignedIn: new Date(),
-  };
-
   const ctx: TrpcContext = {
-    user,
-    platformUser: null,
+    user: null,
+    platformUser: {
+      id: 1,
+      userId: "MRUHAILY",
+      passwordHash: "$2a$12$test",
+      name: "Muhammed ALRuhaily",
+      email: "prog.muhammed@gmail.com",
+      mobile: "+966553445533",
+      displayName: "Admin Rasid System",
+      platformRole: "root_admin",
+      status: "active",
+      lastLoginAt: new Date(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
     req: {
       protocol: "https",
       headers: {},
@@ -43,15 +41,15 @@ function createAuthContext(): { ctx: TrpcContext; clearedCookies: CookieCall[] }
 }
 
 describe("auth.logout", () => {
-  it("clears the session cookie and reports success", async () => {
+  it("clears the platform session cookie and reports success", async () => {
     const { ctx, clearedCookies } = createAuthContext();
     const caller = appRouter.createCaller(ctx);
 
     const result = await caller.auth.logout();
 
     expect(result).toEqual({ success: true });
-    expect(clearedCookies).toHaveLength(2);
-    expect(clearedCookies[0]?.name).toBe(COOKIE_NAME);
+    expect(clearedCookies).toHaveLength(1);
+    expect(clearedCookies[0]?.name).toBe("platform_session");
     expect(clearedCookies[0]?.options).toMatchObject({
       maxAge: -1,
       secure: true,

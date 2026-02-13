@@ -1,6 +1,6 @@
 import type { CreateExpressContextOptions } from "@trpc/server/adapters/express";
 import type { User, PlatformUser } from "../../drizzle/schema";
-import { sdk } from "./sdk";
+// OAuth SDK removed — local auth only
 import { parse as parseCookieHeader } from "cookie";
 import { jwtVerify } from "jose";
 import { ENV } from "./env";
@@ -51,14 +51,7 @@ export async function createContext(
   // Try platform auth first (custom userId + password)
   platformUser = await authenticatePlatformUser(opts.req);
 
-  // If no platform user, try OAuth
-  if (!platformUser) {
-    try {
-      user = await sdk.authenticateRequest(opts.req);
-    } catch (error) {
-      user = null;
-    }
-  }
+  // Local auth only — no OAuth fallback
 
   return {
     req: opts.req,

@@ -1,0 +1,10 @@
+node_modules
+.git
+.manus-logs
+*.test.ts
+*.bak
+.env*
+dist
+coverage
+todo.md
+README.md

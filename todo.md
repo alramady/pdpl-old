@@ -1115,3 +1115,14 @@
 - [x] Enrich new incidents with evidence chain records (138 new, 967 total)
 - [x] Verify all new incidents appear correctly in the platform UI
 - [x] Run tests (270/270 passed) and save checkpoint
+
+## Phase 80: Local Auth + Railway Deployment
+- [x] Remove Manus OAuth authentication entirely
+- [x] Build local auth system (username/password with bcrypt + JWT) — already existed
+- [x] Update database schema with userId, password, displayName, mobile fields — already existed
+- [x] Create local login page matching Rasid design — already existed
+- [x] Seed 4 predefined users (MRUHAILY=Root, aalrebdi=director, msarhan=VP, malmoutaz=manager) — already in DB
+- [x] Update frontend auth flow to use local login only
+- [x] Create Railway deployment config (Dockerfile, railway.json, .dockerignore, seed-users.mjs)
+- [x] Push updated code to GitHub
+- [ ] Deploy on Railway (user action required)
