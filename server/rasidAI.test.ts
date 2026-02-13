@@ -475,10 +475,25 @@ describe("rasidAI — Smart Rasid AI v6.0", () => {
         ],
       } as any);
 
+      // Follow-up suggestions LLM call
+      mockedInvokeLLM.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: JSON.stringify({ suggestions: ["اقتراح 1", "اقتراح 2", "اقتراح 3"] }),
+              role: "assistant",
+            },
+            index: 0,
+            finish_reason: "stop",
+          },
+        ],
+      } as any);
+
       const result = await rasidAIChat("تحليل شامل", [], "TestUser", 1);
       expect(result.response).toBeTruthy();
       // Should not exceed MAX_TOOL_ITERATIONS (8)
-      expect(mockedInvokeLLM).toHaveBeenCalledTimes(7); // initial + 5 tool iterations + 1 final (capped at 6 tool calls before final)
+      // 6 tool iterations + 1 final + 1 follow-up suggestions = 8
+      expect(mockedInvokeLLM).toHaveBeenCalledTimes(8);
     });
 
     it("should handle new tool: search_knowledge_base", async () => {

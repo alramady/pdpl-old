@@ -890,3 +890,28 @@
 - [x] Test Fix: Add scanEngine mock and missing db function mocks to rasidAI.test.ts
 - [x] All 178 tests passing (9 test files)
 - [x] 0 TypeScript errors
+
+## Phase 72: Smart Rasid AI Enhancements + Paste Sites Improvements
+- [x] Server: Add durationMs timing to ThinkingStep (performance.now() tracking)
+- [x] Server: Add toolCategory field to ThinkingStep (read/execute/analysis/personality)
+- [x] Server: Add tool category mapping for all 33 tools
+- [x] Server: Generate dynamic follow-up suggestions via LLM (JSON schema response)
+- [x] Server: Add processingMeta (totalDurationMs, toolCount, agentsUsed) to response
+- [x] Router: Update chat endpoint to return followUpSuggestions and processingMeta
+- [x] Frontend SmartRasid: Enhanced ThinkingProcess with progress bar, timing display, category badges
+- [x] Frontend SmartRasid: Tool category badges (قراءة/تنفيذ/تحليل/شخصية) with color coding
+- [x] Frontend SmartRasid: Dynamic follow-up suggestions from LLM (replacing static keyword matching)
+- [x] Frontend SmartRasid: Table export buttons (CSV/Markdown) for response tables
+- [x] Frontend SmartRasid: Rich processing state with user name and animated indicators
+- [x] Frontend SmartRasid: Processing metadata display (duration, tool count, agents used)
+- [x] Frontend PasteSites: Search/filter bar with text search, status filter, and sort options
+- [x] Frontend PasteSites: Severity indicators (حرج/عالي/متوسط/منخفض) with color-coded bars
+- [x] Frontend PasteSites: Risk distribution heatmap with animated bars
+- [x] Frontend PasteSites: Activity timeline with horizontal bar chart
+- [x] Frontend PasteSites: CSV export functionality
+- [x] Frontend PasteSites: Animated counters and pulsing status indicators
+- [x] Frontend PasteSites: Enhanced detail modal with severity + status row
+- [x] Tests: New rasidAI.enhancements.test.ts (12 tests) for tool categories, timing, processingMeta
+- [x] Tests: Fixed rasidAI.test.ts to account for follow-up suggestions LLM call
+- [x] All 202 tests passing (11 test files)
+- [x] 0 TypeScript errors

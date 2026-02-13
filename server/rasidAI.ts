@@ -68,6 +68,8 @@ interface ThinkingStep {
   status: "running" | "completed" | "error";
   timestamp: Date;
   result?: string; // Brief summary of the result
+  durationMs?: number; // Execution time in milliseconds
+  toolCategory?: "read" | "execute" | "personality" | "analysis"; // Tool category for UI badges
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -825,6 +827,23 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     create_alert_rule: "إنشاء قاعدة تنبيه",
   };
 
+  // Determine tool category for UI badges
+  const toolCategoryMap: Record<string, ThinkingStep["toolCategory"]> = {
+    query_leaks: "read", get_leak_details: "read", get_dashboard_stats: "read",
+    get_channels_info: "read", get_monitoring_status: "read", get_alert_info: "read",
+    get_sellers_info: "read", get_evidence_info: "read", get_threat_rules_info: "read",
+    get_darkweb_pastes: "read", get_feedback_accuracy: "read", get_knowledge_graph: "read",
+    get_osint_info: "read", get_threat_map: "read", get_system_health: "read",
+    get_audit_log: "read", get_reports_and_documents: "read", get_platform_users_info: "read",
+    search_knowledge_base: "read", get_platform_guide: "read",
+    analyze_trends: "analysis", get_correlations: "analysis", analyze_user_activity: "analysis",
+    execute_live_scan: "execute", execute_pii_scan: "execute",
+    create_leak_record: "execute", update_leak_status: "execute",
+    generate_report: "execute", create_alert_channel: "execute", create_alert_rule: "execute",
+    get_personality_greeting: "personality", check_leader_mention: "personality",
+    manage_personality_scenarios: "personality",
+  };
+
   const step: ThinkingStep = {
     id: stepId,
     agent: agentMap[toolName] || "الوكيل الرئيسي",
@@ -832,16 +851,20 @@ async function executeTool(toolName: string, params: any, thinkingSteps: Thinkin
     description: toolDescriptions[toolName] || toolName,
     status: "running",
     timestamp: new Date(),
+    toolCategory: toolCategoryMap[toolName] || "read",
   };
   thinkingSteps.push(step);
 
+  const startTime = performance.now();
   try {
     const result = await executeToolInternal(toolName, params);
     step.status = "completed";
+    step.durationMs = Math.round(performance.now() - startTime);
     step.result = summarizeResult(toolName, result);
     return result;
   } catch (err: any) {
     step.status = "error";
+    step.durationMs = Math.round(performance.now() - startTime);
     step.result = `خطأ: ${err.message}`;
     console.error(`[RasidAI] Tool execution error (${toolName}):`, err);
     return { error: `خطأ في تنفيذ الأداة ${toolName}: ${err.message}` };
@@ -1877,7 +1900,7 @@ export async function rasidAIChat(
   history: Array<{ role: "user" | "assistant"; content: string }>,
   userName: string,
   userId: number,
-): Promise<{ response: string; toolsUsed: string[]; thinkingSteps: ThinkingStep[] }> {
+): Promise<{ response: string; toolsUsed: string[]; thinkingSteps: ThinkingStep[]; followUpSuggestions: string[]; processingMeta: { totalDurationMs: number; toolCount: number; agentsUsed: string[] } }> {
   const thinkingSteps: ThinkingStep[] = [];
   const stats = await getDashboardStats();
   
@@ -1992,6 +2015,54 @@ export async function rasidAIChat(
       result: `تم استخدام ${toolsUsed.length} أداة لصياغة الرد`,
     });
 
+    // Generate dynamic follow-up suggestions via LLM
+    let followUpSuggestions: string[] = [];
+    try {
+      const followUpResponse = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content: `أنت مساعد منصة راصد. بناءً على المحادثة التالية، اقترح 3 أسئلة متابعة ذكية ومختصرة (كل سؤال أقل من 50 حرف) يمكن للمستخدم طرحها. الأسئلة يجب أن تكون:
+1. مرتبطة بالسياق الحالي ومفيدة عملياً
+2. متنوعة (تحليل، تفاصيل، إجراء)
+3. باللغة العربية فقط
+
+أجب بـ JSON فقط: {"suggestions": ["سؤال1", "سؤال2", "سؤال3"]}`,
+          },
+          { role: "user", content: `سؤال المستخدم: ${message}\n\nرد راصد: ${content.substring(0, 500)}\n\nالأدوات المستخدمة: ${toolsUsed.join(", ") || "لا شيء"}` },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "follow_up_suggestions",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                suggestions: {
+                  type: "array",
+                  items: { type: "string" },
+                  description: "3 follow-up suggestions in Arabic",
+                },
+              },
+              required: ["suggestions"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const rawContent = followUpResponse.choices?.[0]?.message?.content;
+      const contentStr = typeof rawContent === "string" ? rawContent : "{}";
+      const parsed = JSON.parse(contentStr);
+      followUpSuggestions = (parsed.suggestions || []).slice(0, 3);
+    } catch (e) {
+      console.warn("[RasidAI] Follow-up suggestions generation failed:", e);
+    }
+
+    // Calculate processing metadata
+    const agentsUsed = Array.from(new Set(thinkingSteps.map(s => s.agent)));
+    const totalDurationMs = thinkingSteps.reduce((sum, s) => sum + (s.durationMs || 0), 0);
+
     // Log the interaction
     await logAudit(
       userId,
@@ -2001,7 +2072,13 @@ export async function rasidAIChat(
       userName,
     );
 
-    return { response: content, toolsUsed, thinkingSteps };
+    return {
+      response: content,
+      toolsUsed,
+      thinkingSteps,
+      followUpSuggestions,
+      processingMeta: { totalDurationMs, toolCount: toolsUsed.length, agentsUsed },
+    };
   } catch (err: any) {
     console.error("[RasidAI] Chat error:", err);
     await logAudit(userId, "smart_rasid.error", `Error: ${err.message}`, "system", userName);
@@ -2020,6 +2097,8 @@ export async function rasidAIChat(
       response: "عذراً، حدث خطأ أثناء معالجة طلبك. يرجى المحاولة مرة أخرى.",
       toolsUsed,
       thinkingSteps,
+      followUpSuggestions: [],
+      processingMeta: { totalDurationMs: 0, toolCount: toolsUsed.length, agentsUsed: [] },
     };
   }
 }

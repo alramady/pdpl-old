@@ -1,8 +1,9 @@
 /**
- * PasteSites — Paste site monitoring view
+ * PasteSites — Enhanced Paste site monitoring view
  * Dark Observatory Theme — Uses tRPC API
+ * Enhanced with: search/filter, severity indicators, timeline, risk heatmap, animated stats
  */
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FileText,
   AlertTriangle,
@@ -15,13 +16,25 @@ import {
   Server,
   ScanLine,
   ShieldAlert,
+  Search,
+  Filter,
+  TrendingUp,
+  Activity,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Shield,
+  Flame,
+  Zap,
+  BarChart2,
+  Download,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DetailModal } from "@/components/DetailModal";
 import LeakDetailDrilldown from "@/components/LeakDetailDrilldown";
 
@@ -43,15 +56,139 @@ const statusText = (s: string) => {
   }
 };
 
+const severityLevel = (paste: any): { level: string; color: string; icon: typeof Shield; label: string } => {
+  const piiCount = (paste.piiTypes as string[] | undefined)?.length ?? 0;
+  if (paste.status === "flagged" || piiCount >= 4) {
+    return { level: "critical", color: "text-red-500", icon: Flame, label: "حرج" };
+  }
+  if (piiCount >= 2) {
+    return { level: "high", color: "text-orange-400", icon: AlertTriangle, label: "عالي" };
+  }
+  if (piiCount >= 1) {
+    return { level: "medium", color: "text-amber-400", icon: Shield, label: "متوسط" };
+  }
+  return { level: "low", color: "text-emerald-400", icon: Shield, label: "منخفض" };
+};
+
+// Animated counter component
+function AnimatedCounter({ value, className }: { value: number; className?: string }) {
+  return (
+    <motion.span
+      key={value}
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={className}
+    >
+      {value}
+    </motion.span>
+  );
+}
+
 export default function PasteSites() {
-  const { data: pastes, isLoading: pastesLoading } = trpc.pastes.list.useQuery();
-  const { data: channels, isLoading: channelsLoading } = trpc.channels.list.useQuery({ platform: "paste" });
+  const { data: pastes, isLoading: pastesLoading, refetch: refetchPastes } = trpc.pastes.list.useQuery();
+  const { data: channels, isLoading: channelsLoading, refetch: refetchChannels } = trpc.channels.list.useQuery({ platform: "paste" });
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [drillLeak, setDrillLeak] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<"date" | "severity">("date");
+  const [showFilters, setShowFilters] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const pasteEntries = pastes ?? [];
   const pasteChannels = channels ?? [];
   const isLoading = pastesLoading || channelsLoading;
+
+  // Filtered and sorted pastes
+  const filteredPastes = useMemo(() => {
+    let filtered = [...pasteEntries];
+
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.filename.toLowerCase().includes(q) ||
+        p.sourceName.toLowerCase().includes(q) ||
+        (p.preview && p.preview.toLowerCase().includes(q)) ||
+        ((p.piiTypes as string[] | undefined) || []).some(t => t.toLowerCase().includes(q))
+      );
+    }
+
+    // Status filter
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(p => p.status === statusFilter);
+    }
+
+    // Sort
+    if (sortBy === "date") {
+      filtered.sort((a, b) => new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime());
+    } else {
+      filtered.sort((a, b) => {
+        const severityOrder: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+        return (severityOrder[severityLevel(b).level] || 0) - (severityOrder[severityLevel(a).level] || 0);
+      });
+    }
+
+    return filtered;
+  }, [pasteEntries, searchQuery, statusFilter, sortBy]);
+
+  // Risk distribution for heatmap
+  const riskDistribution = useMemo(() => {
+    const dist = { critical: 0, high: 0, medium: 0, low: 0 };
+    pasteEntries.forEach(p => {
+      const sev = severityLevel(p);
+      dist[sev.level as keyof typeof dist]++;
+    });
+    return dist;
+  }, [pasteEntries]);
+
+  // Timeline data (group by date)
+  const timelineData = useMemo(() => {
+    const groups: Record<string, number> = {};
+    pasteEntries.forEach(p => {
+      const date = new Date(p.detectedAt).toLocaleDateString("ar-SA");
+      groups[date] = (groups[date] || 0) + 1;
+    });
+    return Object.entries(groups).slice(0, 7).reverse();
+  }, [pasteEntries]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([refetchPastes(), refetchChannels()]);
+      toast.success("تم تحديث البيانات");
+    } catch {
+      toast.error("فشل في تحديث البيانات");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const exportPastes = () => {
+    if (filteredPastes.length === 0) {
+      toast.error("لا توجد بيانات للتصدير");
+      return;
+    }
+    const BOM = "\uFEFF";
+    const headers = ["اسم الملف", "المصدر", "الحالة", "تاريخ الاكتشاف", "أنواع البيانات", "الخطورة"];
+    const rows = filteredPastes.map(p => [
+      p.filename,
+      p.sourceName,
+      statusText(p.status),
+      new Date(p.detectedAt).toLocaleString("ar-SA"),
+      ((p.piiTypes as string[] | undefined) || []).join(" | "),
+      severityLevel(p).label,
+    ]);
+    const csv = [headers.join(","), ...rows.map(r => r.map(c => `"${c}"`).join(","))].join("\n");
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `paste-sites-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("تم تصدير البيانات بنجاح");
+  };
 
   if (isLoading) {
     return (
@@ -93,14 +230,15 @@ export default function PasteSites() {
         </div>
       </motion.div>
 
-      {/* Stats */}
+      {/* Stats with animated counters */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat, i) => (
           <motion.div key={stat.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}>
             <div className="group cursor-pointer transition-all hover:scale-[1.02]" onClick={() => setActiveModal(`stat-${stat.id}`)}>
               <Card className="border-border group-hover:border-primary/30 transition-colors">
                 <CardContent className="p-4 text-center">
-                  <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                  <stat.icon className={`w-5 h-5 mx-auto mb-2 ${stat.color} opacity-60`} />
+                  <AnimatedCounter value={stat.value} className={`text-2xl font-bold ${stat.color}`} />
                   <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
                   <p className="text-[9px] text-primary/50 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">اضغط للتفاصيل ←</p>
                 </CardContent>
@@ -108,6 +246,91 @@ export default function PasteSites() {
             </div>
           </motion.div>
         ))}
+      </div>
+
+      {/* Risk Heatmap + Timeline Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Risk Distribution Heatmap */}
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-amber-400" />
+              توزيع مستوى الخطورة
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            <div className="grid grid-cols-4 gap-2">
+              {[
+                { key: "critical", label: "حرج", color: "bg-red-500", textColor: "text-red-400", count: riskDistribution.critical },
+                { key: "high", label: "عالي", color: "bg-orange-500", textColor: "text-orange-400", count: riskDistribution.high },
+                { key: "medium", label: "متوسط", color: "bg-amber-500", textColor: "text-amber-400", count: riskDistribution.medium },
+                { key: "low", label: "منخفض", color: "bg-emerald-500", textColor: "text-emerald-400", count: riskDistribution.low },
+              ].map(item => (
+                <motion.div
+                  key={item.key}
+                  whileHover={{ scale: 1.05 }}
+                  className="relative p-3 rounded-lg bg-secondary/30 border border-border text-center cursor-default"
+                >
+                  <div className={`absolute top-0 left-0 right-0 h-1 rounded-t-lg ${item.color}`} style={{ opacity: Math.min(1, item.count / Math.max(1, pasteEntries.length) + 0.2) }} />
+                  <p className={`text-xl font-bold ${item.textColor}`}>{item.count}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{item.label}</p>
+                </motion.div>
+              ))}
+            </div>
+            {/* Bar visualization */}
+            <div className="mt-3 h-3 rounded-full bg-secondary/30 overflow-hidden flex">
+              {pasteEntries.length > 0 && (
+                <>
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(riskDistribution.critical / pasteEntries.length) * 100}%` }} transition={{ duration: 0.8 }} className="bg-red-500 h-full" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(riskDistribution.high / pasteEntries.length) * 100}%` }} transition={{ duration: 0.8, delay: 0.1 }} className="bg-orange-500 h-full" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(riskDistribution.medium / pasteEntries.length) * 100}%` }} transition={{ duration: 0.8, delay: 0.2 }} className="bg-amber-500 h-full" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${(riskDistribution.low / pasteEntries.length) * 100}%` }} transition={{ duration: 0.8, delay: 0.3 }} className="bg-emerald-500 h-full" />
+                </>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Activity Timeline */}
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Activity className="w-4 h-4 text-cyan-400" />
+              النشاط الزمني
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pb-4">
+            {timelineData.length > 0 ? (
+              <div className="space-y-2">
+                {timelineData.map(([date, count], i) => (
+                  <motion.div
+                    key={date}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="flex items-center gap-3"
+                  >
+                    <span className="text-[10px] text-muted-foreground min-w-[80px] text-left font-mono">{date}</span>
+                    <div className="flex-1 h-5 bg-secondary/20 rounded-full overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(100, (count / Math.max(...timelineData.map(d => d[1] as number))) * 100)}%` }}
+                        transition={{ duration: 0.6, delay: i * 0.1 }}
+                        className="h-full bg-gradient-to-l from-cyan-500 to-teal-500 rounded-full flex items-center justify-end px-2"
+                      >
+                        <span className="text-[9px] font-bold text-white">{count}</span>
+                      </motion.div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground text-sm">
+                لا توجد بيانات زمنية متاحة
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
 
       {/* Monitored sites */}
@@ -124,7 +347,11 @@ export default function PasteSites() {
                         <h3 className="text-sm font-semibold text-foreground">{source.name}</h3>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <span className={`w-2 h-2 rounded-full ${source.status === "active" ? "bg-emerald-500" : "bg-amber-500"}`} />
+                        <motion.span
+                          animate={source.status === "active" ? { scale: [1, 1.3, 1] } : {}}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className={`w-2 h-2 rounded-full ${source.status === "active" ? "bg-emerald-500" : "bg-amber-500"}`}
+                        />
                         <span className="text-[10px] text-muted-foreground">{source.status === "active" ? "نشط" : "متوقف"}</span>
                       </div>
                     </div>
@@ -147,69 +374,217 @@ export default function PasteSites() {
         ))}
       </div>
 
-      {/* Recent pastes */}
+      {/* Recent pastes with search/filter */}
       <Card className="border-border">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <FileText className="w-4 h-4 text-amber-400" />
-            أحدث اللصقات المرصودة
-          </CardTitle>
-          <Button size="sm" variant="outline" className="gap-2" onClick={() => toast("جاري التحديث...")}>
-            <RefreshCw className="w-3.5 h-3.5" />
-            تحديث
-          </Button>
+        <CardHeader className="flex flex-col gap-3">
+          <div className="flex flex-row items-center justify-between">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <FileText className="w-4 h-4 text-amber-400" />
+              أحدث اللصقات المرصودة
+              <Badge variant="outline" className="text-[10px] mr-2">
+                {filteredPastes.length} / {pasteEntries.length}
+              </Badge>
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={exportPastes}>
+                <Download className="w-3 h-3" />
+                تصدير
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 text-xs"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="w-3 h-3" />
+                فلترة
+                {showFilters ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                تحديث
+              </Button>
+            </div>
+          </div>
+
+          {/* Search and Filter Bar */}
+          <AnimatePresence>
+            {showFilters && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="flex flex-wrap items-center gap-3 pt-2 border-t border-border">
+                  {/* Search */}
+                  <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="بحث بالاسم، المصدر، أو نوع البيانات..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pr-10 pl-4 py-2 text-sm rounded-lg bg-secondary/30 border border-border focus:border-primary/50 focus:outline-none text-foreground placeholder:text-muted-foreground"
+                    />
+                  </div>
+
+                  {/* Status filter */}
+                  <div className="flex items-center gap-1.5">
+                    {[
+                      { value: "all", label: "الكل" },
+                      { value: "flagged", label: "مُعلَّم" },
+                      { value: "analyzing", label: "قيد التحليل" },
+                      { value: "documented", label: "موثّق" },
+                    ].map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setStatusFilter(opt.value)}
+                        className={`text-[11px] px-3 py-1.5 rounded-lg border transition-colors ${
+                          statusFilter === opt.value
+                            ? "bg-primary/10 border-primary/30 text-primary"
+                            : "bg-secondary/20 border-border text-muted-foreground hover:border-primary/20"
+                        }`}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Sort */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-muted-foreground">ترتيب:</span>
+                    <button
+                      onClick={() => setSortBy("date")}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors flex items-center gap-1 ${
+                        sortBy === "date" ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border text-muted-foreground"
+                      }`}
+                    >
+                      <Calendar className="w-3 h-3" />
+                      التاريخ
+                    </button>
+                    <button
+                      onClick={() => setSortBy("severity")}
+                      className={`text-[11px] px-2.5 py-1 rounded-lg border transition-colors flex items-center gap-1 ${
+                        sortBy === "severity" ? "bg-primary/10 border-primary/30 text-primary" : "bg-secondary/20 border-border text-muted-foreground"
+                      }`}
+                    >
+                      <AlertTriangle className="w-3 h-3" />
+                      الخطورة
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {pasteEntries.map((paste, i) => (
-              <motion.div
-                key={paste.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-                className="p-4 rounded-lg bg-secondary/20 border border-border hover:border-amber-500/20 transition-colors group cursor-pointer"
-                onClick={() => setActiveModal(`paste-${paste.id}`)}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="text-sm font-mono font-semibold text-foreground">{paste.filename}</h3>
-                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <ExternalLink className="w-3 h-3" />
-                        {paste.sourceName}
-                      </span>
-                      {paste.fileSize && <span>{paste.fileSize}</span>}
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {paste.detectedAt ? new Date(paste.detectedAt).toLocaleDateString("ar-SA") : "—"}
-                      </span>
+            <AnimatePresence mode="popLayout">
+              {filteredPastes.map((paste, i) => {
+                const sev = severityLevel(paste);
+                const SevIcon = sev.icon;
+                return (
+                  <motion.div
+                    key={paste.id}
+                    layout
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: i * 0.03 }}
+                    className="p-4 rounded-lg bg-secondary/20 border border-border hover:border-amber-500/20 transition-colors group cursor-pointer relative"
+                    onClick={() => setActiveModal(`paste-${paste.id}`)}
+                  >
+                    {/* Severity indicator bar */}
+                    <div className={`absolute top-0 right-0 bottom-0 w-1 rounded-r-lg ${
+                      sev.level === "critical" ? "bg-red-500" :
+                      sev.level === "high" ? "bg-orange-500" :
+                      sev.level === "medium" ? "bg-amber-500" : "bg-emerald-500"
+                    }`} />
+
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start gap-3">
+                        {/* Severity icon */}
+                        <div className={`mt-0.5 p-1.5 rounded-lg ${
+                          sev.level === "critical" ? "bg-red-500/10" :
+                          sev.level === "high" ? "bg-orange-500/10" :
+                          sev.level === "medium" ? "bg-amber-500/10" : "bg-emerald-500/10"
+                        }`}>
+                          <SevIcon className={`w-4 h-4 ${sev.color}`} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-mono font-semibold text-foreground">{paste.filename}</h3>
+                          <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <ExternalLink className="w-3 h-3" />
+                              {paste.sourceName}
+                            </span>
+                            {paste.fileSize && <span>{paste.fileSize}</span>}
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3" />
+                              {paste.detectedAt ? new Date(paste.detectedAt).toLocaleDateString("ar-SA") : "—"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-[10px] px-2 py-0.5 rounded border ${
+                          sev.level === "critical" ? "text-red-400 bg-red-500/10 border-red-500/30" :
+                          sev.level === "high" ? "text-orange-400 bg-orange-500/10 border-orange-500/30" :
+                          sev.level === "medium" ? "text-amber-400 bg-amber-500/10 border-amber-500/30" :
+                          "text-emerald-400 bg-emerald-500/10 border-emerald-500/30"
+                        }`}>
+                          {sev.label}
+                        </span>
+                        <span className={`text-[10px] px-2 py-1 rounded border ${statusStyle(paste.status)}`}>
+                          {statusText(paste.status)}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                  <span className={`text-[10px] px-2 py-1 rounded border ${statusStyle(paste.status)}`}>
-                    {statusText(paste.status)}
-                  </span>
-                </div>
 
-                {/* PII types found */}
-                {paste.piiTypes && (paste.piiTypes as string[]).length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 mb-2">
-                    {(paste.piiTypes as string[]).map((type) => (
-                      <Badge key={type} variant="outline" className="text-[10px] bg-red-500/5 border-red-500/20 text-red-400">
-                        {type}
-                      </Badge>
-                    ))}
-                  </div>
-                )}
+                    {/* PII types found */}
+                    {paste.piiTypes && (paste.piiTypes as string[]).length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 mb-2 mr-10">
+                        {(paste.piiTypes as string[]).map((type) => (
+                          <Badge key={type} variant="outline" className="text-[10px] bg-red-500/5 border-red-500/20 text-red-400">
+                            {type}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
 
-                {/* Preview */}
-                {paste.preview && (
-                  <div className="p-2 rounded bg-black/30 border border-border">
-                    <code className="text-[11px] text-muted-foreground font-mono break-all">{paste.preview}</code>
-                  </div>
-                )}
-                <p className="text-[9px] text-primary/50 mt-2 opacity-0 group-hover:opacity-100 transition-opacity text-center">اضغط للتفاصيل ←</p>
-              </motion.div>
-            ))}
+                    {/* Preview */}
+                    {paste.preview && (
+                      <div className="p-2 rounded bg-black/30 border border-border mr-10">
+                        <code className="text-[11px] text-muted-foreground font-mono break-all">{paste.preview}</code>
+                      </div>
+                    )}
+                    <p className="text-[9px] text-primary/50 mt-2 opacity-0 group-hover:opacity-100 transition-opacity text-center">اضغط للتفاصيل ←</p>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+
+            {filteredPastes.length === 0 && pasteEntries.length > 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <Search className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>لا توجد نتائج مطابقة للبحث</p>
+                <button
+                  onClick={() => { setSearchQuery(""); setStatusFilter("all"); }}
+                  className="text-primary text-sm mt-2 hover:underline"
+                >
+                  إزالة الفلاتر
+                </button>
+              </div>
+            )}
+
             {pasteEntries.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />
@@ -244,7 +619,7 @@ export default function PasteSites() {
           title={channel.name}
           icon={<FileText className="w-6 h-6 text-amber-400" />}
         >
-          <div className="p-4 space-y-4 text-sm">
+          <div className="p-4 space-y-4">
             <p>تفاصيل الموقع المُرَاقب <span className="font-mono">{channel.name}</span>.</p>
             <div className="grid grid-cols-2 gap-4 text-center">
                 <div className="p-3 bg-secondary/30 rounded-lg">
@@ -273,58 +648,81 @@ export default function PasteSites() {
         </DetailModal>
       ))}
 
-      {pasteEntries.map(paste => (
-        <DetailModal
-          key={`modal-paste-${paste.id}`}
-          open={activeModal === `paste-${paste.id}`}
-          onClose={() => setActiveModal(null)}
-          title="تفاصيل اللصقة"
-          icon={<FileText className="w-6 h-6 text-cyan-400" />}
-          maxWidth="max-w-2xl"
-        >
-          <div className="p-4 space-y-3 text-sm">
-            <h3 className="font-mono text-lg text-primary">{paste.filename}</h3>
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs">
-                <span className="flex items-center gap-1.5"><Server className="w-3 h-3" /> {paste.sourceName}</span>
-                <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {new Date(paste.detectedAt).toLocaleString("ar-SA")}</span>
-                {paste.fileSize && <span className="flex items-center gap-1.5"><Info className="w-3 h-3" /> {paste.fileSize}</span>}
-            </div>
-            <div className="flex items-center justify-between p-3 bg-secondary/30 rounded-lg">
-                <span className="text-muted-foreground">الحالة</span>
-                <span className={`font-semibold ${statusStyle(paste.status)}`}>{statusText(paste.status)}</span>
-            </div>
-            {paste.piiTypes && (paste.piiTypes as string[]).length > 0 && (
-                <div>
-                    <h4 className="font-semibold mb-2">البيانات الحساسة المكتشفة:</h4>
-                    <div className="flex flex-wrap gap-2">
-                        {(paste.piiTypes as string[]).map(type => (
-                            <Badge key={type} variant="destructive" className="text-xs">{type}</Badge>
-                        ))}
-                    </div>
+      {pasteEntries.map(paste => {
+        const sev = severityLevel(paste);
+        return (
+          <DetailModal
+            key={`modal-paste-${paste.id}`}
+            open={activeModal === `paste-${paste.id}`}
+            onClose={() => setActiveModal(null)}
+            title="تفاصيل اللصقة"
+            icon={<FileText className="w-6 h-6 text-cyan-400" />}
+            maxWidth="max-w-2xl"
+          >
+            <div className="p-4 space-y-3 text-sm">
+              <h3 className="font-mono text-lg text-primary">{paste.filename}</h3>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-muted-foreground text-xs">
+                  <span className="flex items-center gap-1.5"><Server className="w-3 h-3" /> {paste.sourceName}</span>
+                  <span className="flex items-center gap-1.5"><Clock className="w-3 h-3" /> {new Date(paste.detectedAt).toLocaleString("ar-SA")}</span>
+                  {paste.fileSize && <span className="flex items-center gap-1.5"><Info className="w-3 h-3" /> {paste.fileSize}</span>}
+              </div>
+
+              {/* Severity + Status row */}
+              <div className="flex items-center gap-3">
+                <div className={`flex items-center gap-2 p-2.5 rounded-lg flex-1 ${
+                  sev.level === "critical" ? "bg-red-500/10 border border-red-500/20" :
+                  sev.level === "high" ? "bg-orange-500/10 border border-orange-500/20" :
+                  sev.level === "medium" ? "bg-amber-500/10 border border-amber-500/20" :
+                  "bg-emerald-500/10 border border-emerald-500/20"
+                }`}>
+                  <sev.icon className={`w-5 h-5 ${sev.color}`} />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">مستوى الخطورة</p>
+                    <p className={`font-bold ${sev.color}`}>{sev.label}</p>
+                  </div>
                 </div>
-            )}
-            {paste.preview && (
-                <div>
-                    <h4 className="font-semibold mb-2">معاينة المحتوى:</h4>
-                    <div className="p-3 rounded bg-black/50 border border-border max-h-48 overflow-y-auto">
-                        <code className="text-xs text-muted-foreground font-mono break-all whitespace-pre-wrap">{paste.preview}</code>
-                    </div>
+                <div className="flex items-center gap-2 p-2.5 bg-secondary/30 rounded-lg flex-1 border border-border">
+                  <Eye className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-[10px] text-muted-foreground">الحالة</p>
+                    <p className={`font-semibold ${statusStyle(paste.status).split(" ")[0]}`}>{statusText(paste.status)}</p>
+                  </div>
                 </div>
-            )}
-            <Button variant="outline" className="w-full" onClick={() => {
-              if ((paste as any).sourceUrl) {
-                window.open((paste as any).sourceUrl, '_blank', 'noopener,noreferrer');
-              } else if (paste.sourceName) {
-                toast.info(`المصدر: ${paste.sourceName}`, { description: "لا يوجد رابط مباشر متاح" });
-              } else {
-                toast.info("لا يوجد رابط متاح لهذا المصدر");
-              }
-            }}>
-              فتح المصدر الأصلي <ExternalLink className="w-3 h-3 mr-2" />
-            </Button>
-          </div>
-        </DetailModal>
-      ))}
+              </div>
+
+              {paste.piiTypes && (paste.piiTypes as string[]).length > 0 && (
+                  <div>
+                      <h4 className="font-semibold mb-2">البيانات الحساسة المكتشفة:</h4>
+                      <div className="flex flex-wrap gap-2">
+                          {(paste.piiTypes as string[]).map(type => (
+                              <Badge key={type} variant="destructive" className="text-xs">{type}</Badge>
+                          ))}
+                      </div>
+                  </div>
+              )}
+              {paste.preview && (
+                  <div>
+                      <h4 className="font-semibold mb-2">معاينة المحتوى:</h4>
+                      <div className="p-3 rounded bg-black/50 border border-border max-h-48 overflow-y-auto">
+                          <code className="text-xs text-muted-foreground font-mono break-all whitespace-pre-wrap">{paste.preview}</code>
+                      </div>
+                  </div>
+              )}
+              <Button variant="outline" className="w-full" onClick={() => {
+                if ((paste as any).sourceUrl) {
+                  window.open((paste as any).sourceUrl, '_blank', 'noopener,noreferrer');
+                } else if (paste.sourceName) {
+                  toast.info(`المصدر: ${paste.sourceName}`, { description: "لا يوجد رابط مباشر متاح" });
+                } else {
+                  toast.info("لا يوجد رابط متاح لهذا المصدر");
+                }
+              }}>
+                فتح المصدر الأصلي <ExternalLink className="w-3 h-3 mr-2" />
+              </Button>
+            </div>
+          </DetailModal>
+        );
+      })}
 
       {/* Leak Detail Drilldown */}
       <LeakDetailDrilldown

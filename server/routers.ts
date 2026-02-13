@@ -1528,7 +1528,13 @@ export const appRouter = router({
           who.name,
           who.id,
         );
-        return { response: result.response, toolsUsed: result.toolsUsed, thinkingSteps: result.thinkingSteps };
+        return {
+          response: result.response,
+          toolsUsed: result.toolsUsed,
+          thinkingSteps: result.thinkingSteps,
+          followUpSuggestions: result.followUpSuggestions,
+          processingMeta: result.processingMeta,
+        };
       }),
 
     dashboardSummary: publicProcedure.query(async () => {

@@ -61,7 +61,7 @@ import {
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { soundManager } from "@/lib/soundManager";
-import { Save, Trash2, FolderOpen, Download, X, MessageCircle, Archive } from "lucide-react";
+import { Save, Trash2, FolderOpen, Download, X, MessageCircle, Archive, Timer, Table2, FileDown, Lightbulb } from "lucide-react";
 
 // ═══ CONSTANTS ═══
 const RASID_CHARACTER_URL = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296955420/trhmUCDmIUgvRfyf.png"; // Waving character
@@ -75,6 +75,8 @@ interface ThinkingStep {
   status: "running" | "completed" | "error";
   timestamp: string;
   result?: string;
+  durationMs?: number;
+  toolCategory?: "read" | "execute" | "personality" | "analysis";
 }
 
 interface ChatMessage {
@@ -86,6 +88,8 @@ interface ChatMessage {
   thinkingSteps?: ThinkingStep[];
   rating?: number;
   userQuery?: string;
+  followUpSuggestions?: string[];
+  processingMeta?: { totalDurationMs: number; toolCount: number; agentsUsed: string[] };
 }
 
 const quickCommands = [
@@ -166,6 +170,14 @@ const agentColors: Record<string, string> = {
   "وكيل المعرفة": "text-blue-400",
   "وكيل الملفات": "text-teal-400",
   "وكيل الشخصية": "text-pink-400",
+};
+
+// Tool category badges configuration
+const toolCategoryConfig: Record<string, { label: string; color: string; bgColor: string; icon: typeof Brain }> = {
+  read: { label: "قراءة", color: "text-blue-400", bgColor: "bg-blue-500/10 border-blue-500/20", icon: Database },
+  execute: { label: "تنفيذ", color: "text-emerald-400", bgColor: "bg-emerald-500/10 border-emerald-500/20", icon: Zap },
+  analysis: { label: "تحليل", color: "text-violet-400", bgColor: "bg-violet-500/10 border-violet-500/20", icon: BarChart2 },
+  personality: { label: "شخصية", color: "text-pink-400", bgColor: "bg-pink-500/10 border-pink-500/20", icon: HeartHandshake },
 };
 
 // ═══ MATRIX RAIN BACKGROUND ═══
@@ -249,12 +261,17 @@ function PulseRings({ size = 80 }: { size?: number }) {
   );
 }
 
-// ═══ THINKING STEPS COMPONENT — Console Style ═══
+// ═══ THINKING STEPS COMPONENT — Enhanced Console Style with Timing & Categories ═══
 function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: ThinkingStep[]; isExpanded: boolean; onToggle: () => void }) {
   if (!steps || steps.length === 0) return null;
 
   const completedCount = steps.filter(s => s.status === "completed").length;
   const errorCount = steps.filter(s => s.status === "error").length;
+  const totalDuration = steps.reduce((sum, s) => sum + (s.durationMs || 0), 0);
+  const progressPercent = steps.length > 0 ? Math.round((completedCount / steps.length) * 100) : 0;
+
+  // Collect unique categories used
+  const categoriesUsed = Array.from(new Set(steps.map(s => s.toolCategory).filter(Boolean))) as string[];
 
   return (
     <div className="mb-3">
@@ -267,11 +284,41 @@ function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: Thinking
         <span className="text-[10px] text-cyan-400/60">
           [{completedCount}/{steps.length}]{errorCount > 0 ? ` ERR:${errorCount}` : ""}
         </span>
+        {/* Category badges */}
+        <div className="flex items-center gap-1">
+          {categoriesUsed.map((cat) => {
+            const config = toolCategoryConfig[cat];
+            if (!config) return null;
+            const CatIcon = config.icon;
+            return (
+              <span key={cat} className={`inline-flex items-center gap-0.5 text-[8px] px-1.5 py-0.5 rounded ${config.bgColor} ${config.color} border`}>
+                <CatIcon className="w-2.5 h-2.5" />
+                {config.label}
+              </span>
+            );
+          })}
+        </div>
+        {totalDuration > 0 && (
+          <span className="text-[9px] text-cyan-400/50 flex items-center gap-0.5">
+            <Timer className="w-2.5 h-2.5" />
+            {totalDuration < 1000 ? `${totalDuration}ms` : `${(totalDuration / 1000).toFixed(1)}s`}
+          </span>
+        )}
         <div className="flex-1" />
         <span className="text-[9px] text-cyan-500/40 font-mono">
           {isExpanded ? "▼ COLLAPSE" : "▶ EXPAND"}
         </span>
       </button>
+
+      {/* Progress bar */}
+      <div className="h-0.5 mt-0.5 rounded-full bg-[#0a1628] overflow-hidden">
+        <motion.div
+          className={`h-full rounded-full ${errorCount > 0 ? 'bg-gradient-to-r from-emerald-500 to-red-500' : 'bg-gradient-to-r from-cyan-500 to-emerald-500'}`}
+          initial={{ width: 0 }}
+          animate={{ width: `${progressPercent}%` }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        />
+      </div>
 
       <AnimatePresence>
         {isExpanded && (
@@ -288,6 +335,7 @@ function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: Thinking
                 const agentColor = agentColors[step.agent] || "text-cyan-400";
                 const statusSymbol = step.status === "completed" ? "✓" : step.status === "error" ? "✗" : "◉";
                 const statusColor = step.status === "completed" ? "text-emerald-400" : step.status === "error" ? "text-red-400" : "text-amber-400";
+                const catConfig = step.toolCategory ? toolCategoryConfig[step.toolCategory] : null;
 
                 return (
                   <motion.div
@@ -301,9 +349,20 @@ function ThinkingStepsDisplay({ steps, isExpanded, onToggle }: { steps: Thinking
                     <AgentIcon className={`w-3 h-3 ${agentColor} flex-shrink-0 mt-0.5`} />
                     <span className={`${agentColor} min-w-[80px]`}>{step.agent}</span>
                     <span className="text-slate-500">→</span>
-                    <span className="text-slate-300">{step.description}</span>
+                    {catConfig && (
+                      <span className={`text-[8px] px-1 py-0 rounded ${catConfig.bgColor} ${catConfig.color} border flex-shrink-0`}>
+                        {catConfig.label}
+                      </span>
+                    )}
+                    <span className="text-slate-300 flex-1">{step.description}</span>
+                    {step.durationMs !== undefined && step.durationMs > 0 && (
+                      <span className="text-[9px] text-cyan-500/40 flex items-center gap-0.5 flex-shrink-0">
+                        <Timer className="w-2 h-2" />
+                        {step.durationMs < 1000 ? `${step.durationMs}ms` : `${(step.durationMs / 1000).toFixed(1)}s`}
+                      </span>
+                    )}
                     {step.result && (
-                      <span className="text-slate-600 truncate group-hover:whitespace-normal max-w-[200px]">
+                      <span className="text-slate-600 truncate group-hover:whitespace-normal max-w-[200px] flex-shrink-0">
                         // {step.result}
                       </span>
                     )}
@@ -664,6 +723,8 @@ export default function SmartRasid() {
         toolsUsed: (result as any).toolsUsed,
         thinkingSteps: (result as any).thinkingSteps,
         userQuery: msg,
+        followUpSuggestions: (result as any).followUpSuggestions || [],
+        processingMeta: (result as any).processingMeta,
       };
 
       setNewMessageIds(prev => new Set(prev).add(assistantMessage.id));
@@ -1228,18 +1289,41 @@ export default function SmartRasid() {
                     />
                   )}
 
-                  {/* Tool usage indicator */}
+                  {/* Tool usage indicator with category badges */}
                   {msg.role === "assistant" && msg.toolsUsed && msg.toolsUsed.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {msg.toolsUsed.map((tool, i) => (
-                        <span
-                          key={i}
-                          className="inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded bg-cyan-500/10 text-cyan-400 border border-cyan-500/15 font-mono"
-                        >
-                          <Terminal className="w-2.5 h-2.5" />
-                          {toolLabels[tool] || tool}
-                        </span>
-                      ))}
+                      {msg.toolsUsed.map((tool, i) => {
+                        // Determine tool category from thinking steps
+                        const stepForTool = msg.thinkingSteps?.find(s => s.action === tool);
+                        const catConfig = stepForTool?.toolCategory ? toolCategoryConfig[stepForTool.toolCategory] : null;
+                        return (
+                          <span
+                            key={i}
+                            className={`inline-flex items-center gap-1 text-[9px] px-2 py-0.5 rounded border font-mono ${
+                              catConfig ? `${catConfig.bgColor} ${catConfig.color}` : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/15'
+                            }`}
+                          >
+                            {catConfig ? <catConfig.icon className="w-2.5 h-2.5" /> : <Terminal className="w-2.5 h-2.5" />}
+                            {toolLabels[tool] || tool}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Processing meta info */}
+                  {msg.role === "assistant" && msg.processingMeta && msg.processingMeta.totalDurationMs > 0 && (
+                    <div className="flex items-center gap-2 mb-2 text-[9px] text-slate-500 font-mono">
+                      <span className="flex items-center gap-0.5">
+                        <Timer className="w-2.5 h-2.5" />
+                        {msg.processingMeta.totalDurationMs < 1000
+                          ? `${msg.processingMeta.totalDurationMs}ms`
+                          : `${(msg.processingMeta.totalDurationMs / 1000).toFixed(1)}s`}
+                      </span>
+                      <span className="text-slate-700">·</span>
+                      <span>{msg.processingMeta.toolCount} أداة</span>
+                      <span className="text-slate-700">·</span>
+                      <span>{msg.processingMeta.agentsUsed.length} وكيل</span>
                     </div>
                   )}
 
@@ -1250,18 +1334,50 @@ export default function SmartRasid() {
                         : "bg-[#0a1628]/80 border border-cyan-500/10 text-slate-200"
                     }`}
                   >
-                    {/* Copy button */}
-                    <button
-                      onClick={() => copyMessage(msg.id, msg.content)}
-                      className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-white/10"
-                      title="نسخ"
-                    >
-                      {copiedId === msg.id ? (
-                        <Check className="w-3 h-3 text-emerald-400" />
-                      ) : (
-                        <Copy className="w-3 h-3 text-slate-500" />
+                    {/* Action buttons */}
+                    <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                      <button
+                        onClick={() => copyMessage(msg.id, msg.content)}
+                        className="p-1 rounded-md hover:bg-white/10"
+                        title="نسخ"
+                      >
+                        {copiedId === msg.id ? (
+                          <Check className="w-3 h-3 text-emerald-400" />
+                        ) : (
+                          <Copy className="w-3 h-3 text-slate-500" />
+                        )}
+                      </button>
+                      {/* Table export buttons - only show if content has tables */}
+                      {msg.role === "assistant" && msg.content.includes("|") && msg.content.includes("---") && (
+                        <>
+                          <button
+                            onClick={() => {
+                              const tables = extractMarkdownTables(msg.content);
+                              if (tables.length === 0) { toast.error("لا توجد جداول"); return; }
+                              const csv = tablesToCsv(tables);
+                              downloadFile(csv, `rasid-table-${Date.now()}.csv`, "text/csv;charset=utf-8");
+                              toast.success("تم تصدير الجدول ك CSV");
+                            }}
+                            className="p-1 rounded-md hover:bg-white/10"
+                            title="تصدير CSV"
+                          >
+                            <Table2 className="w-3 h-3 text-slate-500" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const tables = extractMarkdownTables(msg.content);
+                              if (tables.length === 0) { toast.error("لا توجد جداول"); return; }
+                              downloadFile(tables.join("\n\n"), `rasid-table-${Date.now()}.md`, "text/markdown;charset=utf-8");
+                              toast.success("تم تصدير الجدول ك Markdown");
+                            }}
+                            className="p-1 rounded-md hover:bg-white/10"
+                            title="تصدير Markdown"
+                          >
+                            <FileDown className="w-3 h-3 text-slate-500" />
+                          </button>
+                        </>
                       )}
-                    </button>
+                    </div>
 
                     {msg.role === "assistant" ? (
                       <div className="rasid-response prose prose-invert max-w-none text-[13px] leading-[1.7] [&_h1]:text-base [&_h1]:font-bold [&_h1]:text-cyan-200 [&_h1]:mt-4 [&_h1]:mb-2 [&_h2]:text-[14px] [&_h2]:font-bold [&_h2]:text-cyan-200 [&_h2]:mt-3 [&_h2]:mb-2 [&_h3]:text-[13px] [&_h3]:font-semibold [&_h3]:text-cyan-300 [&_h3]:mt-3 [&_h3]:mb-1.5 [&_h4]:text-[12px] [&_h4]:font-semibold [&_h4]:text-teal-300 [&_h4]:mt-2 [&_h4]:mb-1 [&_p]:text-[13px] [&_p]:text-slate-300 [&_p]:leading-[1.7] [&_p]:mb-2 [&_li]:text-[12px] [&_li]:text-slate-300 [&_li]:leading-[1.6] [&_ul]:space-y-0.5 [&_ol]:space-y-0.5 [&_table]:text-[11px] [&_table]:w-full [&_table]:border-collapse [&_th]:bg-cyan-500/10 [&_th]:text-cyan-300 [&_th]:text-[11px] [&_th]:font-semibold [&_th]:px-2.5 [&_th]:py-1.5 [&_th]:border [&_th]:border-cyan-500/15 [&_td]:px-2.5 [&_td]:py-1.5 [&_td]:border [&_td]:border-cyan-500/10 [&_td]:text-slate-400 [&_a]:text-cyan-400 [&_a]:underline [&_a]:underline-offset-2 [&_strong]:text-cyan-200 [&_strong]:font-semibold [&_em]:text-teal-300 [&_code]:text-[11px] [&_code]:text-cyan-300 [&_code]:bg-cyan-500/10 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:text-[11px] [&_pre]:bg-[#060d1b] [&_pre]:border [&_pre]:border-cyan-500/10 [&_pre]:rounded-lg [&_pre]:p-3 [&_pre]:overflow-x-auto [&_blockquote]:border-r-2 [&_blockquote]:border-cyan-400/40 [&_blockquote]:pr-3 [&_blockquote]:pl-0 [&_blockquote]:text-[12px] [&_blockquote]:text-cyan-200/80 [&_blockquote]:italic [&_blockquote]:my-2 [&_hr]:border-cyan-500/15 [&_hr]:my-3 [&_img]:rounded-lg [&_img]:border [&_img]:border-cyan-500/20 [&_img]:shadow-lg [&_img]:shadow-cyan-500/5 [&_img]:max-w-full [&_img]:my-3">
@@ -1330,17 +1446,24 @@ export default function SmartRasid() {
                     )}
                   </div>
 
-                  {/* Follow-up suggestions */}
+                  {/* Dynamic follow-up suggestions from LLM */}
                   {msg.role === "assistant" && msg.id === messages[messages.length - 1]?.id && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
-                      {getFollowUpSuggestions(msg.content).map((suggestion, i) => (
+                      {((msg.followUpSuggestions && msg.followUpSuggestions.length > 0)
+                        ? msg.followUpSuggestions
+                        : getFollowUpSuggestions(msg.content)
+                      ).map((suggestion, i) => (
                         <motion.button
                           key={i}
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.1 }}
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => sendMessage(suggestion)}
-                          className="text-[11px] px-3 py-1.5 rounded-lg bg-[#0a1628]/60 hover:bg-cyan-500/10 border border-cyan-500/10 hover:border-cyan-500/25 text-slate-400 hover:text-cyan-300 transition-all font-mono"
+                          className="text-[11px] px-3 py-1.5 rounded-lg bg-[#0a1628]/60 hover:bg-cyan-500/10 border border-cyan-500/10 hover:border-cyan-500/25 text-slate-400 hover:text-cyan-300 transition-all font-mono flex items-center gap-1.5"
                         >
+                          <Lightbulb className="w-3 h-3 text-amber-400/60" />
                           {suggestion}
                         </motion.button>
                       ))}
@@ -1373,7 +1496,21 @@ export default function SmartRasid() {
                         <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.2 }} className="w-2 h-2 rounded-full bg-teal-400" />
                         <motion.div animate={{ scale: [1, 1.4, 1] }} transition={{ duration: 0.6, repeat: Infinity, delay: 0.4 }} className="w-2 h-2 rounded-full bg-emerald-400" />
                       </div>
-                      <span className="text-sm text-cyan-400/80 font-mono">PROCESSING...</span>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-cyan-400/80 font-mono">جاري المعالجة...</span>
+                        <span className="text-[9px] text-slate-500 font-mono">
+                          طلب من {user?.name || (user as any)?.displayName || "المستخدم"}
+                        </span>
+                      </div>
+                    </div>
+                    {/* Animated progress bar */}
+                    <div className="h-0.5 rounded-full bg-[#060d1b] overflow-hidden mb-2">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-500"
+                        animate={{ x: ["-100%", "100%"] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        style={{ width: "50%" }}
+                      />
                     </div>
                     {loadingSteps.length > 0 && (
                       <div className="space-y-1 mt-2 border-t border-cyan-500/10 pt-2 font-mono text-[10px]">
@@ -1586,6 +1723,57 @@ export default function SmartRasid() {
       />
     </div>
   );
+}
+
+// ═══ TABLE EXPORT UTILITIES ═══
+function extractMarkdownTables(content: string): string[] {
+  const tables: string[] = [];
+  const lines = content.split("\n");
+  let currentTable: string[] = [];
+  let inTable = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      currentTable.push(trimmed);
+      inTable = true;
+    } else {
+      if (inTable && currentTable.length >= 3) {
+        tables.push(currentTable.join("\n"));
+      }
+      currentTable = [];
+      inTable = false;
+    }
+  }
+  if (inTable && currentTable.length >= 3) {
+    tables.push(currentTable.join("\n"));
+  }
+  return tables;
+}
+
+function tablesToCsv(tables: string[]): string {
+  return tables.map(table => {
+    const rows = table.split("\n")
+      .filter(row => !row.match(/^\|[\s-:|]+\|$/)) // Remove separator rows
+      .map(row =>
+        row.split("|").slice(1, -1).map(cell => {
+          const cleaned = cell.trim().replace(/"/g, '""');
+          return `"${cleaned}"`;
+        }).join(",")
+      );
+    return rows.join("\n");
+  }).join("\n\n");
+}
+
+function downloadFile(content: string, filename: string, mimeType: string) {
+  const BOM = "\uFEFF";
+  const blob = new Blob([BOM + content], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // Generate follow-up suggestions based on the last assistant message
